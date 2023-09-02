@@ -10,6 +10,8 @@ use winit::{
 };
 use glutin::display::GetGlDisplay;
 
+use nalgebra_glm as glm;
+
 fn main() {
     //Main object of our application from winit
     let event_loop = EventLoop::new();
@@ -49,8 +51,10 @@ fn main() {
     let mut renderer = None;
     let mut state = None;
 
+    let now = std::time::SystemTime::now();
+
     event_loop.run(move |event, window_target, control_flow| {
-        control_flow.set_wait();
+        control_flow.set_poll();
         match event {
             Event::Resumed => {
                 let window = window.take().unwrap_or_else(|| {
@@ -86,7 +90,7 @@ fn main() {
                                 NonZeroU32::new(size.width).unwrap(),
                                 NonZeroU32::new(size.height).unwrap(),
                             );
-                            let renderer = renderer.as_ref().unwrap();
+                            let renderer = renderer.as_mut().unwrap();
                             renderer.resize(size.width as i32, size.height as i32);
                         }
                     }
@@ -99,7 +103,7 @@ fn main() {
             Event::MainEventsCleared => {
                 if let Some((gl_context, gl_surface, _window)) = &state {
                     let renderer = renderer.as_ref().unwrap();
-                    renderer.draw();
+                    renderer.draw(std::time::SystemTime::now().duration_since(now).unwrap().as_secs_f32() );
                     //window.request_redraw();
 
                     gl_surface.swap_buffers(gl_context).unwrap();
@@ -115,6 +119,7 @@ pub struct Renderer {
     program: gl::types::GLuint,
     vao: gl::types::GLuint,
     vbo: gl::types::GLuint,
+    aspect : Option<f32>
 }
 
 impl Renderer {
@@ -149,50 +154,54 @@ impl Renderer {
             gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
             gl::BufferData(
                 gl::ARRAY_BUFFER,
-                (VERTEX_DATA.len() * std::mem::size_of::<f32>()) as gl::types::GLsizeiptr,
-                VERTEX_DATA.as_ptr() as *const _,
+                (infinirust::cube::TRIANGLES.len() * std::mem::size_of::<f32>()) as gl::types::GLsizeiptr,
+                infinirust::cube::TRIANGLES.as_ptr() as *const _,
                 gl::STATIC_DRAW,
             );
 
-            let pos_attrib = gl::GetAttribLocation(program, b"position\0".as_ptr() as *const _);
-            let color_attrib = gl::GetAttribLocation(program, b"color\0".as_ptr() as *const _);
             gl::VertexAttribPointer(
-                pos_attrib as gl::types::GLuint,
-                2,
-                gl::FLOAT,
                 0,
-                5 * std::mem::size_of::<f32>() as gl::types::GLsizei,
-                std::ptr::null(),
-            );
-            gl::VertexAttribPointer(
-                color_attrib as gl::types::GLuint,
                 3,
                 gl::FLOAT,
                 0,
-                5 * std::mem::size_of::<f32>() as gl::types::GLsizei,
-                (2 * std::mem::size_of::<f32>()) as *const () as *const _,
+                0,
+                std::ptr::null()
             );
-            gl::EnableVertexAttribArray(pos_attrib as gl::types::GLuint);
-            gl::EnableVertexAttribArray(color_attrib as gl::types::GLuint);
 
-            Self { program, vao, vbo}
+            gl::EnableVertexAttribArray(0);
+
+            Self { program, vao, vbo, aspect : None}
         }
     }
 
-    pub fn draw(&self) {
+    pub fn draw(&self, angle : f32) {
         unsafe {
             gl::UseProgram(self.program);
+            gl::Enable(gl::DEPTH_TEST);
+            gl::Disable(gl::CULL_FACE);
+
+            let projection = glm::perspective(self.aspect.unwrap(), 0.785398, 1.0, 100.0);
+            let model = glm::translation(&glm::vec3(0.0,0.0,-10.0));
+            let rotation = glm::rotation(angle, &glm::vec3(0.0,1.0,0.0));
+            let rotation2 = glm::rotation(angle * 2.0, &glm::vec3(1.0,0.0,0.0));
+
+            let mvp: glm::TMat4<f32> = projection * model * rotation * rotation2;
+
+            let mvp_location = gl::GetUniformLocation(self.program, "mvp\0".as_ptr().cast());
+
+            gl::UniformMatrix4fv(mvp_location, 1, 0, mvp.as_ptr());
 
             gl::BindVertexArray(self.vao);
             gl::BindBuffer(gl::ARRAY_BUFFER, self.vbo);
 
             gl::ClearColor(0.1, 0.1, 0.1, 0.9);
-            gl::Clear(gl::COLOR_BUFFER_BIT);
-            gl::DrawArrays(gl::TRIANGLES, 0, 3);
+            gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
+            gl::DrawArrays(gl::TRIANGLES, 0, 36);
         }
     }
 
-    pub fn resize(&self, width: i32, height: i32) {
+    pub fn resize(&mut self, width: i32, height: i32) {
+        self.aspect = Some(width as f32 / height as f32);
         unsafe {
             gl::Viewport(0, 0, width, height);
         }
@@ -216,30 +225,24 @@ fn get_gl_string(variant: gl::types::GLenum) -> Option<&'static CStr> {
     }
 }
 
-#[rustfmt::skip]
-static VERTEX_DATA: [f32; 15] = [
-    -0.5, -0.5,  1.0,  0.0,  0.0,
-     0.0,  0.5,  0.0,  1.0,  0.0,
-     0.5, -0.5,  0.0,  0.0,  1.0,
-];
-
 const VERTEX_SHADER_SOURCE: &[u8] = b"
-#version 100
+#version 330
 precision mediump float;
 
-attribute vec2 position;
-attribute vec3 color;
+layout(location=0) in vec3 position;
+
+uniform mat4 mvp;
 
 varying vec3 v_color;
 
 void main() {
-    gl_Position = vec4(position, 0.0, 1.0);
-    v_color = color;
+    gl_Position = mvp * vec4(position, 1.0);
+    v_color = (position + 1.0) / 2.0;
 }
 \0";
 
 const FRAGMENT_SHADER_SOURCE: &[u8] = b"
-#version 130
+#version 330
 precision mediump float;
 
 varying vec3 v_color;

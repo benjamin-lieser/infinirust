@@ -1,7 +1,7 @@
 use std::ffi::CStr;
 
 /// Will panic if the shader source does not compile
-pub fn create_and_compile_shader(shader_type: gl::types::GLenum, source: &CStr) -> gl::types::GLuint {
+fn create_and_compile_shader(shader_type: gl::types::GLenum, source: &CStr) -> gl::types::GLuint {
     unsafe {
         let shader = gl::CreateShader(shader_type);
         if shader == 0 {
@@ -25,6 +25,7 @@ pub fn create_and_compile_shader(shader_type: gl::types::GLenum, source: &CStr) 
     }
 }
 
+/// Panics if there are shader compiling or linking errors
 pub fn create_program(vertex_source : &CStr, fragment_source : &CStr) -> gl::types::GLuint {
     unsafe {
         let program = gl::CreateProgram();
