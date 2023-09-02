@@ -136,20 +136,9 @@ impl Renderer {
                 println!("Shaders version on {}", shaders_version.to_string_lossy());
             }
 
-            let vertex_shader = create_shader(gl::VERTEX_SHADER, VERTEX_SHADER_SOURCE);
-            let fragment_shader = create_shader(gl::FRAGMENT_SHADER, FRAGMENT_SHADER_SOURCE);
-
-            let program = gl::CreateProgram();
-
-            gl::AttachShader(program, vertex_shader);
-            gl::AttachShader(program, fragment_shader);
-
-            gl::LinkProgram(program);
+            let program = infinirust::mygl::create_program(CStr::from_bytes_with_nul(VERTEX_SHADER_SOURCE).unwrap(), CStr::from_bytes_with_nul(FRAGMENT_SHADER_SOURCE).unwrap());
 
             gl::UseProgram(program);
-
-            gl::DeleteShader(vertex_shader);
-            gl::DeleteShader(fragment_shader);
 
             let mut vao = std::mem::zeroed();
             gl::GenVertexArrays(1, &mut vao);
@@ -220,28 +209,6 @@ impl Drop for Renderer {
     }
 }
 
-unsafe fn create_shader(
-    shader_type: gl::types::GLenum,
-    source: &[u8],
-) -> gl::types::GLuint {
-    let shader = gl::CreateShader(shader_type);
-    gl::ShaderSource(shader, 1, [source.as_ptr().cast()].as_ptr(), std::ptr::null());
-    gl::CompileShader(shader);
-    
-    //check for compile errors
-    let mut status : gl::types::GLint = 0;
-    let mut error_length : gl::types::GLsizei = 0;
-    gl::GetShaderiv(shader, gl::COMPILE_STATUS, &mut status);
-    if status == 0 {
-        gl::GetShaderiv(shader, gl::INFO_LOG_LENGTH, &mut error_length);
-        let mut buffer = vec![0 as u8; error_length as usize];
-        gl::GetShaderInfoLog(shader, error_length, std::ptr::null_mut(), buffer.as_mut_ptr().cast());
-        println!("Shader Compile Error: {}", std::str::from_utf8(&buffer).unwrap());
-        panic!();
-    }
-    shader
-}
-
 fn get_gl_string(variant: gl::types::GLenum) -> Option<&'static CStr> {
     unsafe {
         let s = gl::GetString(variant);
@@ -272,7 +239,7 @@ void main() {
 \0";
 
 const FRAGMENT_SHADER_SOURCE: &[u8] = b"
-#version 100
+#version 130
 precision mediump float;
 
 varying vec3 v_color;
