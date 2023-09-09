@@ -4,7 +4,7 @@ use glutin::{config::ConfigTemplateBuilder, context::ContextAttributesBuilder, p
 use glutin_winit::{DisplayBuilder, GlWindow};
 use raw_window_handle::HasRawWindowHandle;
 use winit::{
-    event::{Event, WindowEvent},
+    event::{Event, WindowEvent, DeviceEvent, ElementState},
     event_loop::EventLoop,
     window::WindowBuilder,
 };
@@ -51,7 +51,11 @@ fn main() {
     let mut renderer = None;
     let mut state = None;
 
-    let now = std::time::SystemTime::now();
+    let mut stopped = false;
+
+    let mut now = std::time::SystemTime::now();
+
+    let mut angle = 0.0;
 
     event_loop.run(move |event, window_target, control_flow| {
         control_flow.set_poll();
@@ -101,12 +105,34 @@ fn main() {
                 _ => (),
             },
             Event::MainEventsCleared => {
-                if let Some((gl_context, gl_surface, _window)) = &state {
+                if let Some((gl_context, gl_surface, window)) = &state {
                     let renderer = renderer.as_ref().unwrap();
-                    renderer.draw(std::time::SystemTime::now().duration_since(now).unwrap().as_secs_f32() );
-                    //window.request_redraw();
+
+                    let current_time = std::time::SystemTime::now();
+
+
+                    let delta_t = current_time.duration_since(now).unwrap();
+                    now = current_time;
+
+                    if !stopped {
+                        angle += delta_t.as_secs_f32();
+                    }
+
+                    renderer.draw(angle);
+                    window.request_redraw();
 
                     gl_surface.swap_buffers(gl_context).unwrap();
+                }
+            },
+            Event::DeviceEvent { device_id, event } => {
+                match event {
+                    DeviceEvent::Key(input) => {
+                        println!("{:?}", input);
+                        if input.scancode == 57 && input.state == ElementState::Pressed{
+                            stopped = !stopped;
+                        }
+                    },
+                    _ => ()
                 }
             },
             _ => ()
