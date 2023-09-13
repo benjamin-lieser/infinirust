@@ -1,5 +1,9 @@
 use std::ffi::CStr;
 
+mod texture_atlas;
+
+pub use texture_atlas::TextureAtlas;
+
 /// Will panic if the shader source does not compile
 fn create_and_compile_shader(shader_type: gl::types::GLenum, source: &CStr) -> gl::types::GLuint {
     unsafe {

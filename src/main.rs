@@ -124,7 +124,7 @@ fn main() {
                     gl_surface.swap_buffers(gl_context).unwrap();
                 }
             },
-            Event::DeviceEvent { device_id, event } => {
+            Event::DeviceEvent { device_id : _, event } => {
                 match event {
                     DeviceEvent::Key(input) => {
                         println!("{:?}", input);
