@@ -59,6 +59,10 @@ impl TextureAtlas {
         Ok(())
     }
 
+    pub fn get_position(&self, id : u32) -> (f32, f32) {
+        self.positions[id as usize]
+    }
+
     pub fn bind_texture(&mut self, texture_unit : gl::types::GLenum) {
         unsafe {
             gl::ActiveTexture(texture_unit);
