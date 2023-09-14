@@ -196,6 +196,16 @@ impl Renderer {
 
             gl::EnableVertexAttribArray(0);
 
+            let mut atlas = infinirust::mygl::TextureAtlas::new();
+            atlas.add_texture("textures/grass_side.png", 0).unwrap();
+            atlas.add_texture("textures/grass_top.png", 1).unwrap();
+            atlas.add_texture("textures/dirt.png", 23).unwrap();
+            atlas.save("temp.png").unwrap();
+            atlas.bind_texture(gl::TEXTURE0);
+            atlas.finalize();
+
+
+
             Self { program, vao, vbo, aspect : None}
         }
     }
@@ -207,15 +217,18 @@ impl Renderer {
             gl::Disable(gl::CULL_FACE);
 
             let projection = glm::perspective(self.aspect.unwrap(), 0.785398, 1.0, 100.0);
-            let model = glm::translation(&glm::vec3(0.0,0.0,-10.0));
+            let model = glm::translation(&glm::vec3(0.0,0.0,-5.0));
             let rotation = glm::rotation(angle, &glm::vec3(0.0,1.0,0.0));
             let rotation2 = glm::rotation(angle * 2.0, &glm::vec3(1.0,0.0,0.0));
 
             let mvp: glm::TMat4<f32> = projection * model * rotation * rotation2;
 
             let mvp_location = gl::GetUniformLocation(self.program, "mvp\0".as_ptr().cast());
+            let texture_location = gl::GetUniformLocation(self.program, "texture\0".as_ptr().cast());
 
             gl::UniformMatrix4fv(mvp_location, 1, 0, mvp.as_ptr());
+
+            gl::Uniform1i(texture_location, 0);
 
             gl::BindVertexArray(self.vao);
             gl::BindBuffer(gl::ARRAY_BUFFER, self.vbo);
@@ -253,27 +266,29 @@ fn get_gl_string(variant: gl::types::GLenum) -> Option<&'static CStr> {
 
 const VERTEX_SHADER_SOURCE: &[u8] = b"
 #version 330
-precision mediump float;
+precision highp float;
 
 layout(location=0) in vec3 position;
 
 uniform mat4 mvp;
 
-varying vec3 v_color;
+varying vec2 texCord;
 
 void main() {
     gl_Position = mvp * vec4(position, 1.0);
-    v_color = (position + 1.0) / 2.0;
+    texCord = (position.xy + 1.0) / 2.0 / 64 ;
 }
 \0";
 
 const FRAGMENT_SHADER_SOURCE: &[u8] = b"
 #version 330
-precision mediump float;
+precision highp float;
 
-varying vec3 v_color;
+uniform sampler2D texture;
+
+varying vec2 texCord;
 
 void main() {
-    gl_FragColor = vec4(v_color, 1.0);
+    gl_FragColor = texture2D(texture, texCord);
 }
 \0";
