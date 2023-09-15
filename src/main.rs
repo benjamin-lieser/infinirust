@@ -284,13 +284,13 @@ const FRAGMENT_SHADER_SOURCE: &[u8] = b"
 #version 410 core
 precision highp float;
 
-uniform sampler2D texture;
+uniform sampler2D mytexture;
 
 layout(location=0) out vec4 fragColor;
 
 in vec2 texCord;
 
 void main() {
-    fragColor = texture2D(texture, texCord);
+    fragColor = texture(mytexture, texCord);
 }
 \0";
