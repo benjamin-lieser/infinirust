@@ -1,6 +1,6 @@
 use std::{ffi::{CString, CStr}, num::NonZeroU32};
 
-use glutin::{config::ConfigTemplateBuilder, context::ContextAttributesBuilder, prelude::{GlDisplay, NotCurrentGlContextSurfaceAccessor, GlConfig}, surface::{GlSurface, SwapInterval}};
+use glutin::{config::ConfigTemplateBuilder, context::{ContextAttributesBuilder, GlProfile, ContextApi, Version}, prelude::{GlDisplay, NotCurrentGlContextSurfaceAccessor, GlConfig}, surface::{GlSurface, SwapInterval}};
 use glutin_winit::{DisplayBuilder, GlWindow};
 use raw_window_handle::HasRawWindowHandle;
 use winit::{
@@ -42,7 +42,7 @@ fn main() {
 
     let gl_display = gl_config.display();
 
-    let context_attributes = ContextAttributesBuilder::new().build(raw_window_handle);
+    let context_attributes = ContextAttributesBuilder::new().with_profile(GlProfile::Core).with_context_api(ContextApi::OpenGl(Some(Version::new(4, 1)))).build(raw_window_handle);
 
     let mut not_current_gl_context = Some(unsafe {
         gl_display.create_context(&gl_config, &context_attributes).unwrap()
@@ -265,14 +265,14 @@ fn get_gl_string(variant: gl::types::GLenum) -> Option<&'static CStr> {
 }
 
 const VERTEX_SHADER_SOURCE: &[u8] = b"
-#version 330
+#version 410 core
 precision highp float;
 
 layout(location=0) in vec3 position;
 
 uniform mat4 mvp;
 
-varying vec2 texCord;
+out vec2 texCord;
 
 void main() {
     gl_Position = mvp * vec4(position, 1.0);
@@ -281,14 +281,16 @@ void main() {
 \0";
 
 const FRAGMENT_SHADER_SOURCE: &[u8] = b"
-#version 330
+#version 410 core
 precision highp float;
 
 uniform sampler2D texture;
 
-varying vec2 texCord;
+layout(location=0) out vec4 fragColor;
+
+in vec2 texCord;
 
 void main() {
-    gl_FragColor = texture2D(texture, texCord);
+    fragColor = texture2D(texture, texCord);
 }
 \0";
