@@ -103,6 +103,35 @@ fn main() {
                 WindowEvent::CloseRequested => {
                     control_flow.set_exit();
                 },
+                WindowEvent::KeyboardInput { device_id : _, input, is_synthetic : _ } => {
+                    let renderer = renderer.as_mut().unwrap();
+                    println!("{:?}", input);
+                    let pressed = match input.state {
+                        ElementState::Pressed => true,
+                        ElementState::Released => false
+                    };
+                    match input.scancode {
+                        30 => {
+                            renderer.keyboard_input(Key::Left, pressed);
+                        },
+                        31 => {
+                            renderer.keyboard_input(Key::Backward, pressed);
+                        },
+                        32 => {
+                            renderer.keyboard_input(Key::Right, pressed);
+                        },
+                        17 => {
+                            renderer.keyboard_input(Key::Forward, pressed);
+                        },
+                        42 => {
+                            renderer.keyboard_input(Key::Down, pressed);
+                        },
+                        57 => {
+                            renderer.keyboard_input(Key::Up, pressed);
+                        }
+                        _ => {}
+                    }
+                }
                 _ => (),
             },
             Event::MainEventsCleared => {
@@ -125,32 +154,7 @@ fn main() {
                 let renderer = renderer.as_mut().unwrap();
                 match event {
                     DeviceEvent::Key(input) => {
-                        println!("{:?}", input);
-                        let pressed = match input.state {
-                            ElementState::Pressed => true,
-                            ElementState::Released => false
-                        };
-                        match input.scancode {
-                            30 => {
-                                renderer.keyboard_input(Key::Left, pressed);
-                            },
-                            31 => {
-                                renderer.keyboard_input(Key::Backward, pressed);
-                            },
-                            32 => {
-                                renderer.keyboard_input(Key::Right, pressed);
-                            },
-                            17 => {
-                                renderer.keyboard_input(Key::Forward, pressed);
-                            },
-                            42 => {
-                                renderer.keyboard_input(Key::Down, pressed);
-                            },
-                            57 => {
-                                renderer.keyboard_input(Key::Up, pressed);
-                            }
-                            _ => {}
-                        }
+                        
                     },
                     DeviceEvent::MouseMotion { delta } => {
                         renderer.mouse_input(delta);
