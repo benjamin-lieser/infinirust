@@ -202,7 +202,7 @@ impl Game {
             atlas.add_texture("textures/grass_side.png", 0).unwrap();
             atlas.add_texture("textures/grass_top.png", 1).unwrap();
             atlas.add_texture("textures/dirt.png", 23).unwrap();
-            atlas.save("temp.png").unwrap();
+            //atlas.save("temp.png").unwrap();
             atlas.bind_texture(gl::TEXTURE0);
             atlas.finalize();
             
@@ -233,6 +233,14 @@ impl Game {
             self.camera.go_left(-delta_t * speed);
         }
 
+        if self.controls.up {
+            self.camera.go_up(delta_t * speed);
+        }
+
+        if self.controls.down {
+            self.camera.go_up(-delta_t * speed);
+        }
+
 
 
         unsafe {
@@ -244,11 +252,11 @@ impl Game {
             
             let [x,y,z] = self.camera.position();
 
-            let model = glm::translation(&glm::vec3(x as f32,y as f32,z as f32));
+            let model = glm::translation(&glm::vec3(-x as f32,-y as f32,-z as f32));
             //let rotation = glm::rotation(angle, &glm::vec3(0.0,1.0,0.0));
             //let rotation2 = glm::rotation(angle * 2.0, &glm::vec3(1.0,0.0,0.0));
 
-            let mvp: glm::TMat4<f32> = projection * model * self.camera.view_matrix();
+            let mvp: glm::TMat4<f32> = projection * self.camera.view_matrix() * model;
 
             let mvp_location = gl::GetUniformLocation(self.program, "mvp\0".as_ptr().cast());
             let texture_location = gl::GetUniformLocation(self.program, "texture\0".as_ptr().cast());

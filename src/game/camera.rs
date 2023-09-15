@@ -53,7 +53,7 @@ impl Camera for FreeCamera {
 
     fn go_left(&mut self, diff : f32) {
         self.pos[2] -= (diff * self.yaw.sin()) as f64;
-        self.pos[0] += (diff * self.yaw.cos()) as f64;
+        self.pos[0] -= (diff * self.yaw.cos()) as f64;
     }
 
     fn go_up(&mut self, diff : f32) {
