@@ -2,7 +2,13 @@ use std::ffi::CStr;
 
 mod texture_atlas;
 
+mod gl_smart_pointers;
+
 pub use texture_atlas::TextureAtlas;
+pub use gl_smart_pointers::VAO;
+pub use gl_smart_pointers::VBO;
+pub use gl_smart_pointers::VBOWithStorage;
+
 
 /// Will panic if the shader source does not compile
 fn create_and_compile_shader(shader_type: gl::types::GLenum, source: &CStr) -> gl::types::GLuint {

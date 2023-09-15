@@ -43,7 +43,7 @@ impl Camera for FreeCamera {
     }
 
     fn change_yaw(&mut self, diff : f32) {
-        self.yaw = (self.yaw + diff) % std::f32::consts::FRAC_2_PI;
+        self.yaw = (self.yaw + diff) % std::f32::consts::TAU;
     }
 
     fn go_forward(&mut self, diff : f32) {
