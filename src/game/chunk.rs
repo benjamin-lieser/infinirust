@@ -88,29 +88,53 @@ fn add_face(vertex_data: &mut Vec<u8>, texture_data : &mut Vec<f32>, atlas : &Te
     //bottom left
     texture_data.push(tex_x);
     texture_data.push(tex_y);
-    //top right
-    texture_data.push(tex_x + size_x);
-    texture_data.push(tex_y + size_y);
-    //top left
-    texture_data.push(tex_x);
-    texture_data.push(tex_y + size_y);
+    match dir {
+        Direction::NegX | Direction::NegY | Direction::NegZ => {
+            //top right
+            texture_data.push(tex_x + size_x);
+            texture_data.push(tex_y + size_y);
+            //top left
+            texture_data.push(tex_x);
+            texture_data.push(tex_y + size_y);
+        },
+        Direction::PosX | Direction::PosY | Direction::PosZ => {
+            //top left
+            texture_data.push(tex_x);
+            texture_data.push(tex_y + size_y);
+            //top right
+            texture_data.push(tex_x + size_x);
+            texture_data.push(tex_y + size_y);
+        }
+    }
+    
     
     //bottom left
     texture_data.push(tex_x);
     texture_data.push(tex_y);
-    //bottom right
-    texture_data.push(tex_x + size_x);
-    texture_data.push(tex_y);
-    //top right
-    texture_data.push(tex_x + size_x);
-    texture_data.push(tex_y + size_y);
+    match dir {
+        Direction::NegX | Direction::NegY | Direction::NegZ => {
+            //bottom right
+            texture_data.push(tex_x + size_x);
+            texture_data.push(tex_y);
+            //top right
+            texture_data.push(tex_x + size_x);
+            texture_data.push(tex_y + size_y);
+        },
+        Direction::PosX | Direction::PosY | Direction::PosZ => {
+            //top right
+            texture_data.push(tex_x + size_x);
+            texture_data.push(tex_y + size_y);
+            //bottom right
+            texture_data.push(tex_x + size_x);
+            texture_data.push(tex_y);
+        }
+    }
 
 
     let mut insert = |x,y,z| {
         vertex_data.push(pos[0] + x);
         vertex_data.push(pos[1] + y);
-        vertex_data.push(pos[2] + z)
-
+        vertex_data.push(pos[2] + z);
     };
 
     match dir {
