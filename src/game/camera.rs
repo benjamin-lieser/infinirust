@@ -4,7 +4,7 @@ use glm::Mat4;
 
 pub trait Camera {
     fn position(&self) -> [f64;3];
-    fn view_projection_matrix(&self) -> Mat4;
+    fn view_matrix(&self) -> Mat4;
 
     fn change_pitch(&mut self, diff : f32);
     fn change_yaw(&mut self, diff : f32);
@@ -60,7 +60,7 @@ impl Camera for FreeCamera {
         self.pos[1] += diff as f64;
     }
 
-    fn view_projection_matrix(&self) -> Mat4 {
+    fn view_matrix(&self) -> Mat4 {
         let pitch = glm::rotation(self.pitch, &glm::vec3(1.0,0.0,0.0));
         let yaw = glm::rotation(self.yaw, &glm::vec3(0.0,1.0,0.0));
         pitch * yaw
