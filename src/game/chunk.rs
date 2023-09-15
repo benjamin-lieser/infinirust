@@ -62,6 +62,10 @@ impl Chunk {
                     if self.get([x,y,z]) > 0 {
                         add_face(&mut self.vertex_pos.data, &mut self.texture_pos.data, atlas, 0, [x as u8, y as u8, z as u8], Direction::PosZ);
                         add_face(&mut self.vertex_pos.data, &mut self.texture_pos.data, atlas, 0, [x as u8, y as u8, z as u8], Direction::NegZ);
+                        add_face(&mut self.vertex_pos.data, &mut self.texture_pos.data, atlas, 0, [x as u8, y as u8, z as u8], Direction::NegX);
+                        add_face(&mut self.vertex_pos.data, &mut self.texture_pos.data, atlas, 0, [x as u8, y as u8, z as u8], Direction::PosX);
+                        add_face(&mut self.vertex_pos.data, &mut self.texture_pos.data, atlas, 23, [x as u8, y as u8, z as u8], Direction::NegY);
+                        add_face(&mut self.vertex_pos.data, &mut self.texture_pos.data, atlas, 1, [x as u8, y as u8, z as u8], Direction::PosY);
                     }
                 }
             }
@@ -89,7 +93,7 @@ fn add_face(vertex_data: &mut Vec<u8>, texture_data : &mut Vec<f32>, atlas : &Te
     texture_data.push(tex_x);
     texture_data.push(tex_y);
     match dir {
-        Direction::NegX | Direction::NegY | Direction::NegZ => {
+        Direction::NegX | Direction::PosY | Direction::PosZ => {
             //top right
             texture_data.push(tex_x + size_x);
             texture_data.push(tex_y + size_y);
@@ -97,7 +101,7 @@ fn add_face(vertex_data: &mut Vec<u8>, texture_data : &mut Vec<f32>, atlas : &Te
             texture_data.push(tex_x);
             texture_data.push(tex_y + size_y);
         },
-        Direction::PosX | Direction::PosY | Direction::PosZ => {
+        Direction::PosX | Direction::NegY | Direction::NegZ => {
             //top left
             texture_data.push(tex_x);
             texture_data.push(tex_y + size_y);
@@ -112,7 +116,7 @@ fn add_face(vertex_data: &mut Vec<u8>, texture_data : &mut Vec<f32>, atlas : &Te
     texture_data.push(tex_x);
     texture_data.push(tex_y);
     match dir {
-        Direction::NegX | Direction::NegY | Direction::NegZ => {
+        Direction::NegX | Direction::PosY | Direction::PosZ => {
             //bottom right
             texture_data.push(tex_x + size_x);
             texture_data.push(tex_y);
@@ -120,7 +124,7 @@ fn add_face(vertex_data: &mut Vec<u8>, texture_data : &mut Vec<f32>, atlas : &Te
             texture_data.push(tex_x + size_x);
             texture_data.push(tex_y + size_y);
         },
-        Direction::PosX | Direction::PosY | Direction::PosZ => {
+        Direction::PosX | Direction::NegY | Direction::NegZ => {
             //top right
             texture_data.push(tex_x + size_x);
             texture_data.push(tex_y + size_y);
@@ -138,26 +142,59 @@ fn add_face(vertex_data: &mut Vec<u8>, texture_data : &mut Vec<f32>, atlas : &Te
     };
 
     match dir {
-        Direction::NegX => {
-            
-        },
-        Direction::PosZ => {
-            insert(0,0,1);
+        Direction::PosY => {
+            insert(0,1,0);
+            insert(1,1,1);
+            insert(1,1,0);
+
+            insert(0,1,0);
             insert(0,1,1);
             insert(1,1,1);
-
-            insert(0,0,1);
-            insert(1,1,1);     
-            insert(1,0,1);
-        },
-        Direction::NegZ => {
+        }
+        Direction::NegY => {
             insert(0,0,0);
-            insert(1,1,0);
+            insert(1,0,0);
+            insert(1,0,1);
+
+            insert(0,0,0);
+            insert(1,0,1);
+            insert(0,0,1);
+        }
+        Direction::NegX => {
+            insert(0,0,0);
+            insert(0,1,1);
             insert(0,1,0);
 
             insert(0,0,0);
+            insert(0,0,1);
+            insert(0,1,1);
+        },
+        Direction::PosX => {
             insert(1,0,0);
-            insert(1,1,0);     
+            insert(1,1,0);
+            insert(1,1,1);
+
+            insert(1,0,0);
+            insert(1,1,1);
+            insert(1,0,1);
+        },
+        Direction::PosZ => {
+            insert(0,0,1);
+            insert(1,1,1);
+            insert(0,1,1);
+
+            insert(0,0,1);  
+            insert(1,0,1);
+            insert(1,1,1);   
+        },
+        Direction::NegZ => {
+            insert(0,0,0);
+            insert(0,1,0);
+            insert(1,1,0);
+
+            insert(0,0,0);
+            insert(1,1,0);
+            insert(1,0,0);     
         },
         _ => {}
     }
