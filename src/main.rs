@@ -5,7 +5,7 @@ use glutin_winit::{DisplayBuilder, GlWindow};
 use infinirust::game::{Chunk, FreeCamera, Camera, Controls, Key};
 use raw_window_handle::HasRawWindowHandle;
 use winit::{
-    event::{Event, WindowEvent, DeviceEvent, ElementState},
+    event::{Event, WindowEvent, DeviceEvent, ElementState, VirtualKeyCode},
     event_loop::EventLoop,
     window::WindowBuilder,
 };
@@ -110,23 +110,23 @@ fn main() {
                         ElementState::Pressed => true,
                         ElementState::Released => false
                     };
-                    match input.scancode {
-                        30 => {
+                    match input.virtual_keycode {
+                        Some(VirtualKeyCode::A) => {
                             renderer.keyboard_input(Key::Left, pressed);
                         },
-                        31 => {
+                        Some(VirtualKeyCode::S) => {
                             renderer.keyboard_input(Key::Backward, pressed);
                         },
-                        32 => {
+                        Some(VirtualKeyCode::D) => {
                             renderer.keyboard_input(Key::Right, pressed);
                         },
-                        17 => {
+                        Some(VirtualKeyCode::W) => {
                             renderer.keyboard_input(Key::Forward, pressed);
                         },
-                        42 => {
+                        Some(VirtualKeyCode::LShift) => {
                             renderer.keyboard_input(Key::Down, pressed);
                         },
-                        57 => {
+                        Some(VirtualKeyCode::Space) => {
                             renderer.keyboard_input(Key::Up, pressed);
                         }
                         _ => {}
