@@ -259,7 +259,7 @@ impl Game {
             let mvp: glm::TMat4<f32> = projection * self.camera.view_matrix() * model;
 
             let mvp_location = gl::GetUniformLocation(self.program, "mvp\0".as_ptr().cast());
-            let texture_location = gl::GetUniformLocation(self.program, "texture\0".as_ptr().cast());
+            let texture_location = gl::GetUniformLocation(self.program, "tex_atlas\0".as_ptr().cast());
 
             gl::UniformMatrix4fv(mvp_location, 1, 0, mvp.as_ptr());
 
@@ -343,13 +343,13 @@ const FRAGMENT_SHADER_SOURCE: &[u8] = b"
 #version 410 core
 precision highp float;
 
-uniform sampler2D texture;
+uniform sampler2D tex_atlas;
 
 layout(location=0) out vec4 fragColor;
 
 in vec2 texCord;
 
 void main() {
-    fragColor = texture2D(texture, texCord);
+    fragColor = texture(tex_atlas, texCord);
 }
 \0";
