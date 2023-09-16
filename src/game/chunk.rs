@@ -132,6 +132,10 @@ impl Chunk {
             gl::DrawArrays(gl::TRIANGLES, 0, self.texture_pos.data.len() as i32 / 2);
         }
     }
+
+    pub fn position(&self) -> &[i32;3] {
+        &self.position
+    }
 }
 
 fn add_face(
@@ -251,6 +255,5 @@ fn add_face(
             insert(1, 1, 0);
             insert(1, 0, 0);
         }
-        _ => {}
     }
 }

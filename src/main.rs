@@ -16,7 +16,7 @@ use raw_window_handle::HasRawWindowHandle;
 use winit::{
     event::{DeviceEvent, ElementState, Event, VirtualKeyCode, WindowEvent},
     event_loop::EventLoop,
-    window::WindowBuilder,
+    window::{CursorGrabMode, WindowBuilder}, monitor::MonitorHandle,
 };
 
 use nalgebra_glm as glm;
@@ -66,11 +66,7 @@ fn main() {
     let mut renderer = None;
     let mut state = None;
 
-    let mut stopped = false;
-
     let mut now = std::time::SystemTime::now();
-
-    let mut angle = 0.0;
 
     event_loop.run(move |event, window_target, control_flow| {
         control_flow.set_poll();
@@ -121,6 +117,21 @@ fn main() {
                         }
                     }
                 }
+                WindowEvent::Focused(is_focused) => {
+                    let window = &mut state.as_mut().unwrap().2;
+                    if is_focused {
+                        window
+                            .set_cursor_grab(CursorGrabMode::Confined)
+                            .or_else(|_e| window.set_cursor_grab(CursorGrabMode::Locked))
+                            .unwrap();
+                        window.set_cursor_visible(false);
+                        window.set_fullscreen(Some(winit::window::Fullscreen::Borderless(None)));
+                    } else {
+                        window.set_fullscreen(None);
+                        window.set_cursor_grab(CursorGrabMode::None).unwrap();
+                        window.set_cursor_visible(true);
+                    }
+                }
                 WindowEvent::CloseRequested => {
                     control_flow.set_exit();
                 }
@@ -135,6 +146,7 @@ fn main() {
                         ElementState::Pressed => true,
                         ElementState::Released => false,
                     };
+                    let window = &mut state.as_mut().unwrap().2;
                     match input.virtual_keycode {
                         Some(VirtualKeyCode::A) => {
                             renderer.keyboard_input(Key::Left, pressed);
@@ -154,6 +166,20 @@ fn main() {
                         Some(VirtualKeyCode::Space) => {
                             renderer.keyboard_input(Key::Up, pressed);
                         }
+                        Some(VirtualKeyCode::Escape) => {
+                            control_flow.set_exit();
+                        }
+                        Some(VirtualKeyCode::G) => {
+                            window
+                                .set_cursor_grab(CursorGrabMode::Confined)
+                                .or_else(|_e| window.set_cursor_grab(CursorGrabMode::Locked))
+                                .unwrap();
+                            window.set_cursor_visible(false);
+                        }
+                        Some(VirtualKeyCode::R) => {
+                            window.set_cursor_grab(CursorGrabMode::None).unwrap();
+                            window.set_cursor_visible(true);
+                        }
                         _ => {}
                     }
                 }
@@ -164,7 +190,6 @@ fn main() {
                     let renderer = renderer.as_mut().unwrap();
 
                     let current_time = std::time::SystemTime::now();
-
                     let delta_t = current_time.duration_since(now).unwrap();
                     now = current_time;
 
@@ -180,7 +205,6 @@ fn main() {
             } => {
                 let renderer = renderer.as_mut().unwrap();
                 match event {
-                    DeviceEvent::Key(input) => {}
                     DeviceEvent::MouseMotion { delta } => {
                         renderer.mouse_input(delta);
                     }
