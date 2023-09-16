@@ -45,7 +45,7 @@ fn main() {
         })
         .unwrap();
 
-    println!("{:?}", window);
+    println!("{:?}", window.as_ref().unwrap());
 
     //Only required for windows, which needs a handle to a window for opengl context creation
     let raw_window_handle = window.as_ref().map(|window| window.raw_window_handle());
@@ -120,15 +120,11 @@ fn main() {
                 WindowEvent::Focused(is_focused) => {
                     let window = &mut state.as_mut().unwrap().2;
                     if is_focused {
-                        window
-                            .set_cursor_grab(CursorGrabMode::Confined)
-                            .or_else(|_e| window.set_cursor_grab(CursorGrabMode::Locked))
-                            .unwrap();
                         window.set_cursor_visible(false);
                         window.set_fullscreen(Some(winit::window::Fullscreen::Borderless(None)));
                     } else {
                         window.set_fullscreen(None);
-                        window.set_cursor_grab(CursorGrabMode::None).unwrap();
+                        //window.set_cursor_grab(CursorGrabMode::None).unwrap();
                         window.set_cursor_visible(true);
                     }
                 }
