@@ -1,15 +1,23 @@
-use std::{ffi::{CString, CStr}, num::NonZeroU32};
+use std::{
+    ffi::{CStr, CString},
+    num::NonZeroU32,
+};
 
-use glutin::{config::ConfigTemplateBuilder, context::{ContextAttributesBuilder, GlProfile, ContextApi, Version}, prelude::{GlDisplay, NotCurrentGlContextSurfaceAccessor, GlConfig}, surface::{GlSurface, SwapInterval}};
+use glutin::display::GetGlDisplay;
+use glutin::{
+    config::ConfigTemplateBuilder,
+    context::{ContextApi, ContextAttributesBuilder, GlProfile, Version},
+    prelude::{GlConfig, GlDisplay, NotCurrentGlContextSurfaceAccessor},
+    surface::{GlSurface, SwapInterval},
+};
 use glutin_winit::{DisplayBuilder, GlWindow};
-use infinirust::game::{Chunk, FreeCamera, Camera, Controls, Key};
+use infinirust::game::{Camera, Chunk, Controls, FreeCamera, Key};
 use raw_window_handle::HasRawWindowHandle;
 use winit::{
-    event::{Event, WindowEvent, DeviceEvent, ElementState, VirtualKeyCode},
+    event::{DeviceEvent, ElementState, Event, VirtualKeyCode, WindowEvent},
     event_loop::EventLoop,
     window::WindowBuilder,
 };
-use glutin::display::GetGlDisplay;
 
 use nalgebra_glm as glm;
 
@@ -20,21 +28,22 @@ fn main() {
     //Describes the configuration of the window
     let window_builder = WindowBuilder::new();
 
-    
     let display_builder = DisplayBuilder::new().with_window_builder(Some(window_builder));
 
-    let (mut window, gl_config) = display_builder.build(&event_loop, ConfigTemplateBuilder::new(), |configs| {
-        // Find the config with the maximum number of samples
-        configs
-            .reduce(|accum, config| {
-                if config.num_samples() > accum.num_samples() {
-                    config
-                } else {
-                    accum
-                }
-            })
-            .unwrap()
-    }).unwrap();
+    let (mut window, gl_config) = display_builder
+        .build(&event_loop, ConfigTemplateBuilder::new(), |configs| {
+            // Find the config with the maximum number of samples
+            configs
+                .reduce(|accum, config| {
+                    if config.num_samples() > accum.num_samples() {
+                        config
+                    } else {
+                        accum
+                    }
+                })
+                .unwrap()
+        })
+        .unwrap();
 
     println!("{:?}", window);
 
@@ -43,10 +52,15 @@ fn main() {
 
     let gl_display = gl_config.display();
 
-    let context_attributes = ContextAttributesBuilder::new().with_profile(GlProfile::Core).with_context_api(ContextApi::OpenGl(Some(Version::new(3, 0)))).build(raw_window_handle);
+    let context_attributes = ContextAttributesBuilder::new()
+        .with_profile(GlProfile::Core)
+        .with_context_api(ContextApi::OpenGl(Some(Version::new(3, 0))))
+        .build(raw_window_handle);
 
     let mut not_current_gl_context = Some(unsafe {
-        gl_display.create_context(&gl_config, &context_attributes).unwrap()
+        gl_display
+            .create_context(&gl_config, &context_attributes)
+            .unwrap()
     });
 
     let mut renderer = None;
@@ -71,10 +85,17 @@ fn main() {
                 let attrs = window.build_surface_attributes(<_>::default());
 
                 let gl_surface = unsafe {
-                    gl_config.display().create_window_surface(&gl_config, &attrs).unwrap()
+                    gl_config
+                        .display()
+                        .create_window_surface(&gl_config, &attrs)
+                        .unwrap()
                 };
 
-                let gl_context = not_current_gl_context.take().unwrap().make_current(&gl_surface).unwrap();
+                let gl_context = not_current_gl_context
+                    .take()
+                    .unwrap()
+                    .make_current(&gl_surface)
+                    .unwrap();
 
                 renderer.get_or_insert_with(|| Game::new(&gl_display));
 
@@ -85,7 +106,7 @@ fn main() {
                 }
 
                 assert!(state.replace((gl_context, gl_surface, window)).is_none());
-            },
+            }
             Event::WindowEvent { event, .. } => match event {
                 WindowEvent::Resized(size) => {
                     if size.width != 0 && size.height != 0 {
@@ -99,33 +120,37 @@ fn main() {
                             renderer.resize(size.width as i32, size.height as i32);
                         }
                     }
-                },
+                }
                 WindowEvent::CloseRequested => {
                     control_flow.set_exit();
-                },
-                WindowEvent::KeyboardInput { device_id : _, input, is_synthetic : _ } => {
+                }
+                WindowEvent::KeyboardInput {
+                    device_id: _,
+                    input,
+                    is_synthetic: _,
+                } => {
                     let renderer = renderer.as_mut().unwrap();
                     println!("{:?}", input);
                     let pressed = match input.state {
                         ElementState::Pressed => true,
-                        ElementState::Released => false
+                        ElementState::Released => false,
                     };
                     match input.virtual_keycode {
                         Some(VirtualKeyCode::A) => {
                             renderer.keyboard_input(Key::Left, pressed);
-                        },
+                        }
                         Some(VirtualKeyCode::S) => {
                             renderer.keyboard_input(Key::Backward, pressed);
-                        },
+                        }
                         Some(VirtualKeyCode::D) => {
                             renderer.keyboard_input(Key::Right, pressed);
-                        },
+                        }
                         Some(VirtualKeyCode::W) => {
                             renderer.keyboard_input(Key::Forward, pressed);
-                        },
+                        }
                         Some(VirtualKeyCode::LShift) => {
                             renderer.keyboard_input(Key::Down, pressed);
-                        },
+                        }
                         Some(VirtualKeyCode::Space) => {
                             renderer.keyboard_input(Key::Up, pressed);
                         }
@@ -140,7 +165,6 @@ fn main() {
 
                     let current_time = std::time::SystemTime::now();
 
-
                     let delta_t = current_time.duration_since(now).unwrap();
                     now = current_time;
 
@@ -149,31 +173,31 @@ fn main() {
 
                     gl_surface.swap_buffers(gl_context).unwrap();
                 }
-            },
-            Event::DeviceEvent { device_id : _, event } => {
+            }
+            Event::DeviceEvent {
+                device_id: _,
+                event,
+            } => {
                 let renderer = renderer.as_mut().unwrap();
                 match event {
-                    DeviceEvent::Key(input) => {
-                        
-                    },
+                    DeviceEvent::Key(input) => {}
                     DeviceEvent::MouseMotion { delta } => {
                         renderer.mouse_input(delta);
                     }
-                    _ => ()
+                    _ => (),
                 }
-            },
-            _ => ()
+            }
+            _ => (),
         }
     });
-
 }
 
 pub struct Game {
     program: gl::types::GLuint,
-    chunk : Chunk,
-    camera : FreeCamera,
-    controls : Controls,
-    aspect : Option<f32>
+    chunk: Chunk,
+    camera: FreeCamera,
+    controls: Controls,
+    aspect: Option<f32>,
 }
 
 impl Game {
@@ -184,7 +208,7 @@ impl Game {
                 gl_display.get_proc_address(symbol.as_c_str()).cast()
             });
 
-            if let Some(renderer) = get_gl_string( gl::RENDERER) {
+            if let Some(renderer) = get_gl_string(gl::RENDERER) {
                 println!("Running on {}", renderer.to_string_lossy());
             }
             if let Some(version) = get_gl_string(gl::VERSION) {
@@ -195,12 +219,14 @@ impl Game {
                 println!("Shaders version on {}", shaders_version.to_string_lossy());
             }
 
-            let program = infinirust::mygl::create_program(CStr::from_bytes_with_nul(VERTEX_SHADER_SOURCE).unwrap(), CStr::from_bytes_with_nul(FRAGMENT_SHADER_SOURCE).unwrap());
+            let program = infinirust::mygl::create_program(
+                CStr::from_bytes_with_nul(VERTEX_SHADER_SOURCE).unwrap(),
+                CStr::from_bytes_with_nul(FRAGMENT_SHADER_SOURCE).unwrap(),
+            );
 
             let generator = noise::Perlin::new(1);
 
-            let mut chunk = Chunk::new([0,0,0], &generator);
-            
+            let mut chunk = Chunk::new([0, 0, 0], &generator);
 
             let mut atlas = infinirust::mygl::TextureAtlas::new();
             atlas.add_texture("textures/grass_side.png", 0).unwrap();
@@ -209,16 +235,20 @@ impl Game {
             //atlas.save("temp.png").unwrap();
             atlas.bind_texture(gl::TEXTURE0);
             atlas.finalize();
-            
+
             chunk.write_vbo(&atlas);
 
-
-            Self { program, chunk, camera : FreeCamera::new([0.0,0.0,0.0]) , aspect : None, controls : Controls::default()}
+            Self {
+                program,
+                chunk,
+                camera: FreeCamera::new([0.0, 0.0, 0.0]),
+                aspect: None,
+                controls: Controls::default(),
+            }
         }
     }
 
-    pub fn draw(&mut self, delta_t : f32) {
-
+    pub fn draw(&mut self, delta_t: f32) {
         let speed = 5.0;
 
         if self.controls.forward {
@@ -245,25 +275,24 @@ impl Game {
             self.camera.go_up(-delta_t * speed);
         }
 
-
-
         unsafe {
             gl::UseProgram(self.program);
             gl::Enable(gl::DEPTH_TEST);
             gl::Enable(gl::CULL_FACE);
 
             let projection = glm::perspective(self.aspect.unwrap(), 0.785398, 1.0, 100.0);
-            
-            let [x,y,z] = self.camera.position();
 
-            let model = glm::translation(&glm::vec3(-x as f32,-y as f32,-z as f32));
+            let [x, y, z] = self.camera.position();
+
+            let model = glm::translation(&glm::vec3(-x as f32, -y as f32, -z as f32));
             //let rotation = glm::rotation(angle, &glm::vec3(0.0,1.0,0.0));
             //let rotation2 = glm::rotation(angle * 2.0, &glm::vec3(1.0,0.0,0.0));
 
             let mvp: glm::TMat4<f32> = projection * self.camera.view_matrix() * model;
 
             let mvp_location = gl::GetUniformLocation(self.program, "mvp\0".as_ptr().cast());
-            let texture_location = gl::GetUniformLocation(self.program, "tex_atlas\0".as_ptr().cast());
+            let texture_location =
+                gl::GetUniformLocation(self.program, "tex_atlas\0".as_ptr().cast());
 
             gl::UniformMatrix4fv(mvp_location, 1, 0, mvp.as_ptr());
 
@@ -282,25 +311,25 @@ impl Game {
         }
     }
 
-    pub fn mouse_input(&mut self, delta : (f64, f64)) {
+    pub fn mouse_input(&mut self, delta: (f64, f64)) {
         self.camera.change_pitch(delta.1 as f32 / 100.0);
         self.camera.change_yaw(delta.0 as f32 / 100.0);
     }
 
-    pub fn keyboard_input(&mut self, key : Key, pressed : bool) {
+    pub fn keyboard_input(&mut self, key: Key, pressed: bool) {
         match key {
             Key::Backward => {
                 self.controls.backward = pressed;
-            },
+            }
             Key::Down => {
                 self.controls.down = pressed;
-            },
+            }
             Key::Forward => {
                 self.controls.forward = pressed;
-            },
+            }
             Key::Left => {
                 self.controls.left = pressed;
-            },
+            }
             Key::Right => {
                 self.controls.right = pressed;
             }

@@ -1,7 +1,7 @@
 mod camera;
 mod chunk;
-mod world;
 mod input;
+mod world;
 
 pub use camera::{Camera, FreeCamera};
 pub use chunk::Chunk;
@@ -14,7 +14,7 @@ pub enum Direction {
     PosY,
     NegY,
     PosZ,
-    NegZ
+    NegZ,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -24,5 +24,5 @@ pub enum Key {
     Left,
     Right,
     Up,
-    Down
+    Down,
 }
