@@ -11,7 +11,7 @@ use glutin::{
     surface::{GlSurface, SwapInterval},
 };
 use glutin_winit::{DisplayBuilder, GlWindow};
-use infinirust::game::{Camera, Chunk, Controls, FreeCamera, Key, World};
+use infinirust::game::{Camera, Controls, FreeCamera, Key, World};
 use raw_window_handle::HasRawWindowHandle;
 use winit::{
     event::{DeviceEvent, ElementState, Event, VirtualKeyCode, WindowEvent},
@@ -266,7 +266,7 @@ impl Game {
     }
 
     pub fn draw(&mut self, delta_t: f32) {
-        let speed = 15.0;
+        let speed = 35.0;
 
         if self.controls.forward {
             self.camera.go_forward(delta_t * speed);
@@ -292,7 +292,7 @@ impl Game {
             self.camera.go_up(-delta_t * speed);
         }
 
-        let projection = glm::perspective(self.aspect.unwrap(), 0.785398, 0.5, 100.0);
+        let projection = glm::perspective(self.aspect.unwrap(), 0.785398, 0.5, 300.0);
 
         self.world.draw(self.program, &projection, &self.camera)
     }
