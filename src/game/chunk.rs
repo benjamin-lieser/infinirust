@@ -7,7 +7,7 @@ use crate::game::Direction;
 pub const CHUNK_SIZE: usize = 16;
 
 /// Range of y is from -MAX_Y to MAX_Y exclusive, has to be multiple of CHUNK_SIZE
-pub const MAX_Y: i32 = 256;
+pub const MAX_Y: i32 = 128;
 
 pub struct Chunk {
     /// Array of blocks in the chunk
@@ -35,9 +35,9 @@ impl Chunk {
             for zz in 0..CHUNK_SIZE {
                 let x = (x * CHUNK_SIZE as i32 + xx as i32) as f64 + 0.5;
                 let z = (z * CHUNK_SIZE as i32 + zz as i32) as f64 + 0.5;
-                let height = generator.get([x, z]);
+                let height = generator.get([x / 10.0, z / 10.0]) * MAX_Y as f64;
                 for yy in 0..CHUNK_SIZE {
-                    let y = ((y * CHUNK_SIZE as i32 + yy as i32) / MAX_Y) as f64 + 0.5;
+                    let y = (y * CHUNK_SIZE as i32 + yy as i32) as f64 + 0.5;
                     if y >= height {
                         chunk.set([xx, yy, zz], 1);
                     }
@@ -70,54 +70,66 @@ impl Chunk {
             for y in 0..CHUNK_SIZE {
                 for z in 0..CHUNK_SIZE {
                     if self.get([x, y, z]) > 0 {
-                        add_face(
-                            &mut self.vertex_pos.data,
-                            &mut self.texture_pos.data,
-                            atlas,
-                            0,
-                            [x as u8, y as u8, z as u8],
-                            Direction::PosZ,
-                        );
-                        add_face(
-                            &mut self.vertex_pos.data,
-                            &mut self.texture_pos.data,
-                            atlas,
-                            0,
-                            [x as u8, y as u8, z as u8],
-                            Direction::NegZ,
-                        );
-                        add_face(
-                            &mut self.vertex_pos.data,
-                            &mut self.texture_pos.data,
-                            atlas,
-                            0,
-                            [x as u8, y as u8, z as u8],
-                            Direction::NegX,
-                        );
-                        add_face(
-                            &mut self.vertex_pos.data,
-                            &mut self.texture_pos.data,
-                            atlas,
-                            0,
-                            [x as u8, y as u8, z as u8],
-                            Direction::PosX,
-                        );
-                        add_face(
-                            &mut self.vertex_pos.data,
-                            &mut self.texture_pos.data,
-                            atlas,
-                            23,
-                            [x as u8, y as u8, z as u8],
-                            Direction::NegY,
-                        );
-                        add_face(
-                            &mut self.vertex_pos.data,
-                            &mut self.texture_pos.data,
-                            atlas,
-                            1,
-                            [x as u8, y as u8, z as u8],
-                            Direction::PosY,
-                        );
+                        if z == CHUNK_SIZE - 1 || self.get([x, y, z + 1]) == 0 {
+                            add_face(
+                                &mut self.vertex_pos.data,
+                                &mut self.texture_pos.data,
+                                atlas,
+                                0,
+                                [x as u8, y as u8, z as u8],
+                                Direction::PosZ,
+                            );
+                        }
+                        if z == 0 || self.get([x, y, z - 1]) == 0 {
+                            add_face(
+                                &mut self.vertex_pos.data,
+                                &mut self.texture_pos.data,
+                                atlas,
+                                0,
+                                [x as u8, y as u8, z as u8],
+                                Direction::NegZ,
+                            );
+                        }
+                        if x == 0 || self.get([x - 1, y, z]) == 0 {
+                            add_face(
+                                &mut self.vertex_pos.data,
+                                &mut self.texture_pos.data,
+                                atlas,
+                                0,
+                                [x as u8, y as u8, z as u8],
+                                Direction::NegX,
+                            );
+                        }
+                        if x == CHUNK_SIZE - 1 || self.get([x + 1, y, z]) == 0 {
+                            add_face(
+                                &mut self.vertex_pos.data,
+                                &mut self.texture_pos.data,
+                                atlas,
+                                0,
+                                [x as u8, y as u8, z as u8],
+                                Direction::PosX,
+                            );
+                        }
+                        if y == CHUNK_SIZE - 1 || self.get([x, y + 1, z]) == 0 {
+                            add_face(
+                                &mut self.vertex_pos.data,
+                                &mut self.texture_pos.data,
+                                atlas,
+                                1,
+                                [x as u8, y as u8, z as u8],
+                                Direction::PosY,
+                            );
+                        }
+                        if y == 0 || self.get([x, y - 1, z]) == 0 {
+                            add_face(
+                                &mut self.vertex_pos.data,
+                                &mut self.texture_pos.data,
+                                atlas,
+                                23,
+                                [x as u8, y as u8, z as u8],
+                                Direction::NegY,
+                            );
+                        }
                     }
                 }
             }
@@ -133,7 +145,7 @@ impl Chunk {
         }
     }
 
-    pub fn position(&self) -> &[i32;3] {
+    pub fn position(&self) -> &[i32; 3] {
         &self.position
     }
 }

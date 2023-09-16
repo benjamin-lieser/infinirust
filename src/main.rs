@@ -11,12 +11,12 @@ use glutin::{
     surface::{GlSurface, SwapInterval},
 };
 use glutin_winit::{DisplayBuilder, GlWindow};
-use infinirust::game::{Camera, Chunk, Controls, FreeCamera, Key};
+use infinirust::game::{Camera, Chunk, Controls, FreeCamera, Key, World};
 use raw_window_handle::HasRawWindowHandle;
 use winit::{
     event::{DeviceEvent, ElementState, Event, VirtualKeyCode, WindowEvent},
     event_loop::EventLoop,
-    window::{CursorGrabMode, WindowBuilder}, monitor::MonitorHandle,
+    window::{CursorGrabMode, WindowBuilder},
 };
 
 use nalgebra_glm as glm;
@@ -214,7 +214,7 @@ fn main() {
 
 pub struct Game {
     program: gl::types::GLuint,
-    chunk: Chunk,
+    world: World,
     camera: FreeCamera,
     controls: Controls,
     aspect: Option<f32>,
@@ -244,9 +244,6 @@ impl Game {
                 CStr::from_bytes_with_nul(FRAGMENT_SHADER_SOURCE).unwrap(),
             );
 
-            let generator = noise::Perlin::new(1);
-
-            let mut chunk = Chunk::new([0, 0, 0], &generator);
 
             let mut atlas = infinirust::mygl::TextureAtlas::new();
             atlas.add_texture("textures/grass_side.png", 0).unwrap();
@@ -256,11 +253,11 @@ impl Game {
             atlas.bind_texture(gl::TEXTURE0);
             atlas.finalize();
 
-            chunk.write_vbo(&atlas);
+            let world = World::new(&atlas);
 
             Self {
                 program,
-                chunk,
+                world,
                 camera: FreeCamera::new([0.0, 0.0, 0.0]),
                 aspect: None,
                 controls: Controls::default(),
@@ -269,7 +266,7 @@ impl Game {
     }
 
     pub fn draw(&mut self, delta_t: f32) {
-        let speed = 5.0;
+        let speed = 15.0;
 
         if self.controls.forward {
             self.camera.go_forward(delta_t * speed);
@@ -295,33 +292,9 @@ impl Game {
             self.camera.go_up(-delta_t * speed);
         }
 
-        unsafe {
-            gl::UseProgram(self.program);
-            gl::Enable(gl::DEPTH_TEST);
-            gl::Enable(gl::CULL_FACE);
+        let projection = glm::perspective(self.aspect.unwrap(), 0.785398, 0.5, 100.0);
 
-            let projection = glm::perspective(self.aspect.unwrap(), 0.785398, 1.0, 100.0);
-
-            let [x, y, z] = self.camera.position();
-
-            let model = glm::translation(&glm::vec3(-x as f32, -y as f32, -z as f32));
-            //let rotation = glm::rotation(angle, &glm::vec3(0.0,1.0,0.0));
-            //let rotation2 = glm::rotation(angle * 2.0, &glm::vec3(1.0,0.0,0.0));
-
-            let mvp: glm::TMat4<f32> = projection * self.camera.view_matrix() * model;
-
-            let mvp_location = gl::GetUniformLocation(self.program, "mvp\0".as_ptr().cast());
-            let texture_location =
-                gl::GetUniformLocation(self.program, "tex_atlas\0".as_ptr().cast());
-
-            gl::UniformMatrix4fv(mvp_location, 1, 0, mvp.as_ptr());
-
-            gl::Uniform1i(texture_location, 0);
-
-            gl::ClearColor(0.1, 0.1, 0.1, 0.9);
-            gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
-            self.chunk.draw();
-        }
+        self.world.draw(self.program, &projection, &self.camera)
     }
 
     pub fn resize(&mut self, width: i32, height: i32) {

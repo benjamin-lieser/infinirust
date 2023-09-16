@@ -5,7 +5,9 @@ mod world;
 
 pub use camera::{Camera, FreeCamera};
 pub use chunk::Chunk;
+pub use chunk::CHUNK_SIZE;
 pub use input::Controls;
+pub use world::World;
 
 #[derive(Debug, Clone, Copy)]
 pub enum Direction {
