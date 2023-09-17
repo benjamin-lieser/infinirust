@@ -51,6 +51,8 @@ impl World {
             gl::ClearColor(0.1, 0.1, 0.1, 0.9);
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
 
+            let projection_view =projection * camera.view_matrix();
+
             for (_, chunk) in &self.chunks {
                 let [cx, cy, cz] = chunk.position();
 
@@ -63,7 +65,7 @@ impl World {
                     (cy - y) as f32,
                     (cz - z) as f32,
                 ));
-                let mvp: glm::TMat4<f32> = projection * camera.view_matrix() * model;
+                let mvp: glm::Mat4 = projection_view * model;
                 gl::UniformMatrix4fv(mvp_location, 1, 0, mvp.as_ptr());
                 chunk.draw();
             }

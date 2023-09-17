@@ -190,8 +190,7 @@ fn main() {
                     now = current_time;
 
                     renderer.draw(delta_t.as_secs_f32());
-                    window.request_redraw();
-
+                 
                     gl_surface.swap_buffers(gl_context).unwrap();
                 }
             }
