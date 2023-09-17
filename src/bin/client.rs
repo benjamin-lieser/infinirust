@@ -43,6 +43,7 @@ fn main() {
                     input,
                     is_synthetic: _,
                 } => {
+                    println!("{:?}", input);
                     let pressed = match input.state {
                         ElementState::Pressed => true,
                         ElementState::Released => false,
