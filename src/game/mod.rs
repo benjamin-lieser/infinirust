@@ -12,6 +12,7 @@ pub use chunk::Chunk;
 pub use chunk::CHUNK_SIZE;
 pub use input::Controls;
 pub use world::World;
+pub use world::ServerWorld;
 
 #[derive(Debug, Clone, Copy)]
 pub enum Direction {

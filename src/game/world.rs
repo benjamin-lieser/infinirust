@@ -1,11 +1,32 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, io::Write};
 
 use nalgebra_glm as glm;
 use noise::Perlin;
 
 use crate::mygl::TextureAtlas;
 
-use super::{Camera, Chunk, FreeCamera, CHUNK_SIZE};
+use super::{Camera, Chunk, FreeCamera, CHUNK_SIZE, chunk::ChunkData};
+
+pub struct ServerWorld {
+    generator : Perlin,
+    loaded_chunks : HashMap<[i32; 3], ChunkData>
+}
+
+impl ServerWorld {
+    pub fn new(seed : u32) -> Self {
+        ServerWorld { generator: Perlin::new(seed), loaded_chunks: HashMap::new() }
+    }
+    pub fn write_chunk(&mut self, pos : &[i32;3], writer : &mut impl Write) {
+        if let Some(chunk) = self.loaded_chunks.get(pos) {
+            chunk.write_to(writer);
+        } else {
+            let new_chunk = ChunkData::generate(&self.generator, pos);
+            new_chunk.write_to(writer);
+            self.loaded_chunks.insert(*pos, new_chunk);
+        }
+        println!("write chunk {:?}", pos);
+    }
+}
 
 pub struct World {
     chunks: HashMap<[i32; 3], Chunk>,

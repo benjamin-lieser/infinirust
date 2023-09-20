@@ -1,3 +1,5 @@
+use std::io::{Write, Read};
+
 use noise::{NoiseFn, Perlin};
 
 use crate::mygl::{TextureAtlas, VBOWithStorage, VAO};
@@ -8,6 +10,56 @@ pub const CHUNK_SIZE: usize = 16;
 
 /// Range of y is from -MAX_Y to MAX_Y exclusive, has to be multiple of CHUNK_SIZE
 pub const MAX_Y: i32 = 128;
+
+/// Data of a chunk. Is used by server and client
+pub struct ChunkData {
+    blocks : Vec<u8>
+}
+
+impl ChunkData {
+
+    pub fn empty() -> Self {
+        ChunkData { blocks: vec![0;CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE] }
+    }
+
+    pub fn generate(generator : &Perlin, pos : &[i32;3]) -> Self {
+        let mut chunk = Self::empty();
+
+        let [x, y, z] = pos;
+
+        for xx in 0..CHUNK_SIZE {
+            for zz in 0..CHUNK_SIZE {
+                let x = (x * CHUNK_SIZE as i32 + xx as i32) as f64 + 0.5;
+                let z = (z * CHUNK_SIZE as i32 + zz as i32) as f64 + 0.5;
+                let height = generator.get([x / 50.0, z / 50.0]) * MAX_Y as f64;
+                for yy in 0..CHUNK_SIZE {
+                    let y = (y * CHUNK_SIZE as i32 + yy as i32) as f64 + 0.5;
+                    if y <= height {
+                        chunk.set([xx, yy, zz], 1);
+                    }
+                }
+            }
+        }
+
+        chunk
+    }
+
+    pub fn get(&self, pos: [usize; 3]) -> u8 {
+        self.blocks[pos[0] * CHUNK_SIZE * CHUNK_SIZE + pos[1] * CHUNK_SIZE + pos[2]]
+    }
+
+    pub fn set(&mut self, pos: [usize; 3], block: u8) {
+        self.blocks[pos[0] * CHUNK_SIZE * CHUNK_SIZE + pos[1] * CHUNK_SIZE + pos[2]] = block
+    }
+
+    pub fn write_to(&self, writer : &mut impl Write) {
+        writer.write_all(&self.blocks).unwrap();
+    }
+
+    pub fn read_from(&mut self, reader : &mut impl Read) {
+        reader.read_exact(&mut self.blocks).unwrap();
+    }
+}
 
 pub struct Chunk {
     /// Array of blocks in the chunk

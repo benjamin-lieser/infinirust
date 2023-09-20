@@ -560,6 +560,7 @@ name = "infinirust"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "byteorder",
  "gl",
  "glutin",
  "glutin-winit",
