@@ -9,7 +9,7 @@ use crate::game::Direction;
 pub const CHUNK_SIZE: usize = 16;
 
 /// Range y chunks go from -Y_RANGE to Y_RANGE - 1
-pub const Y_RANGE: i32 = 8;
+pub const Y_RANGE: i32 = 4;
 
 /// Data of a chunk. Is used by server and client
 pub struct ChunkData {
@@ -59,6 +59,11 @@ impl ChunkData {
     pub fn read_from(&mut self, reader : &mut impl Read) {
         reader.read_exact(&mut self.blocks).unwrap();
     }
+
+    pub fn request_from(&mut self, pos : &[i32;3], stream : &mut (impl Read + Write)) {
+        stream.write_all(crate::misc::as_bytes(pos)).unwrap();
+        self.read_from(stream);
+    }
 }
 
 pub struct Chunk {
@@ -73,7 +78,7 @@ pub struct Chunk {
 
 impl Chunk {
     /// The next bytes in data have to represent the chunk data
-    pub fn new(position: [i32; 3], data: &mut impl Read) -> Self {
+    pub fn new(position: [i32; 3], data: &mut (impl Read + Write)) -> Self {
         let mut chunk = Chunk {
             blocks: ChunkData::empty(),
             position,
@@ -82,7 +87,7 @@ impl Chunk {
             texture_pos: VBOWithStorage::new(),
         };
 
-        chunk.blocks.read_from(data);
+        chunk.blocks.request_from(&position, data);
 
         chunk
             .vao
@@ -94,6 +99,11 @@ impl Chunk {
         chunk.vao.enable_array(1);
 
         chunk
+    }
+
+    pub fn change_pos(&mut self, new_pos : [i32;3], server : &mut (impl Write + Read)) {
+        self.blocks.request_from(&new_pos, server);
+        self.position = new_pos;
     }
 
     pub fn write_vbo(&mut self, atlas: &TextureAtlas) {

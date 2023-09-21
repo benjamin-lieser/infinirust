@@ -10,6 +10,7 @@ use nalgebra_glm as glm;
 pub use camera::{Camera, FreeCamera};
 pub use chunk::Chunk;
 pub use chunk::CHUNK_SIZE;
+pub use chunk::Y_RANGE;
 pub use input::Controls;
 pub use world::World;
 pub use world::ServerWorld;

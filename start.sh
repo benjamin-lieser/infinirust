@@ -1,3 +1,3 @@
-cargo build
-./target/debug/server &
-./target/debug/client
+cargo build -r
+./target/release/server &
+./target/release/client

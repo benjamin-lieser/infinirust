@@ -1,6 +1,5 @@
-use std::net::{TcpListener, TcpStream};
+use std::{net::{TcpListener, TcpStream}, io::Read};
 
-use byteorder::{LittleEndian, ReadBytesExt};
 use infinirust::game::ServerWorld;
 
 fn main() -> std::io::Result<()> {
@@ -16,9 +15,7 @@ fn main() -> std::io::Result<()> {
 }
 
 fn handle_request(mut stream: TcpStream, world: &mut ServerWorld) {
-    let x = stream.read_i32::<LittleEndian>().unwrap();
-    let y = stream.read_i32::<LittleEndian>().unwrap();
-    let z = stream.read_i32::<LittleEndian>().unwrap();
-    let pos = [x, y, z];
+    let mut pos = [0i32;3];
+    stream.read_exact(infinirust::misc::as_bytes_mut(&mut pos)).unwrap();
     world.write_chunk(&pos, &mut stream);
 }

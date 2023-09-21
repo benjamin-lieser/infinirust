@@ -2,12 +2,11 @@ use std::{collections::HashMap, io::Write, net::TcpStream};
 
 use nalgebra_glm as glm;
 use noise::Perlin;
-use byteorder::{WriteBytesExt, LittleEndian};
 
 
 use crate::mygl::TextureAtlas;
 
-use super::{Camera, Chunk, FreeCamera, CHUNK_SIZE, chunk::ChunkData};
+use super::{Camera, Chunk, FreeCamera, CHUNK_SIZE, chunk::ChunkData, Y_RANGE};
 
 pub struct ServerWorld {
     generator : Perlin,
@@ -40,15 +39,11 @@ impl World {
         let mut chunks = HashMap::new();
 
         for x in -8..8 {
-            for y in -8..8 {
+            for y in -Y_RANGE..Y_RANGE {
                 for z in -8..8 {
                     let pos = [x, y, z];
 
-                    let mut stream = TcpStream::connect(server.clone()).unwrap();
-
-                    stream.write_i32::<LittleEndian>(x).unwrap();
-                    stream.write_i32::<LittleEndian>(y).unwrap();
-                    stream.write_i32::<LittleEndian>(z).unwrap();
+                    let mut stream = TcpStream::connect(&server).unwrap();
 
 
                     chunks.insert(pos, Chunk::new(pos, &mut stream));
