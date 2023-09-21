@@ -8,8 +8,8 @@ use crate::game::Direction;
 
 pub const CHUNK_SIZE: usize = 16;
 
-/// Range of y is from -MAX_Y to MAX_Y exclusive, has to be multiple of CHUNK_SIZE
-pub const MAX_Y: i32 = 128;
+/// Range y chunks go from -Y_RANGE to Y_RANGE - 1
+pub const Y_RANGE: i32 = 8;
 
 /// Data of a chunk. Is used by server and client
 pub struct ChunkData {
@@ -31,7 +31,7 @@ impl ChunkData {
             for zz in 0..CHUNK_SIZE {
                 let x = (x * CHUNK_SIZE as i32 + xx as i32) as f64 + 0.5;
                 let z = (z * CHUNK_SIZE as i32 + zz as i32) as f64 + 0.5;
-                let height = generator.get([x / 50.0, z / 50.0]) * MAX_Y as f64;
+                let height = generator.get([x / 50.0, z / 50.0]) * Y_RANGE as f64 * CHUNK_SIZE as f64 * 0.1;
                 for yy in 0..CHUNK_SIZE {
                     let y = (y * CHUNK_SIZE as i32 + yy as i32) as f64 + 0.5;
                     if y <= height {
@@ -63,7 +63,7 @@ impl ChunkData {
 
 pub struct Chunk {
     /// Array of blocks in the chunk
-    blocks: Vec<u8>,
+    blocks: ChunkData,
     /// [0,0,0] is the chunk at origion in the positive direction
     position: [i32; 3],
     vao: VAO,
@@ -72,30 +72,17 @@ pub struct Chunk {
 }
 
 impl Chunk {
-    pub fn new(position: [i32; 3], generator: &Perlin) -> Self {
+    /// The next bytes in data have to represent the chunk data
+    pub fn new(position: [i32; 3], data: &mut impl Read) -> Self {
         let mut chunk = Chunk {
-            blocks: vec![0; CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE],
+            blocks: ChunkData::empty(),
             position,
             vao: VAO::new(),
             vertex_pos: VBOWithStorage::new(),
             texture_pos: VBOWithStorage::new(),
         };
 
-        let [x, y, z] = position;
-
-        for xx in 0..CHUNK_SIZE {
-            for zz in 0..CHUNK_SIZE {
-                let x = (x * CHUNK_SIZE as i32 + xx as i32) as f64 + 0.5;
-                let z = (z * CHUNK_SIZE as i32 + zz as i32) as f64 + 0.5;
-                let height = generator.get([x / 50.0, z / 50.0]) * MAX_Y as f64;
-                for yy in 0..CHUNK_SIZE {
-                    let y = (y * CHUNK_SIZE as i32 + yy as i32) as f64 + 0.5;
-                    if y <= height {
-                        chunk.set([xx, yy, zz], 1);
-                    }
-                }
-            }
-        }
+        chunk.blocks.read_from(data);
 
         chunk
             .vao
@@ -109,20 +96,12 @@ impl Chunk {
         chunk
     }
 
-    pub fn get(&self, pos: [usize; 3]) -> u8 {
-        self.blocks[pos[0] * CHUNK_SIZE * CHUNK_SIZE + pos[1] * CHUNK_SIZE + pos[2]]
-    }
-
-    pub fn set(&mut self, pos: [usize; 3], block: u8) {
-        self.blocks[pos[0] * CHUNK_SIZE * CHUNK_SIZE + pos[1] * CHUNK_SIZE + pos[2]] = block
-    }
-
     pub fn write_vbo(&mut self, atlas: &TextureAtlas) {
         for x in 0..CHUNK_SIZE {
             for y in 0..CHUNK_SIZE {
                 for z in 0..CHUNK_SIZE {
-                    if self.get([x, y, z]) > 0 {
-                        if z == CHUNK_SIZE - 1 || self.get([x, y, z + 1]) == 0 {
+                    if self.blocks.get([x, y, z]) > 0 {
+                        if z == CHUNK_SIZE - 1 || self.blocks.get([x, y, z + 1]) == 0 {
                             add_face(
                                 &mut self.vertex_pos.data,
                                 &mut self.texture_pos.data,
@@ -132,7 +111,7 @@ impl Chunk {
                                 Direction::PosZ,
                             );
                         }
-                        if z == 0 || self.get([x, y, z - 1]) == 0 {
+                        if z == 0 || self.blocks.get([x, y, z - 1]) == 0 {
                             add_face(
                                 &mut self.vertex_pos.data,
                                 &mut self.texture_pos.data,
@@ -142,7 +121,7 @@ impl Chunk {
                                 Direction::NegZ,
                             );
                         }
-                        if x == 0 || self.get([x - 1, y, z]) == 0 {
+                        if x == 0 || self.blocks.get([x - 1, y, z]) == 0 {
                             add_face(
                                 &mut self.vertex_pos.data,
                                 &mut self.texture_pos.data,
@@ -152,7 +131,7 @@ impl Chunk {
                                 Direction::NegX,
                             );
                         }
-                        if x == CHUNK_SIZE - 1 || self.get([x + 1, y, z]) == 0 {
+                        if x == CHUNK_SIZE - 1 || self.blocks.get([x + 1, y, z]) == 0 {
                             add_face(
                                 &mut self.vertex_pos.data,
                                 &mut self.texture_pos.data,
@@ -162,7 +141,7 @@ impl Chunk {
                                 Direction::PosX,
                             );
                         }
-                        if y == CHUNK_SIZE - 1 || self.get([x, y + 1, z]) == 0 {
+                        if y == CHUNK_SIZE - 1 || self.blocks.get([x, y + 1, z]) == 0 {
                             add_face(
                                 &mut self.vertex_pos.data,
                                 &mut self.texture_pos.data,
@@ -172,7 +151,7 @@ impl Chunk {
                                 Direction::PosY,
                             );
                         }
-                        if y == 0 || self.get([x, y - 1, z]) == 0 {
+                        if y == 0 || self.blocks.get([x, y - 1, z]) == 0 {
                             add_face(
                                 &mut self.vertex_pos.data,
                                 &mut self.texture_pos.data,

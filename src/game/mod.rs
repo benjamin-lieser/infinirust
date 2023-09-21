@@ -71,7 +71,7 @@ impl Game {
             atlas.bind_texture(gl::TEXTURE0);
             atlas.finalize();
 
-            let world = World::new(&atlas);
+            let world = World::new(&atlas, "localhost:8042".to_owned());
 
             Self {
                 program,

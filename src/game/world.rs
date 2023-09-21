@@ -1,7 +1,9 @@
-use std::{collections::HashMap, io::Write};
+use std::{collections::HashMap, io::Write, net::TcpStream};
 
 use nalgebra_glm as glm;
 use noise::Perlin;
+use byteorder::{WriteBytesExt, LittleEndian};
+
 
 use crate::mygl::TextureAtlas;
 
@@ -29,26 +31,33 @@ impl ServerWorld {
 }
 
 pub struct World {
-    chunks: HashMap<[i32; 3], Chunk>,
-    generator: Perlin,
+    chunks : HashMap<[i32; 3], Chunk>,
+    server : String
 }
 
 impl World {
-    pub fn new(atlas: &TextureAtlas) -> Self {
+    pub fn new(atlas: &TextureAtlas, server : String) -> Self {
         let mut chunks = HashMap::new();
-        let generator = Perlin::new(42);
 
         for x in -8..8 {
             for y in -8..8 {
                 for z in -8..8 {
                     let pos = [x, y, z];
-                    chunks.insert(pos, Chunk::new(pos, &generator));
+
+                    let mut stream = TcpStream::connect(server.clone()).unwrap();
+
+                    stream.write_i32::<LittleEndian>(x).unwrap();
+                    stream.write_i32::<LittleEndian>(y).unwrap();
+                    stream.write_i32::<LittleEndian>(z).unwrap();
+
+
+                    chunks.insert(pos, Chunk::new(pos, &mut stream));
                     chunks.get_mut(&pos).unwrap().write_vbo(atlas);
                 }
             }
         }
 
-        Self { chunks, generator }
+        Self { chunks, server }
     }
 
     pub fn draw(
