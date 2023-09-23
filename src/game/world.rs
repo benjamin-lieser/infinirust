@@ -8,6 +8,8 @@ use crate::mygl::TextureAtlas;
 
 use super::{Camera, Chunk, FreeCamera, CHUNK_SIZE, chunk::ChunkData, Y_RANGE};
 
+const VIEW_DISTANCE : i32 = 8;
+
 pub struct ServerWorld {
     generator : Perlin,
     loaded_chunks : HashMap<[i32; 3], ChunkData>
@@ -31,6 +33,7 @@ impl ServerWorld {
 
 pub struct World {
     chunks : HashMap<[i32; 3], Chunk>,
+    center : [i32;3],
     server : String
 }
 
@@ -52,7 +55,25 @@ impl World {
             }
         }
 
-        Self { chunks, server }
+        Self { chunks, center : [0,0,0], server }
+    }
+
+    pub fn update_center(&mut self, camera_pos : &[f64;3]) {
+        let camera_center = [camera_pos[0] as i32 / CHUNK_SIZE as i32, camera_pos[1] as i32 / CHUNK_SIZE as i32, camera_pos[2] as i32 / CHUNK_SIZE as i32];
+        // x
+        if self.center[0] != camera_center[0] {
+            for x in (camera_center[0] - VIEW_DISTANCE)..(self.center[0] - VIEW_DISTANCE) {
+
+                for y in -Y_RANGE..Y_RANGE {
+                    for z in (self.center[2] - VIEW_DISTANCE)..(self.center[0] - VIEW_DISTANCE) {
+                        let mut chunk = self.chunks.remove(&[x,y,z]).unwrap();
+                        let mut stream = TcpStream::connect(&self.server).unwrap();
+                        chunk.change_pos([x   ,y,z], &mut stream);
+                    }
+                }
+            }
+        }
+        todo!()
     }
 
     pub fn draw(
