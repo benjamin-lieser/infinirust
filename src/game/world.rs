@@ -6,7 +6,7 @@ use noise::Perlin;
 
 use crate::mygl::TextureAtlas;
 
-use super::{Camera, Chunk, FreeCamera, CHUNK_SIZE, chunk::ChunkData, Y_RANGE};
+use super::{Camera, Chunk, FreeCamera, CHUNK_SIZE, chunk::ChunkData, Y_RANGE, misc::CubeOutlines};
 
 const VIEW_DISTANCE : i32 = 8;
 
@@ -34,6 +34,7 @@ impl ServerWorld {
 pub struct World {
     chunks : HashMap<[i32; 3], Chunk>,
     center : [i32;3],
+    cube_outline : CubeOutlines,
     server : String
 }
 
@@ -55,7 +56,7 @@ impl World {
             }
         }
 
-        Self { chunks, center : [0,0,0], server }
+        Self { chunks, center : [0,0,0], cube_outline: CubeOutlines::new(), server }
     }
 
     pub fn update_center(&mut self, camera_pos : &[f64;3]) {
@@ -122,6 +123,8 @@ impl World {
             let look_pos = camera.view_direction() * distance_to_screen_mid;
 
             println!("{},{},{},{}", camera.view_direction(), look_pos.x as f64 + x, look_pos.y as f64 + y, look_pos.z as f64 + z);
+
+            self.cube_outline.draw(&projection_view);
         }
     }
 }

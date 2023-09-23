@@ -2,6 +2,7 @@ mod camera;
 mod chunk;
 mod input;
 mod world;
+pub mod misc;
 
 use std::ffi::CStr;
 
