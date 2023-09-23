@@ -4,6 +4,7 @@ use nalgebra_glm as glm;
 pub trait Camera {
     fn position(&self) -> [f64; 3];
     fn view_matrix(&self) -> Mat4;
+    fn view_direction(&self) -> glm::Vec3;
 
     fn change_pitch(&mut self, diff: f32);
     fn change_yaw(&mut self, diff: f32);
@@ -67,5 +68,12 @@ impl Camera for FreeCamera {
         let pitch = glm::rotation(self.pitch, &glm::vec3(1.0, 0.0, 0.0));
         let yaw = glm::rotation(self.yaw, &glm::vec3(0.0, 1.0, 0.0));
         pitch * yaw
+    }
+
+    fn view_direction(&self) -> glm::Vec3 {
+        let orig_view_vec = glm::vec4(0.0,0.0,-1.0,1.0);
+        let pitch = glm::rotation(-self.pitch, &glm::vec3(1.0, 0.0, 0.0));
+        let yaw = glm::rotation(-self.yaw, &glm::vec3(0.0, 1.0, 0.0));
+        (yaw * pitch * orig_view_vec).xyz()
     }
 }

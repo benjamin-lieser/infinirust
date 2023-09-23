@@ -5,6 +5,7 @@ mod world;
 
 use std::ffi::CStr;
 
+use glm::Mat4;
 use nalgebra_glm as glm;
 
 pub use camera::{Camera, FreeCamera};
@@ -12,8 +13,8 @@ pub use chunk::Chunk;
 pub use chunk::CHUNK_SIZE;
 pub use chunk::Y_RANGE;
 pub use input::Controls;
-pub use world::World;
 pub use world::ServerWorld;
+pub use world::World;
 
 #[derive(Debug, Clone, Copy)]
 pub enum Direction {
@@ -40,13 +41,17 @@ pub struct Game {
     world: World,
     camera: FreeCamera,
     controls: Controls,
-    aspect: Option<f32>,
+    render_size: Option<(i32, i32)>,
+    projection: Option<Mat4>,
+    distance_to_screen_mid: Option<f32>,
 }
+
+const NEAR_PLAIN: f32 = 0.3;
+const FAR_PLAIN: f32 = 300.0;
 
 impl Game {
     pub fn new() -> Self {
         unsafe {
-
             if let Some(renderer) = get_gl_string(gl::RENDERER) {
                 println!("Running on {}", renderer.to_string_lossy());
             }
@@ -63,7 +68,6 @@ impl Game {
                 CStr::from_bytes_with_nul(FRAGMENT_SHADER_SOURCE).unwrap(),
             );
 
-
             let mut atlas = crate::mygl::TextureAtlas::new();
             atlas.add_texture("textures/grass_side.png", 0).unwrap();
             atlas.add_texture("textures/grass_top.png", 1).unwrap();
@@ -78,8 +82,10 @@ impl Game {
                 program,
                 world,
                 camera: FreeCamera::new([0.0, 0.0, 0.0]),
-                aspect: None,
+                render_size: None,
                 controls: Controls::default(),
+                projection: None,
+                distance_to_screen_mid: None,
             }
         }
     }
@@ -111,16 +117,33 @@ impl Game {
             self.camera.go_up(-delta_t * speed);
         }
 
-        let projection = glm::perspective(self.aspect.unwrap(), 0.785398, 0.5, 300.0);
+        self.world
+            .draw(self.program, &self.projection.unwrap(), &self.camera, self.distance_to_screen_mid.unwrap_or(0.0));
 
-        self.world.draw(self.program, &projection, &self.camera)
+        unsafe {
+            let (x,y) = self.render_size.unwrap();
+            let mut depth : f32 = 0.0;
+            gl::ReadPixels(x / 2, y / 2, 1, 1, gl::DEPTH_COMPONENT, gl::FLOAT, (&mut depth as *mut f32).cast());
+            let ndc = depth * 2.0 - 1.0;
+            self.distance_to_screen_mid = Some((2.0 * NEAR_PLAIN * FAR_PLAIN) / (FAR_PLAIN + NEAR_PLAIN - ndc * (FAR_PLAIN - NEAR_PLAIN)));
+        }
     }
 
     pub fn resize(&mut self, width: i32, height: i32) {
-        self.aspect = Some(width as f32 / height as f32);
+        self.render_size = Some((width, height));
         unsafe {
             gl::Viewport(0, 0, width, height);
         }
+        self.projection = Some(glm::perspective(
+            width as f32 / height as f32,
+            0.785398,
+            NEAR_PLAIN,
+            FAR_PLAIN,
+        ));
+    }
+
+    pub fn print_dist(&self) {
+        println!("{:?}", self.distance_to_screen_mid);
     }
 
     pub fn mouse_input(&mut self, delta: (f64, f64)) {

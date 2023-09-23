@@ -81,6 +81,7 @@ impl World {
         program: gl::types::GLuint,
         projection: &nalgebra_glm::Mat4,
         camera: &FreeCamera,
+        distance_to_screen_mid : f32
     ) {
         unsafe {
             gl::UseProgram(program);
@@ -115,6 +116,12 @@ impl World {
                 gl::UniformMatrix4fv(mvp_location, 1, 0, mvp.as_ptr());
                 chunk.draw();
             }
+
+            // TODO Calculate distance to screen mid here
+
+            let look_pos = camera.view_direction() * distance_to_screen_mid;
+
+            println!("{},{},{},{}", camera.view_direction(), look_pos.x as f64 + x, look_pos.y as f64 + y, look_pos.z as f64 + z);
         }
     }
 }

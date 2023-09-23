@@ -18,7 +18,7 @@ fn main() {
 
     event_loop.run(move |event, _window_target, control_flow| {
         control_flow.set_poll();
-        println!("{:?}", event);
+        //println!("{:?}", event);
 
         let mut handle_keyboard = |input : KeyboardInput| {
             let pressed = match input.state {
@@ -77,9 +77,9 @@ fn main() {
                 WindowEvent::Focused(is_focused) => {
                     if is_focused {
                         window.set_cursor_visible(false);
-                        window.set_fullscreen(Some(winit::window::Fullscreen::Borderless(None)));
+                        //window.set_fullscreen(Some(winit::window::Fullscreen::Borderless(None)));
                     } else {
-                        window.set_fullscreen(None);
+                        //window.set_fullscreen(None);
                         //window.set_cursor_grab(CursorGrabMode::None).unwrap();
                         window.set_cursor_visible(true);
                     }
@@ -103,6 +103,8 @@ fn main() {
                 now = current_time;
 
                 game.draw(delta_t.as_secs_f32());
+
+                //game.print_dist();
 
                 surface.swap_buffers(&gl_context).unwrap();
             }
