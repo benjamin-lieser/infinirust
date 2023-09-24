@@ -2,6 +2,7 @@ mod camera;
 mod chunk;
 mod input;
 mod world;
+mod overlay;
 pub mod misc;
 
 use std::ffi::CStr;
@@ -16,6 +17,9 @@ pub use chunk::Y_RANGE;
 pub use input::Controls;
 pub use world::ServerWorld;
 pub use world::World;
+
+use self::misc::CubeOutlines;
+use self::overlay::Overlay;
 
 #[derive(Debug, Clone, Copy)]
 pub enum Direction {
@@ -44,7 +48,8 @@ pub struct Game {
     controls: Controls,
     render_size: Option<(i32, i32)>,
     projection: Option<Mat4>,
-    distance_to_screen_mid: Option<f32>,
+    cube_outlines: CubeOutlines,
+    overlay: Overlay
 }
 
 const NEAR_PLAIN: f32 = 0.3;
@@ -86,7 +91,8 @@ impl Game {
                 render_size: None,
                 controls: Controls::default(),
                 projection: None,
-                distance_to_screen_mid: None,
+                cube_outlines: CubeOutlines::new(),
+                overlay: Overlay::new()
             }
         }
     }
@@ -119,15 +125,31 @@ impl Game {
         }
 
         self.world
-            .draw(self.program, &self.projection.unwrap(), &self.camera, self.distance_to_screen_mid.unwrap_or(0.0));
+            .draw(self.program, &self.projection.unwrap(), &self.camera);
 
-        unsafe {
+        let distance_to_screen_mid = unsafe {
             let (x,y) = self.render_size.unwrap();
             let mut depth : f32 = 0.0;
             gl::ReadPixels(x / 2, y / 2, 1, 1, gl::DEPTH_COMPONENT, gl::FLOAT, (&mut depth as *mut f32).cast());
             let ndc = depth * 2.0 - 1.0;
-            self.distance_to_screen_mid = Some((2.0 * NEAR_PLAIN * FAR_PLAIN) / (FAR_PLAIN + NEAR_PLAIN - ndc * (FAR_PLAIN - NEAR_PLAIN)));
-        }
+            (2.0 * NEAR_PLAIN * FAR_PLAIN) / (FAR_PLAIN + NEAR_PLAIN - ndc * (FAR_PLAIN - NEAR_PLAIN))
+        };
+
+        let [x,y,z] = self.camera.position();
+
+        let look_pos = self.camera.view_direction() * (distance_to_screen_mid + 1e-1);
+
+        let abs_look_pos = [look_pos.x as f64 + x + 0.5, look_pos.y as f64 + y + 0.5, look_pos.z as f64 + z + 0.5];
+
+        let look_block = abs_look_pos.map(|x| x.round() - 1.0);
+
+        println!("{},{},{},{}", self.camera.view_direction(), look_pos.x as f64 + x, look_pos.y as f64 + y, look_pos.z as f64 + z);
+
+        let model = glm::translation(&glm::vec3((look_block[0] - x) as f32, (look_block[1] - y) as f32, (look_block[2] - z) as f32));
+
+        self.cube_outlines.draw(&(self.projection.unwrap() * self.camera.view_matrix() * model));
+
+        self.overlay.draw();
     }
 
     pub fn resize(&mut self, width: i32, height: i32) {
@@ -141,10 +163,6 @@ impl Game {
             NEAR_PLAIN,
             FAR_PLAIN,
         ));
-    }
-
-    pub fn print_dist(&self) {
-        println!("{:?}", self.distance_to_screen_mid);
     }
 
     pub fn mouse_input(&mut self, delta: (f64, f64)) {

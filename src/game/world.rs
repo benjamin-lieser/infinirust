@@ -6,7 +6,7 @@ use noise::Perlin;
 
 use crate::mygl::TextureAtlas;
 
-use super::{Camera, Chunk, FreeCamera, CHUNK_SIZE, chunk::ChunkData, Y_RANGE, misc::CubeOutlines};
+use super::{Camera, Chunk, FreeCamera, CHUNK_SIZE, chunk::ChunkData, Y_RANGE, misc::CubeOutlines, overlay::Overlay};
 
 const VIEW_DISTANCE : i32 = 8;
 
@@ -34,7 +34,6 @@ impl ServerWorld {
 pub struct World {
     chunks : HashMap<[i32; 3], Chunk>,
     center : [i32;3],
-    cube_outline : CubeOutlines,
     server : String
 }
 
@@ -56,7 +55,7 @@ impl World {
             }
         }
 
-        Self { chunks, center : [0,0,0], cube_outline: CubeOutlines::new(), server }
+        Self { chunks, center : [0,0,0], server }
     }
 
     pub fn update_center(&mut self, camera_pos : &[f64;3]) {
@@ -82,7 +81,6 @@ impl World {
         program: gl::types::GLuint,
         projection: &nalgebra_glm::Mat4,
         camera: &FreeCamera,
-        distance_to_screen_mid : f32
     ) {
         unsafe {
             gl::UseProgram(program);
@@ -117,20 +115,6 @@ impl World {
                 gl::UniformMatrix4fv(mvp_location, 1, 0, mvp.as_ptr());
                 chunk.draw();
             }
-
-            // TODO Calculate distance to screen mid here
-
-            let look_pos = camera.view_direction() * (distance_to_screen_mid + 1e-3);
-
-            let abs_look_pos = [look_pos.x as f64 + x + 0.5, look_pos.y as f64 + y + 0.5, look_pos.z as f64 + z + 0.5];
-
-            let look_block = abs_look_pos.map(|x| x.round() - 1.0);
-
-            println!("{},{},{},{}", camera.view_direction(), look_pos.x as f64 + x, look_pos.y as f64 + y, look_pos.z as f64 + z);
-
-            let model = glm::translation(&glm::vec3((look_block[0] - x) as f32, (look_block[1] - y) as f32, (look_block[2] - z) as f32));
-
-            self.cube_outline.draw(&(projection_view * model));
         }
     }
 }

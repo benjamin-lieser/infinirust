@@ -47,16 +47,14 @@ fn main() {
                 Some(VirtualKeyCode::Escape) => {
                     control_flow.set_exit();
                 }
-                Some(VirtualKeyCode::G) => {
-                    window
-                        .set_cursor_grab(CursorGrabMode::Confined)
-                        .or_else(|_e| window.set_cursor_grab(CursorGrabMode::Locked))
-                        .unwrap();
-                    window.set_cursor_visible(false);
+                Some(VirtualKeyCode::F) => {
+                    window.set_fullscreen(Some(winit::window::Fullscreen::Borderless(None)));
+                    //window.set_cursor_visible(false);
                 }
-                Some(VirtualKeyCode::R) => {
-                    window.set_cursor_grab(CursorGrabMode::None).unwrap();
-                    window.set_cursor_visible(true);
+                Some(VirtualKeyCode::G) => {
+                    //window.set_cursor_grab(CursorGrabMode::None).unwrap();
+                    //window.set_cursor_visible(true);
+                    window.set_fullscreen(None)
                 }
                 _ => {}
             }

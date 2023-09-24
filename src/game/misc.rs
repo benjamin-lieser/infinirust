@@ -71,7 +71,7 @@ impl CubeOutlines {
             gl::UseProgram(self.program);
             let mvp_location = gl::GetUniformLocation(self.program, "mvp\0".as_ptr().cast());
             self.vao.bind();
-            gl::Disable(gl::DEPTH_TEST);
+            gl::Enable(gl::DEPTH_TEST);
             gl::UniformMatrix4fv(mvp_location, 1, 0, mvp.as_ptr());
             gl::DrawArrays(gl::LINES, 0, 24);
         }
@@ -88,6 +88,7 @@ uniform mat4 mvp;
 
 void main() {
     gl_Position = mvp * vec4(position, 1.0);
+    gl_Position.z -= 1e-4;
 }
 \0";
 
