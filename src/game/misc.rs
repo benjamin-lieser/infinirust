@@ -7,7 +7,7 @@ use crate::mygl::{VAO, VBO, create_program};
 /// draws the outlines of one cube
 pub struct CubeOutlines {
     vao: VAO,
-    #[allow(dead_code)]
+    #[allow(dead_code)] //We dont update the buffer anymore, we just want the Drop glue
     vbo: VBO<f32>,
     program: gl::types::GLuint
 }
