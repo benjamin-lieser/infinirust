@@ -39,11 +39,7 @@ impl Camera for FreeCamera {
     }
 
     fn change_pitch(&mut self, diff: f32) {
-        if diff < 0.0 {
-            self.pitch = (self.pitch + diff).max(-std::f32::consts::FRAC_PI_2);
-        } else {
-            self.pitch = (self.pitch + diff).min(std::f32::consts::FRAC_PI_2);
-        }
+        self.pitch = (self.pitch + diff).clamp(-std::f32::consts::FRAC_PI_2, std::f32::consts::FRAC_PI_2);
     }
 
     fn change_yaw(&mut self, diff: f32) {
