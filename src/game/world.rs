@@ -6,7 +6,7 @@ use noise::Perlin;
 
 use crate::mygl::TextureAtlas;
 
-use super::{Camera, Chunk, FreeCamera, CHUNK_SIZE, chunk::ChunkData, Y_RANGE, misc::CubeOutlines, overlay::Overlay};
+use super::{Camera, Chunk, FreeCamera, CHUNK_SIZE, chunk::ChunkData, Y_RANGE};
 
 const VIEW_DISTANCE : i32 = 8;
 

@@ -15,3 +15,5 @@
 - render players
 - Config file
 - 2D Overlay
+- Sky
+- Lighting

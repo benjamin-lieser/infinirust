@@ -2,25 +2,20 @@ use std::num::NonZeroU32;
 
 use glutin::surface::GlSurface;
 use infinirust::game::{Game, Key};
-use winit::{
-    event::{DeviceEvent, ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent},
-    window::CursorGrabMode,
-};
+use winit::event::{DeviceEvent, ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 
 fn main() {
     let (event_loop, window, surface, gl_context) = infinirust::window::create_window();
 
-    let mut game = Game::new();
+    let mut game = Game::new(window.inner_size());
 
     let mut now = std::time::SystemTime::now();
-
-    
 
     event_loop.run(move |event, _window_target, control_flow| {
         control_flow.set_poll();
         //println!("{:?}", event);
 
-        let mut handle_keyboard = |input : KeyboardInput| {
+        let mut handle_keyboard = |input: KeyboardInput| {
             let pressed = match input.state {
                 ElementState::Pressed => true,
                 ElementState::Released => false,
@@ -69,7 +64,7 @@ fn main() {
                             NonZeroU32::new(size.width).unwrap(),
                             NonZeroU32::new(size.height).unwrap(),
                         );
-                        game.resize(size.width as i32, size.height as i32);
+                        game.resize(size);
                     }
                 }
                 WindowEvent::Focused(is_focused) => {
@@ -113,7 +108,7 @@ fn main() {
                 DeviceEvent::MouseMotion { delta } => {
                     game.mouse_input(delta);
                 }
-                #[cfg(not(target_os="macos"))]
+                #[cfg(not(target_os = "macos"))]
                 DeviceEvent::Key(input) => {
                     handle_keyboard(input);
                 }

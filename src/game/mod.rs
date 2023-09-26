@@ -1,14 +1,15 @@
 mod camera;
 mod chunk;
 mod input;
-mod world;
-mod overlay;
 pub mod misc;
+mod overlay;
+mod world;
 
 use std::ffi::CStr;
 
 use glm::Mat4;
 use nalgebra_glm as glm;
+use winit::dpi::PhysicalSize;
 
 pub use camera::{Camera, FreeCamera};
 pub use chunk::Chunk;
@@ -46,17 +47,17 @@ pub struct Game {
     world: World,
     camera: FreeCamera,
     controls: Controls,
-    render_size: Option<(i32, i32)>,
-    projection: Option<Mat4>,
+    render_size: PhysicalSize<u32>,
+    projection: Mat4,
     cube_outlines: CubeOutlines,
-    overlay: Overlay
+    overlay: Overlay,
 }
 
 const NEAR_PLAIN: f32 = 0.3;
-const FAR_PLAIN: f32 = 300.0;
+const FAR_PLAIN: f32 = 100.0;
 
 impl Game {
-    pub fn new() -> Self {
+    pub fn new(render_size: PhysicalSize<u32>) -> Self {
         unsafe {
             if let Some(renderer) = get_gl_string(gl::RENDERER) {
                 println!("Running on {}", renderer.to_string_lossy());
@@ -84,15 +85,22 @@ impl Game {
 
             let world = World::new(&atlas, "localhost:8042".to_owned());
 
+            let projection = glm::perspective(
+                render_size.width as f32 / render_size.height as f32,
+                0.785398,
+                NEAR_PLAIN,
+                FAR_PLAIN,
+            );
+
             Self {
                 program,
                 world,
                 camera: FreeCamera::new([0.0, 0.0, 0.0]),
-                render_size: None,
+                render_size,
                 controls: Controls::default(),
-                projection: None,
+                projection,
                 cube_outlines: CubeOutlines::new(),
-                overlay: Overlay::new()
+                overlay: Overlay::new(),
             }
         }
     }
@@ -125,44 +133,69 @@ impl Game {
         }
 
         self.world
-            .draw(self.program, &self.projection.unwrap(), &self.camera);
+            .draw(self.program, &self.projection, &self.camera);
 
         let distance_to_screen_mid = unsafe {
-            let (x,y) = self.render_size.unwrap();
-            let mut depth : f32 = 0.0;
-            gl::ReadPixels(x / 2, y / 2, 1, 1, gl::DEPTH_COMPONENT, gl::FLOAT, (&mut depth as *mut f32).cast());
+            let mut depth: f32 = 0.0;
+            gl::ReadPixels(
+                self.render_size.width as i32 / 2,
+                self.render_size.height as i32 / 2,
+                1,
+                1,
+                gl::DEPTH_COMPONENT,
+                gl::FLOAT,
+                (&mut depth as *mut f32).cast(),
+            );
             let ndc = depth * 2.0 - 1.0;
-            (2.0 * NEAR_PLAIN * FAR_PLAIN) / (FAR_PLAIN + NEAR_PLAIN - ndc * (FAR_PLAIN - NEAR_PLAIN))
+            (2.0 * NEAR_PLAIN * FAR_PLAIN)
+                / (FAR_PLAIN + NEAR_PLAIN - ndc * (FAR_PLAIN - NEAR_PLAIN))
         };
 
-        let [x,y,z] = self.camera.position();
+        if distance_to_screen_mid <= 10.0 {
+            let [x, y, z] = self.camera.position();
 
-        let look_pos = self.camera.view_direction() * (distance_to_screen_mid + 1e-1);
+            let look_pos = self.camera.view_direction() * (distance_to_screen_mid + 1e-2);
 
-        let abs_look_pos = [look_pos.x as f64 + x + 0.5, look_pos.y as f64 + y + 0.5, look_pos.z as f64 + z + 0.5];
+            let abs_look_pos = [
+                look_pos.x as f64 + x + 0.5,
+                look_pos.y as f64 + y + 0.5,
+                look_pos.z as f64 + z + 0.5,
+            ];
 
-        let look_block = abs_look_pos.map(|x| x.round() - 1.0);
+            let look_block = abs_look_pos.map(|x| x.round() - 1.0);
 
-        println!("{},{},{},{}", self.camera.view_direction(), look_pos.x as f64 + x, look_pos.y as f64 + y, look_pos.z as f64 + z);
+            println!(
+                "{},{},{},{}",
+                self.camera.view_direction(),
+                look_pos.x as f64 + x,
+                look_pos.y as f64 + y,
+                look_pos.z as f64 + z
+            );
 
-        let model = glm::translation(&glm::vec3((look_block[0] - x) as f32, (look_block[1] - y) as f32, (look_block[2] - z) as f32));
+            let model = glm::translation(&glm::vec3(
+                (look_block[0] - x) as f32,
+                (look_block[1] - y) as f32,
+                (look_block[2] - z) as f32,
+            ));
 
-        self.cube_outlines.draw(&(self.projection.unwrap() * self.camera.view_matrix() * model));
+            self.cube_outlines
+                .draw(&(self.projection * self.camera.view_matrix() * model));
+        }
 
         self.overlay.draw();
     }
 
-    pub fn resize(&mut self, width: i32, height: i32) {
-        self.render_size = Some((width, height));
+    pub fn resize(&mut self, size: PhysicalSize<u32>) {
+        self.render_size = size;
         unsafe {
-            gl::Viewport(0, 0, width, height);
+            gl::Viewport(0, 0, size.width as i32, size.height as i32);
         }
-        self.projection = Some(glm::perspective(
-            width as f32 / height as f32,
+        self.projection = glm::perspective(
+            size.width as f32 / size.height as f32,
             0.785398,
             NEAR_PLAIN,
             FAR_PLAIN,
-        ));
+        );
     }
 
     pub fn mouse_input(&mut self, delta: (f64, f64)) {
