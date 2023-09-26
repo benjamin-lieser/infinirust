@@ -100,7 +100,7 @@ impl Game {
                 controls: Controls::default(),
                 projection,
                 cube_outlines: CubeOutlines::new(),
-                overlay: Overlay::new(),
+                overlay: Overlay::new(render_size),
             }
         }
     }
@@ -196,6 +196,7 @@ impl Game {
             NEAR_PLAIN,
             FAR_PLAIN,
         );
+        self.overlay.resize(size);
     }
 
     pub fn mouse_input(&mut self, delta: (f64, f64)) {
