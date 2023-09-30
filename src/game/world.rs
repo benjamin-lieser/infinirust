@@ -41,9 +41,9 @@ impl World {
     pub fn new(atlas: &TextureAtlas, server : String) -> Self {
         let mut chunks = HashMap::new();
 
-        for x in -8..8 {
+        for x in -VIEW_DISTANCE..VIEW_DISTANCE {
             for y in -Y_RANGE..Y_RANGE {
-                for z in -8..8 {
+                for z in -VIEW_DISTANCE..VIEW_DISTANCE {
                     let pos = [x, y, z];
 
                     let mut stream = TcpStream::connect(&server).unwrap();

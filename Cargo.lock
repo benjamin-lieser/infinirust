@@ -559,8 +559,8 @@ dependencies = [
 name = "infinirust"
 version = "0.1.0"
 dependencies = [
+ "ab_glyph",
  "anyhow",
- "byteorder",
  "gl",
  "glutin",
  "glutin-winit",

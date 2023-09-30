@@ -152,17 +152,31 @@ impl Game {
         };
 
         if distance_to_screen_mid <= 10.0 {
-            let [x, y, z] = self.camera.position();
 
-            let look_pos = self.camera.view_direction() * (distance_to_screen_mid + 1e-2);
+            let [x,y,z] = self.camera.position();
 
-            let abs_look_pos = [
-                look_pos.x as f64 + x + 0.5,
-                look_pos.y as f64 + y + 0.5,
-                look_pos.z as f64 + z + 0.5,
+            let look_pos = self.camera.view_direction() * (distance_to_screen_mid);
+
+            let mut abs_look_pos = [
+                look_pos.x as f64 + x,
+                look_pos.y as f64 + y,
+                look_pos.z as f64 + z,
             ];
+            
+            let diff_to_int = abs_look_pos.map(|x| (x.round() - x).abs());
 
-            let look_block = abs_look_pos.map(|x| x.round() - 1.0);
+            let direction = diff_to_int
+                .iter()
+                .enumerate()
+                .min_by(|(_, a), (_, b)| a.total_cmp(b))
+                .map(|(index, _)| index).unwrap();
+
+            
+            abs_look_pos[direction] = abs_look_pos[direction].round();
+
+            let mut look_block = abs_look_pos.map(|x| x.floor());
+
+            look_block[direction] += if self.camera.view_direction()[direction] <= 0.0 { -1.0 } else { 0.0 };
 
             println!(
                 "{},{},{},{}",
