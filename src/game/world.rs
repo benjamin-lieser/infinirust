@@ -2,6 +2,7 @@ use std::{collections::HashMap, io::Write, net::TcpStream};
 
 use nalgebra_glm as glm;
 use noise::Perlin;
+use tokio::io::AsyncWriteExt;
 
 
 use crate::mygl::TextureAtlas;
@@ -19,12 +20,12 @@ impl ServerWorld {
     pub fn new(seed : u32) -> Self {
         ServerWorld { generator: Perlin::new(seed), loaded_chunks: HashMap::new() }
     }
-    pub fn write_chunk(&mut self, pos : &[i32;3], writer : &mut impl Write) {
+    pub async fn write_chunk(&mut self, pos : &[i32;3], writer : &mut (impl AsyncWriteExt+Unpin)) {
         if let Some(chunk) = self.loaded_chunks.get(pos) {
-            chunk.write_to(writer);
+            chunk.write_to(writer).await;
         } else {
             let new_chunk = ChunkData::generate(&self.generator, pos);
-            new_chunk.write_to(writer);
+            new_chunk.write_to(writer).await;
             self.loaded_chunks.insert(*pos, new_chunk);
         }
         println!("write chunk {:?}", pos);

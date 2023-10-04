@@ -1,6 +1,7 @@
 use std::io::{Write, Read};
 
 use noise::{NoiseFn, Perlin};
+use tokio::io::AsyncWriteExt;
 
 use crate::mygl::{TextureAtlas, VBOWithStorage, VAO};
 
@@ -52,8 +53,8 @@ impl ChunkData {
         self.blocks[pos[0] * CHUNK_SIZE * CHUNK_SIZE + pos[1] * CHUNK_SIZE + pos[2]] = block
     }
 
-    pub fn write_to(&self, writer : &mut impl Write) {
-        writer.write_all(&self.blocks).unwrap();
+    pub async fn write_to(&self, writer : &mut (impl AsyncWriteExt + Unpin)) {
+        writer.write_all(&self.blocks).await;
     }
 
     pub fn read_from(&mut self, reader : &mut impl Read) {
