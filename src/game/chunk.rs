@@ -20,7 +20,7 @@ pub struct ChunkData {
 impl ChunkData {
 
     pub fn empty() -> Self {
-        ChunkData { blocks: vec![0;CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE] }
+        ChunkData { blocks: vec![0;CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE]}
     }
 
     pub fn generate(generator : &Perlin, pos : &[i32;3]) -> Self {
@@ -54,7 +54,7 @@ impl ChunkData {
     }
 
     pub async fn write_to(&self, writer : &mut (impl AsyncWriteExt + Unpin)) {
-        writer.write_all(&self.blocks).await;
+        writer.write_all(&self.blocks).await.unwrap();
     }
 
     pub fn read_from(&mut self, reader : &mut impl Read) {

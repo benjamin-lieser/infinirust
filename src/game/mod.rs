@@ -16,7 +16,6 @@ pub use chunk::Chunk;
 pub use chunk::CHUNK_SIZE;
 pub use chunk::Y_RANGE;
 pub use input::Controls;
-pub use world::ServerWorld;
 pub use world::World;
 
 use self::misc::CubeOutlines;
