@@ -20,19 +20,17 @@ fn main() -> std::io::Result<()> {
 
         let (command_tx, command_rx) = tokio::sync::mpsc::channel(10);
 
-        let (write_package_tx, _) = tokio::sync::broadcast::channel(10);
-
-
-        let write_package_tx2 = write_package_tx.clone();        
-        std::thread::spawn(|| infinirust::server::manage_chunk_data(command_rx, write_package_tx2, world));
+        std::thread::spawn(|| infinirust::server::manage_chunk_data(command_rx, world));
 
         // accept connections and process them in a new thread
         loop {
             let (stream, _) = listener.accept().await.unwrap();
             let (read, write) = stream.into_split();
 
-            tokio::task::spawn(write_packages(write, write_package_tx.subscribe()));
-            tokio::task::spawn(read_packages(read, command_tx.clone()));
+            let (write_tx, write_rx) = tokio::sync::mpsc::channel(10);
+
+            tokio::task::spawn(write_packages(write, write_rx));
+            tokio::task::spawn(read_packages(read, command_tx.clone(), write_tx));
         }
     });
 
@@ -41,7 +39,7 @@ fn main() -> std::io::Result<()> {
 
 async fn write_packages(
     mut stream: OwnedWriteHalf,
-    mut input: tokio::sync::broadcast::Receiver<Arc<[u8]>>,
+    mut input: tokio::sync::mpsc::Receiver<Arc<[u8]>>,
 ) {
     loop {
         let package = input.recv().await.unwrap();
@@ -50,7 +48,7 @@ async fn write_packages(
     }
 }
 
-async fn read_packages(mut stream: OwnedReadHalf, output: tokio::sync::mpsc::Sender<Command>) {
+async fn read_packages(mut stream: OwnedReadHalf, output: tokio::sync::mpsc::Sender<Command>, write_channel : tokio::sync::mpsc::Sender<Arc<[u8]>>) {
     loop {
         let mut package_type = [0u8; 2];
         stream.read_exact(&mut package_type).await.unwrap();
@@ -63,7 +61,7 @@ async fn read_packages(mut stream: OwnedReadHalf, output: tokio::sync::mpsc::Sen
                     .read_exact(infinirust::misc::as_bytes_mut(&mut pos))
                     .await
                     .unwrap();
-                let command = Command::ChunkData(pos);
+                let command = Command::ChunkData(pos, write_channel.clone());
                 output.send(command).await.unwrap();
             }
             // Request chunk data
