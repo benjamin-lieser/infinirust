@@ -157,10 +157,10 @@ impl ServerWorld {
     }
 }
 
-/// The package has 2 bytes with the package id 0x00 0x0A, 12 bytes of position and 4096 bytes of chunk data
+/// The package has 2 bytes with the package id 0x0A 0x00, 12 bytes of position and 4096 bytes of chunk data
 fn create_chunk_package(chunk: &ChunkData, pos: &[i32; 3]) -> Arc<[u8]> {
     let mut package = [0u8; 2 + 12 + 4096];
-    package[1] = 0x0A;
+    package[0] = 0x0A;
     package[2..14].copy_from_slice(as_bytes(pos));
     package[14..].copy_from_slice(&chunk.blocks);
     Arc::from(package)
@@ -169,7 +169,7 @@ fn create_chunk_package(chunk: &ChunkData, pos: &[i32; 3]) -> Arc<[u8]> {
 
 fn create_block_update_package(pos: &[i32; 3], block: u8) -> Arc<[u8]> {
     let mut package = [0u8; 2 + 12 + 1];
-    package[1] = 0x0B;
+    package[0] = 0x0B;
     package[2..14].copy_from_slice(as_bytes(pos));
     package[14] = block;
     Arc::from(package)
