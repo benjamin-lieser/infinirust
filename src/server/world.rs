@@ -1,10 +1,16 @@
 use crate::game::CHUNK_SIZE;
 use crate::game::Y_RANGE;
 use crate::misc::as_bytes;
+use std::hash::Hash;
 use std::{collections::HashMap, sync::Arc};
 
 use noise::NoiseFn;
 use noise::Perlin;
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+pub struct Settings {
+    seed: u32,
+}
 
 use super::BlockUpdateMode;
 pub struct ChunkData {
@@ -53,9 +59,17 @@ impl ChunkData {
         &mut self.blocks[pos[0] * CHUNK_SIZE * CHUNK_SIZE + pos[1] * CHUNK_SIZE + pos[2]]
     }
 }
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
+pub struct ChunkMeta {
+    pos: [i32; 3],
+    /// Where to find the chunk data in the chunk file
+    offset: usize,
+}
+
 pub struct ServerWorld {
     generator: Perlin,
     loaded_chunks: HashMap<[i32; 3], ChunkData>,
+    chunk_meta: HashMap<[i32; 3], ChunkMeta>,
 }
 
 impl ServerWorld {
@@ -63,6 +77,30 @@ impl ServerWorld {
         ServerWorld {
             generator: Perlin::new(seed),
             loaded_chunks: HashMap::new(),
+            chunk_meta: HashMap::new(),
+        }
+    }
+
+    pub fn from_files(world_directory: &std::path::Path) -> Self {
+        let settings_file = std::fs::read_to_string(world_directory.join("settings.json"))
+            .expect("Could not open settings.json");
+        let settings: Settings =
+            serde_json::from_str(&settings_file).expect("Could not parse settings.json");
+
+        let chunks_file =
+            std::fs::read_to_string(world_directory.join("chunks.json")).unwrap_or_default(); //If this file does not exist we assume it to be empty
+
+        let chunk_meta_data : Vec<ChunkMeta> = serde_json::from_str(&chunks_file).expect("Could not parse chunks.json");
+        let mut chunk_meta = HashMap::new();
+
+        for meta in chunk_meta_data {
+            chunk_meta.insert(meta.pos, meta);
+        }
+
+        ServerWorld {
+            generator: Perlin::new(settings.seed),
+            loaded_chunks: HashMap::new(),
+            chunk_meta
         }
     }
 
@@ -101,7 +139,7 @@ impl ServerWorld {
                 // This will always succed and leave an empty block
                 BlockUpdateMode::Destroy => {
                     *block = 0;
-                    create_block_update_package(pos, 0)       
+                    create_block_update_package(pos, 0)
                 }
                 // This will only succeed when the block is empty before
                 BlockUpdateMode::Place => {

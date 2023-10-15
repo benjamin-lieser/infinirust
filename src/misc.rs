@@ -11,3 +11,15 @@ pub fn as_bytes_mut(data : &mut [i32]) -> &mut [u8] {
         std::slice::from_raw_parts_mut(ptr.cast(), data.len() * 4)
     }
 }
+
+pub fn first_none<T>(data : &[Option<T>]) -> Option<usize> {
+    for (idx, x) in data.iter().enumerate() {
+        match x {
+            None => {
+                return Some(idx);
+            }
+            Some(_) => {}
+        }
+    }
+    return None
+}

@@ -1,7 +1,7 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use tokio::net::{
     tcp::{OwnedReadHalf, OwnedWriteHalf},
-    TcpListener, TcpStream,
+    TcpListener
 };
 
 use infinirust::server::{world::ServerWorld, Command};
@@ -16,11 +16,10 @@ fn main() -> std::io::Result<()> {
     rt.block_on(async {
         let listener = TcpListener::bind("127.0.0.1:8042").await.unwrap();
         //common shared state
-        let world = ServerWorld::new(42);
 
         let (command_tx, command_rx) = tokio::sync::mpsc::channel(10);
 
-        std::thread::spawn(|| infinirust::server::manage_chunk_data(command_rx, world));
+        std::thread::spawn(|| infinirust::server::start_world(command_rx, "world".into()));
 
         // accept connections and process them in a new thread
         loop {
@@ -48,7 +47,11 @@ async fn write_packages(
     }
 }
 
-async fn read_packages(mut stream: OwnedReadHalf, output: tokio::sync::mpsc::Sender<Command>, write_channel : tokio::sync::mpsc::Sender<Arc<[u8]>>) {
+async fn read_packages(
+    mut stream: OwnedReadHalf,
+    output: tokio::sync::mpsc::Sender<Command>,
+    write_channel: tokio::sync::mpsc::Sender<Arc<[u8]>>,
+) {
     loop {
         let mut package_type = [0u8; 2];
         stream.read_exact(&mut package_type).await.unwrap();
@@ -64,7 +67,7 @@ async fn read_packages(mut stream: OwnedReadHalf, output: tokio::sync::mpsc::Sen
                 let command = Command::ChunkData(pos, write_channel.clone());
                 output.send(command).await.unwrap();
             }
-            // Request chunk data
+            // Send block update
             0x0B => {
                 // Send block update
                 let mut pos = [0i32; 3];
