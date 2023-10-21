@@ -1,14 +1,14 @@
-use std::fs;
 use std::sync::Arc;
 
-use self::player::{Player, ServerPlayer};
+use self::player::Players;
 use self::world::ServerWorld;
 
 pub mod player;
 pub mod world;
 mod handlers;
 
-type Client = tokio::sync::mpsc::Sender<Arc<[u8]>>;
+pub type Client = tokio::sync::mpsc::Sender<Arc<[u8]>>;
+pub type UUID = usize;
 
 #[derive(Debug)]
 pub enum BlockUpdateMode {
@@ -18,9 +18,9 @@ pub enum BlockUpdateMode {
 
 #[derive(Debug)]
 pub enum Command {
-    ChunkData([i32; 3], Client),
-    Login(String, Client),
-    Logout(usize),
+    ChunkData([i32; 3], UUID),
+    Login(String, Client, tokio::sync::oneshot::Sender<Option<UUID>>),
+    Logout(UUID),
     BlockUpdate([i32; 3], BlockUpdateMode, u8),
 }
 
@@ -33,13 +33,16 @@ pub fn start_world(
 
     while let Some(command) = input.blocking_recv() {
         match command {
-            Command::Login(name, client) => {
-                handlers::login(&mut server, name, client);
+            Command::Login(name, client, back) => {
+                let uuid = server.players.login(name, client);
+                _ = back.send(uuid);
             }
-            Command::Logout(player_id) => {}
-            Command::ChunkData(pos, client) => {
+            Command::Logout(uuid) => {
+                server.players.logout(uuid);
+            }
+            Command::ChunkData(pos, uuid) => {
                 // If the buffer is full or client disconnect, this package will not be send
-                _ = client.try_send(server.world.get_chunk_data(&pos));
+                _ = server.players.client(uuid).try_send(server.world.get_chunk_data(&pos));
             }
             Command::BlockUpdate(pos, mode, block) => {}
         }
@@ -48,46 +51,18 @@ pub fn start_world(
 
 struct Server {
     world: ServerWorld,
-    players: Vec<Player>,
-    connected_players: Vec<Option<ServerPlayer>>,
+    players: Players,
 }
 
 impl Server {
     fn new(world_directory: &std::path::Path) -> Self {
-        let player_file = fs::read_to_string(world_directory.join("players.json"))
-            .expect("Could not open players.json");
-
-        let players = serde_json::from_str(&player_file).expect("Could not parse players.json");
+        let players = Players::new(world_directory);
 
         let world = ServerWorld::from_files(&world_directory);
 
         Server {
             world,
             players,
-            connected_players: vec![],
         }
-    }
-
-    fn is_logged_in(&self, name: &str) -> bool {
-        for player in &self.connected_players {
-            match player {
-                Some(p) => {
-                    if p.player.name == name {
-                        return true;
-                    }
-                }
-                None => {}
-            }
-        }
-        return false;
-    }
-
-    fn is_known(&self, name: &str) -> Option<Player> {
-        for player in &self.players {
-            if player.name == name {
-                return Some(player.clone());
-            }
-        }
-        return None;
     }
 }

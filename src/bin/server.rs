@@ -4,7 +4,7 @@ use tokio::net::{
     TcpListener
 };
 
-use infinirust::server::{world::ServerWorld, Command};
+use infinirust::server::{world::ServerWorld, Command, UUID, Client};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 fn main() -> std::io::Result<()> {
@@ -29,7 +29,7 @@ fn main() -> std::io::Result<()> {
             let (write_tx, write_rx) = tokio::sync::mpsc::channel(10);
 
             tokio::task::spawn(write_packages(write, write_rx));
-            tokio::task::spawn(read_packages(read, command_tx.clone(), write_tx));
+            tokio::task::spawn(read_start_packages(read, command_tx.clone(), write_tx));
         }
     });
 
@@ -47,10 +47,11 @@ async fn write_packages(
     }
 }
 
-async fn read_packages(
+/// Read the packages when the server is in `play` state
+async fn read_play_packages(
     mut stream: OwnedReadHalf,
     output: tokio::sync::mpsc::Sender<Command>,
-    write_channel: tokio::sync::mpsc::Sender<Arc<[u8]>>,
+    uuid: UUID,
 ) {
     loop {
         let mut package_type = [0u8; 2];
@@ -64,7 +65,7 @@ async fn read_packages(
                     .read_exact(infinirust::misc::as_bytes_mut(&mut pos))
                     .await
                     .unwrap();
-                let command = Command::ChunkData(pos, write_channel.clone());
+                let command = Command::ChunkData(pos, uuid);
                 output.send(command).await.unwrap();
             }
             // Send block update
@@ -79,6 +80,44 @@ async fn read_packages(
             _ => {
                 panic!("Invalid package type")
             }
+        }
+    }
+}
+
+/// Read the packages when the server is in `start` state
+async fn read_start_packages(
+    mut stream: OwnedReadHalf,
+    output: tokio::sync::mpsc::Sender<Command>,
+    client: Client,
+) {
+    loop {
+        let mut package_type = [0u8; 2];
+        stream.read_exact(&mut package_type).await.unwrap();
+        match u16::from_le_bytes(package_type) {
+            // Login
+            0x0001 => {
+                let mut length = [0u8; 2];
+                stream.read_exact(&mut length).await.unwrap();
+
+                let length = u16::from_le_bytes(length);
+
+                let mut string = vec![0u8;length as usize];
+
+                stream.read_exact(&mut string).await.unwrap();
+
+                let name = String::from_utf8(string).unwrap();
+
+                let (tx, rx) = tokio::sync::oneshot::channel();
+
+                let command = Command::Login(name, client.clone(), tx);
+                output.send(command).await.unwrap();
+
+                let uuid = rx.await.unwrap();
+
+                //todo
+
+            }
+            _ => {}
         }
     }
 }

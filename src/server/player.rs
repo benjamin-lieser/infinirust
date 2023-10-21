@@ -1,6 +1,7 @@
-use std::sync::Arc;
-
+use anyhow::Ok;
 use serde::{Deserialize, Serialize};
+
+use super::{UUID, Client};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Player {
@@ -12,14 +13,77 @@ pub struct Player {
 
 impl Player {
     pub fn new(name: String) -> Self {
-        Player { name, pos: [0.0;3], pitch: 0.0, yaw: 0.0 }
+        Player {
+            name,
+            pos: [0.0; 3],
+            pitch: 0.0,
+            yaw: 0.0,
+        }
     }
 }
 
 #[derive(Debug)]
 pub struct ServerPlayer {
     pub player: Player,
-    pub package_writer: tokio::sync::mpsc::Sender<Arc<[u8]>>,
-    /// Is unique among the currently logged in users, but assigned dynamically
-    pub player_id: usize,
+    pub package_writer: Client,
+    pub uuid: usize,
+}
+
+/// Both fields have to be same length, online is None when not logged in
+#[derive(Debug)]
+pub struct Players {
+    registered: Vec<Player>,
+    online: Vec<Option<ServerPlayer>>,
+}
+
+impl Players {
+    pub fn new(world_directory: &std::path::Path) -> Self {
+        let player_file = std::fs::read_to_string(world_directory.join("players.json"))
+            .expect("Could not open players.json");
+
+        let players: Vec<Player> = serde_json::from_str(&player_file).expect("Could not parse players.json");
+        let online = (0..players.len()).map(|_| None).collect();
+
+        Players { registered: players, online }
+    }
+
+    pub fn login(&mut self, name: String, client: Client) -> Option<UUID> {
+        let pos = self.registered.iter().enumerate().find(|(idx,p)| p.name == name);
+        if let Some((pos, player)) = pos { //Already registered
+            if self.online[pos].is_none() {
+                self.online[pos] = Some(ServerPlayer { player: player.clone(), package_writer: client, uuid: pos });
+                return Some(pos);
+            } else {
+                return None;
+            }
+        } else { //Not registered
+            let uuid = self.registered.len();
+            self.registered.push(Player::new(name));
+            self.online.push(Some(ServerPlayer { player: self.registered[uuid].clone(), package_writer: client, uuid }));
+            return Some(uuid);
+        }
+    }
+
+    pub fn logout(&mut self, uuid: UUID) {
+        self.online[uuid] = None;
+    }
+
+    pub fn sync_to_disk(&mut self, world_directory: &std::path::Path) -> Result<(), anyhow::Error> {
+        for (disk, ram) in self.registered.iter_mut().zip(self.online.iter()) {
+            if let Some(p) = ram {
+                *disk = p.player.clone();
+            }
+
+        }
+
+        let json = serde_json::to_string(&self.registered)?;
+
+        std::fs::write(world_directory.join("players.json"), json)?;        
+        
+        return Ok(());
+    }
+
+    pub fn client(&self, uuid: UUID) -> &Client {
+        &self.online[uuid].as_ref().unwrap().package_writer
+    }
 }
