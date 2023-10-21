@@ -21,7 +21,7 @@ fn main() -> std::io::Result<()> {
 
         std::thread::spawn(|| infinirust::server::start_world(command_rx, "world".into()));
 
-        // accept connections and process them in a new thread
+        // accept connections and process them in a new task
         loop {
             let (stream, _) = listener.accept().await.unwrap();
             let (read, write) = stream.into_split();
