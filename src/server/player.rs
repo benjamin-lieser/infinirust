@@ -1,7 +1,7 @@
 use anyhow::Ok;
 use serde::{Deserialize, Serialize};
 
-use super::{UUID, Client};
+use super::{UID, Client};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Player {
@@ -26,7 +26,7 @@ impl Player {
 pub struct ServerPlayer {
     pub player: Player,
     pub package_writer: Client,
-    pub uuid: usize,
+    pub uid: usize,
 }
 
 /// Both fields have to be same length, online is None when not logged in
@@ -47,25 +47,26 @@ impl Players {
         Players { registered: players, online }
     }
 
-    pub fn login(&mut self, name: String, client: Client) -> Option<UUID> {
-        let pos = self.registered.iter().enumerate().find(|(idx,p)| p.name == name);
+    pub fn login(&mut self, name: String, client: Client) -> Option<UID> {
+        let pos = self.registered.iter().enumerate().find(|(_idx,p)| p.name == name);
         if let Some((pos, player)) = pos { //Already registered
             if self.online[pos].is_none() {
-                self.online[pos] = Some(ServerPlayer { player: player.clone(), package_writer: client, uuid: pos });
+                self.online[pos] = Some(ServerPlayer { player: player.clone(), package_writer: client, uid: pos });
                 return Some(pos);
             } else {
                 return None;
             }
         } else { //Not registered
-            let uuid = self.registered.len();
+            let uid = self.registered.len();
             self.registered.push(Player::new(name));
-            self.online.push(Some(ServerPlayer { player: self.registered[uuid].clone(), package_writer: client, uuid }));
-            return Some(uuid);
+            self.online.push(Some(ServerPlayer { player: self.registered[uid].clone(), package_writer: client, uid }));
+            return Some(uid);
         }
     }
 
-    pub fn logout(&mut self, uuid: UUID) {
-        self.online[uuid] = None;
+    pub fn logout(&mut self, uid: UID) {
+        let player = self.online[uid].take();
+        self.registered[uid] = player.unwrap().player;
     }
 
     pub fn sync_to_disk(&mut self, world_directory: &std::path::Path) -> Result<(), anyhow::Error> {
@@ -83,7 +84,7 @@ impl Players {
         return Ok(());
     }
 
-    pub fn client(&self, uuid: UUID) -> &Client {
-        &self.online[uuid].as_ref().unwrap().package_writer
+    pub fn client(&self, uid: UID) -> &Client {
+        &self.online[uid].as_ref().unwrap().package_writer
     }
 }

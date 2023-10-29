@@ -8,7 +8,7 @@ pub mod world;
 mod handlers;
 
 pub type Client = tokio::sync::mpsc::Sender<Arc<[u8]>>;
-pub type UUID = usize;
+pub type UID = usize;
 
 #[derive(Debug)]
 pub enum BlockUpdateMode {
@@ -18,9 +18,9 @@ pub enum BlockUpdateMode {
 
 #[derive(Debug)]
 pub enum Command {
-    ChunkData([i32; 3], UUID),
-    Login(String, Client, tokio::sync::oneshot::Sender<Option<UUID>>),
-    Logout(UUID),
+    ChunkData([i32; 3], UID),
+    Login(String, Client, tokio::sync::oneshot::Sender<Option<UID>>),
+    Logout(UID),
     BlockUpdate([i32; 3], BlockUpdateMode, u8),
 }
 

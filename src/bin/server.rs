@@ -3,9 +3,10 @@ use tokio::net::{
     tcp::{OwnedReadHalf, OwnedWriteHalf},
     TcpListener
 };
-
-use infinirust::server::{world::ServerWorld, Command, UUID, Client};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+use infinirust::server::{world::ServerWorld, Command, UID, Client};
+
 
 fn main() -> std::io::Result<()> {
     let rt = tokio::runtime::Builder::new_multi_thread()
@@ -17,7 +18,7 @@ fn main() -> std::io::Result<()> {
         let listener = TcpListener::bind("127.0.0.1:8042").await.unwrap();
         //common shared state
 
-        let (command_tx, command_rx) = tokio::sync::mpsc::channel(10);
+        let (command_tx, command_rx) = tokio::sync::mpsc::channel(100);
 
         std::thread::spawn(|| infinirust::server::start_world(command_rx, "world".into()));
 
@@ -26,7 +27,7 @@ fn main() -> std::io::Result<()> {
             let (stream, _) = listener.accept().await.unwrap();
             let (read, write) = stream.into_split();
 
-            let (write_tx, write_rx) = tokio::sync::mpsc::channel(10);
+            let (write_tx, write_rx) = tokio::sync::mpsc::channel(100);
 
             tokio::task::spawn(write_packages(write, write_rx));
             tokio::task::spawn(read_start_packages(read, command_tx.clone(), write_tx));
@@ -51,7 +52,7 @@ async fn write_packages(
 async fn read_play_packages(
     mut stream: OwnedReadHalf,
     output: tokio::sync::mpsc::Sender<Command>,
-    uuid: UUID,
+    uuid: UID,
 ) {
     loop {
         let mut package_type = [0u8; 2];
