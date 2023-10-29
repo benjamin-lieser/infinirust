@@ -34,15 +34,15 @@ pub fn start_world(
     while let Some(command) = input.blocking_recv() {
         match command {
             Command::Login(name, client, back) => {
-                let uuid = server.players.login(name, client);
-                _ = back.send(uuid);
+                let uid = server.players.login(name, client);
+                _ = back.send(uid);
             }
-            Command::Logout(uuid) => {
-                server.players.logout(uuid);
+            Command::Logout(uid) => {
+                server.players.logout(uid);
             }
-            Command::ChunkData(pos, uuid) => {
+            Command::ChunkData(pos, uid) => {
                 // If the buffer is full or client disconnect, this package will not be send
-                _ = server.players.client(uuid).try_send(server.world.get_chunk_data(&pos));
+                _ = server.players.client(uid).try_send(server.world.get_chunk_data(&pos));
             }
             Command::BlockUpdate(pos, mode, block) => {}
         }
@@ -58,7 +58,7 @@ impl Server {
     fn new(world_directory: &std::path::Path) -> Self {
         let players = Players::new(world_directory);
 
-        let world = ServerWorld::from_files(&world_directory);
+        let world = ServerWorld::from_files(world_directory);
 
         Server {
             world,

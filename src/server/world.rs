@@ -1,7 +1,7 @@
 use crate::game::CHUNK_SIZE;
 use crate::game::Y_RANGE;
 use crate::misc::as_bytes;
-use std::hash::Hash;
+
 use std::{collections::HashMap, sync::Arc};
 
 use noise::NoiseFn;
@@ -59,6 +59,8 @@ impl ChunkData {
         &mut self.blocks[pos[0] * CHUNK_SIZE * CHUNK_SIZE + pos[1] * CHUNK_SIZE + pos[2]]
     }
 }
+
+
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
 pub struct ChunkMeta {
     pos: [i32; 3],
