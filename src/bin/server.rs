@@ -5,7 +5,7 @@ use tokio::net::{
 };
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
-use infinirust::server::{world::ServerWorld, Command, UID, Client};
+use infinirust::server::{Command, UID, Client};
 
 
 fn main() -> std::io::Result<()> {
@@ -16,7 +16,6 @@ fn main() -> std::io::Result<()> {
 
     rt.block_on(async {
         let listener = TcpListener::bind("127.0.0.1:8042").await.unwrap();
-        //common shared state
 
         let (command_tx, command_rx) = tokio::sync::mpsc::channel(100);
 
@@ -43,7 +42,6 @@ async fn write_packages(
 ) {
     loop {
         let package = input.recv().await.unwrap();
-        //TODO: logic to discard packages which are not relevant to the loaded chunks of the client
         stream.write_all(&package).await.unwrap();
     }
 }
@@ -57,6 +55,7 @@ async fn read_play_packages(
     loop {
         let mut package_type = [0u8; 2];
         stream.read_exact(&mut package_type).await.unwrap();
+        //TODO logout when invalid package
         eprintln!("{:?}", package_type);
         match u16::from_le_bytes(package_type) {
             // Request chunk data
