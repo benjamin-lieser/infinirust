@@ -1,6 +1,11 @@
-use std::sync::Arc;
+use crate::misc::AsBytes;
 
-use super::Client;
-use super::Server;
-use super::player::Player;
-use super::player::ServerPlayer;
+#[repr(C)]
+#[derive(Debug, Default)]
+pub struct PackageBlockUpdate {
+    pub pos : [i32;3],
+    pub placed : u8,
+    pub block : u8
+}
+
+unsafe impl AsBytes for PackageBlockUpdate {}

@@ -5,7 +5,7 @@ use self::world::ServerWorld;
 
 pub mod player;
 pub mod world;
-mod handlers;
+pub mod handlers;
 
 pub type Client = tokio::sync::mpsc::Sender<Arc<[u8]>>;
 pub type UID = usize;

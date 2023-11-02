@@ -1,12 +1,15 @@
-use std::sync::Arc;
 use anyhow::anyhow;
+use std::sync::Arc;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{
     tcp::{OwnedReadHalf, OwnedWriteHalf},
     TcpListener,
 };
 
-use infinirust::server::{Client, Command, UID};
+use infinirust::server::{Client, Command, UID, BlockUpdateMode};
+use infinirust::server::handlers::PackageBlockUpdate;
+use infinirust::misc::cast_bytes_mut;
+
 
 fn main() -> std::io::Result<()> {
     let rt = tokio::runtime::Builder::new_multi_thread()
@@ -41,10 +44,9 @@ async fn write_packages(
     mut input: tokio::sync::mpsc::Receiver<Arc<[u8]>>,
 ) {
     loop {
-
         //This unwraps panics iff the user is logged out
         let package = input.recv().await.unwrap();
-        
+
         stream.write_all(&package).await.unwrap();
     }
 }
@@ -56,11 +58,11 @@ async fn read_play_packages(
     mut stream: OwnedReadHalf,
     server: tokio::sync::mpsc::Sender<Command>,
     uid: UID,
-) -> Result<(),anyhow::Error> {
+) -> Result<(), anyhow::Error> {
     loop {
         let mut package_type = [0u8; 2];
         stream.read_exact(&mut package_type).await?;
-        //TODO logout when invalid package
+
         match u16::from_le_bytes(package_type) {
             // Request chunk data
             0x000A => {
@@ -69,15 +71,18 @@ async fn read_play_packages(
                     .read_exact(infinirust::misc::as_bytes_mut(&mut pos))
                     .await?;
                 let command = Command::ChunkData(pos, uid);
-                server.send(command).await.expect("This should never happen. The internal server is not responding");
+                server
+                    .send(command)
+                    .await
+                    .expect("This should never happen. The internal server is not responding");
             }
             // Send block update
             0x000B => {
                 // Send block update
-                let mut pos = [0i32; 3];
-                stream
-                    .read_exact(infinirust::misc::as_bytes_mut(&mut pos))
-                    .await?;
+                let mut package = PackageBlockUpdate::default();
+                stream.read_exact(cast_bytes_mut(&mut package)).await?;
+
+                server.send(Command::BlockUpdate(package.pos, if package.placed != 0 {BlockUpdateMode::Place} else {BlockUpdateMode::Destroy}, package.block)).await.unwrap();
             }
             _ => {
                 return Err(anyhow!("Invalid package type"));
@@ -109,9 +114,12 @@ async fn read_start_packages(
                     }
                 }
                 //Login unsuccessful
-                
+
                 //Send Login failed package with empty message. todo
-                client.send((b"\x01\x00\x00\x00" as &[u8]).into()).await.unwrap();
+                client
+                    .send((b"\x01\x00\x00\x00" as &[u8]).into())
+                    .await
+                    .unwrap();
                 //Do not revieve anymore packages
                 return;
             }
@@ -121,7 +129,9 @@ async fn read_start_packages(
         }
     };
     //Go to play state
-    read_play_packages(stream, server.clone(), uid).await.expect_err("Somehow the read_play_packages function returned with Ok");
+    read_play_packages(stream, server.clone(), uid)
+        .await
+        .expect_err("Somehow the read_play_packages function returned with Ok");
     //Log the player out
     server.send(Command::Logout(uid)).await.unwrap();
 }
