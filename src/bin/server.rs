@@ -1,12 +1,12 @@
 use std::sync::Arc;
+use anyhow::anyhow;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{
     tcp::{OwnedReadHalf, OwnedWriteHalf},
-    TcpListener
+    TcpListener,
 };
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
-use infinirust::server::{Command, UID, Client};
-
+use infinirust::server::{Client, Command, UID};
 
 fn main() -> std::io::Result<()> {
     let rt = tokio::runtime::Builder::new_multi_thread()
@@ -33,7 +33,7 @@ fn main() -> std::io::Result<()> {
         }
     });
 
-    Ok(())
+    std::io::Result::Ok(())
 }
 
 async fn write_packages(
@@ -41,44 +41,46 @@ async fn write_packages(
     mut input: tokio::sync::mpsc::Receiver<Arc<[u8]>>,
 ) {
     loop {
+
+        //This unwraps panics iff the user is logged out
         let package = input.recv().await.unwrap();
+        
         stream.write_all(&package).await.unwrap();
     }
 }
 
 /// Read the packages when the server is in `play` state
+/// It will never return Ok. todo never type if it gets stable
+/// If it returns Err the user has to be logged out
 async fn read_play_packages(
     mut stream: OwnedReadHalf,
-    output: tokio::sync::mpsc::Sender<Command>,
-    uuid: UID,
-) {
+    server: tokio::sync::mpsc::Sender<Command>,
+    uid: UID,
+) -> Result<(),anyhow::Error> {
     loop {
         let mut package_type = [0u8; 2];
-        stream.read_exact(&mut package_type).await.unwrap();
+        stream.read_exact(&mut package_type).await?;
         //TODO logout when invalid package
-        eprintln!("{:?}", package_type);
         match u16::from_le_bytes(package_type) {
             // Request chunk data
-            0x0A => {
+            0x000A => {
                 let mut pos = [0i32; 3];
                 stream
                     .read_exact(infinirust::misc::as_bytes_mut(&mut pos))
-                    .await
-                    .unwrap();
-                let command = Command::ChunkData(pos, uuid);
-                output.send(command).await.unwrap();
+                    .await?;
+                let command = Command::ChunkData(pos, uid);
+                server.send(command).await.expect("This should never happen. The internal server is not responding");
             }
             // Send block update
-            0x0B => {
+            0x000B => {
                 // Send block update
                 let mut pos = [0i32; 3];
                 stream
                     .read_exact(infinirust::misc::as_bytes_mut(&mut pos))
-                    .await
-                    .unwrap();
+                    .await?;
             }
             _ => {
-                panic!("Invalid package type")
+                return Err(anyhow!("Invalid package type"));
             }
         }
     }
@@ -87,37 +89,58 @@ async fn read_play_packages(
 /// Read the packages when the server is in `start` state
 async fn read_start_packages(
     mut stream: OwnedReadHalf,
-    output: tokio::sync::mpsc::Sender<Command>,
+    server: tokio::sync::mpsc::Sender<Command>,
     client: Client,
 ) {
-    loop {
+    let uid = loop {
         let mut package_type = [0u8; 2];
         stream.read_exact(&mut package_type).await.unwrap();
         match u16::from_le_bytes(package_type) {
             // Login
             0x0001 => {
-                let mut length = [0u8; 2];
-                stream.read_exact(&mut length).await.unwrap();
-
-                let length = u16::from_le_bytes(length);
-
-                let mut string = vec![0u8;length as usize];
-
-                stream.read_exact(&mut string).await.unwrap();
-
-                let name = String::from_utf8(string).unwrap();
-
                 let (tx, rx) = tokio::sync::oneshot::channel();
 
-                let command = Command::Login(name, client.clone(), tx);
-                output.send(command).await.unwrap();
+                if let Some(username) = read_alpha_numeric_string(&mut stream).await {
+                    let command = Command::Login(username, client.clone(), tx);
+                    server.send(command).await.unwrap();
 
-                let uuid = rx.await.unwrap();
-
-                //todo
-
+                    if let Some(uid) = rx.await.unwrap() {
+                        break uid; //Move on to play state
+                    }
+                }
+                //Login unsuccessful
+                
+                //Send Login failed package with empty message. todo
+                client.send((b"\x01\x00\x00\x00" as &[u8]).into()).await.unwrap();
+                //Do not revieve anymore packages
+                return;
             }
-            _ => {}
+            _ => {
+                panic!("Recieved invalid package for state `start`");
+            }
         }
+    };
+    //Go to play state
+    read_play_packages(stream, server.clone(), uid).await.expect_err("Somehow the read_play_packages function returned with Ok");
+    //Log the player out
+    server.send(Command::Logout(uid)).await.unwrap();
+}
+
+async fn read_alpha_numeric_string(stream: &mut OwnedReadHalf) -> Option<String> {
+    let mut length = [0u8; 2];
+    stream.read_exact(&mut length).await.unwrap();
+
+    let length = u16::from_le_bytes(length);
+
+    let mut string = vec![0u8; length as usize];
+
+    stream.read_exact(&mut string).await.unwrap();
+
+    let string = String::from_utf8(string).ok()?;
+
+    if string.chars().all(char::is_alphanumeric) {
+        return Some(string);
+    } else {
+        return None;
     }
 }
