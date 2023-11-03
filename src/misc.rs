@@ -16,15 +16,3 @@ pub fn cast_bytes_mut<T: AsBytes>(data: &mut T) -> &mut [u8] {
         ::core::slice::from_raw_parts_mut((data as *mut T) as *mut u8, ::core::mem::size_of::<T>())
     }
 }
-
-pub fn first_none<T>(data: &[Option<T>]) -> Option<usize> {
-    for (idx, x) in data.iter().enumerate() {
-        match x {
-            None => {
-                return Some(idx);
-            }
-            Some(_) => {}
-        }
-    }
-    return None;
-}
