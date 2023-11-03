@@ -1,8 +1,5 @@
 use std::io::{Write, Read};
 
-use noise::{NoiseFn, Perlin};
-use tokio::io::AsyncWriteExt;
-
 use crate::mygl::{TextureAtlas, VBOWithStorage, VAO};
 
 use crate::game::Direction;
@@ -23,38 +20,12 @@ impl ChunkData {
         ChunkData { blocks: vec![0;CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE]}
     }
 
-    pub fn generate(generator : &Perlin, pos : &[i32;3]) -> Self {
-        let mut chunk = Self::empty();
-
-        let [x, y, z] = pos;
-
-        for xx in 0..CHUNK_SIZE {
-            for zz in 0..CHUNK_SIZE {
-                let x = (x * CHUNK_SIZE as i32 + xx as i32) as f64 + 0.5;
-                let z = (z * CHUNK_SIZE as i32 + zz as i32) as f64 + 0.5;
-                let height = generator.get([x / 50.0, z / 50.0]) * Y_RANGE as f64 * CHUNK_SIZE as f64 * 0.1;
-                for yy in 0..CHUNK_SIZE {
-                    let y = (y * CHUNK_SIZE as i32 + yy as i32) as f64 + 0.5;
-                    if y <= height {
-                        chunk.set([xx, yy, zz], 1);
-                    }
-                }
-            }
-        }
-
-        chunk
-    }
-
     pub fn get(&self, pos: [usize; 3]) -> u8 {
         self.blocks[pos[0] * CHUNK_SIZE * CHUNK_SIZE + pos[1] * CHUNK_SIZE + pos[2]]
     }
 
     pub fn set(&mut self, pos: [usize; 3], block: u8) {
         self.blocks[pos[0] * CHUNK_SIZE * CHUNK_SIZE + pos[1] * CHUNK_SIZE + pos[2]] = block
-    }
-
-    pub async fn write_to(&self, writer : &mut (impl AsyncWriteExt + Unpin)) {
-        writer.write_all(&self.blocks).await.unwrap();
     }
 
     pub fn read_from(&mut self, reader : &mut impl Read) {

@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use anyhow::Ok;
 use serde::{Deserialize, Serialize};
 
@@ -86,5 +88,15 @@ impl Players {
 
     pub fn client(&self, uid: UID) -> &Client {
         &self.online[uid].as_ref().unwrap().package_writer
+    }
+
+    /// Sends a package to all logged in players
+    pub fn broadcast(&self, package: Arc<[u8]>) {
+        for player in &self.online {
+            if let Some(p) = player {
+                // Package gets lost if the write channel is full
+                _ = p.package_writer.try_send(package.clone());
+            }
+        }
     }
 }
