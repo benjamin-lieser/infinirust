@@ -60,7 +60,6 @@ impl ChunkData {
     }
 }
 
-
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
 pub struct ChunkMeta {
     pos: [i32; 3],
@@ -92,7 +91,8 @@ impl ServerWorld {
         let chunks_file =
             std::fs::read_to_string(world_directory.join("chunks.json")).unwrap_or_default(); //If this file does not exist we assume it to be empty
 
-        let chunk_meta_data : Vec<ChunkMeta> = serde_json::from_str(&chunks_file).expect("Could not parse chunks.json");
+        let chunk_meta_data: Vec<ChunkMeta> =
+            serde_json::from_str(&chunks_file).expect("Could not parse chunks.json");
         let mut chunk_meta = HashMap::new();
 
         for meta in chunk_meta_data {
@@ -102,7 +102,7 @@ impl ServerWorld {
         ServerWorld {
             generator: Perlin::new(settings.seed),
             loaded_chunks: HashMap::new(),
-            chunk_meta
+            chunk_meta,
         }
     }
 
@@ -129,28 +129,22 @@ impl ServerWorld {
         }
     }
     /// If the block is in unloaded chunks it will be ignored
-    pub fn process_block_update(
-        &mut self,
-        pos: &[i32; 3],
-        mode: BlockUpdateMode,
-        new_block: u8,
-    ) -> Arc<[u8]> {
-        //Send empty package if out of block in unloaded chunk
+    pub fn process_block_update(&mut self, pos: &[i32; 3], new_block: u8) -> Arc<[u8]> {
+        //Send empty package if block is in unloaded chunk
         if let Some(block) = self.get_block_mut(pos) {
-            match mode {
+            if new_block == 0 {
+                //Destroy
                 // This will always succed and leave an empty block
-                BlockUpdateMode::Destroy => {
-                    *block = 0;
-                    create_block_update_package(pos, 0)
-                }
+                *block = 0;
+                create_block_update_package(pos, 0)
+            } else {
+                //Place
                 // This will only succeed when the block is empty before
-                BlockUpdateMode::Place => {
-                    if *block == 0 {
-                        *block = new_block;
-                        create_block_update_package(pos, new_block)
-                    } else {
-                        create_block_update_package(pos, *block)
-                    }
+                if *block == 0 {
+                    *block = new_block;
+                    create_block_update_package(pos, new_block)
+                } else {
+                    create_block_update_package(pos, *block)
                 }
             }
         } else {
@@ -170,7 +164,7 @@ fn create_chunk_package(chunk: &ChunkData, pos: &[i32; 3]) -> Arc<[u8]> {
 }
 
 fn create_block_update_package(pos: &[i32; 3], block: u8) -> Arc<[u8]> {
-    let mut package = [0u8; 2 + 12 + 1];
+    let mut package = [0u8; 2 + 12 + 4];
     package[0] = 0x0B;
     package[2..14].copy_from_slice(as_bytes(pos));
     package[14] = block;

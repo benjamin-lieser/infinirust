@@ -6,10 +6,9 @@ use tokio::net::{
     TcpListener,
 };
 
-use infinirust::server::{Client, Command, UID, BlockUpdateMode};
-use infinirust::server::handlers::PackageBlockUpdate;
 use infinirust::misc::cast_bytes_mut;
-
+use infinirust::server::handlers::PackageBlockUpdate;
+use infinirust::server::{BlockUpdateMode, Client, Command, UID};
 
 fn main() -> std::io::Result<()> {
     let rt = tokio::runtime::Builder::new_multi_thread()
@@ -82,7 +81,10 @@ async fn read_play_packages(
                 let mut package = PackageBlockUpdate::default();
                 stream.read_exact(cast_bytes_mut(&mut package)).await?;
 
-                server.send(Command::BlockUpdate(package.pos, if package.placed != 0 {BlockUpdateMode::Place} else {BlockUpdateMode::Destroy}, package.block)).await.unwrap();
+                server
+                    .send(Command::BlockUpdate(package.pos, package.block))
+                    .await
+                    .expect("This should never happen. The internal server is not responding");
             }
             _ => {
                 return Err(anyhow!("Invalid package type"));

@@ -21,7 +21,8 @@ pub enum Command {
     ChunkData([i32; 3], UID),
     Login(String, Client, tokio::sync::oneshot::Sender<Option<UID>>),
     Logout(UID),
-    BlockUpdate([i32; 3], BlockUpdateMode, u8),
+    BlockUpdate([i32; 3], u8),
+    Shutdown
 }
 
 /// Supposed to be started in a new tread
@@ -44,7 +45,16 @@ pub fn start_world(
                 // If the buffer is full or client disconnect, this package will not be send
                 _ = server.players.client(uid).try_send(server.world.get_chunk_data(&pos));
             }
-            Command::BlockUpdate(pos, mode, block) => {}
+            Command::BlockUpdate(pos, block) => {
+                let package = server.world.process_block_update(&pos, block);
+                server.players.broadcast(package);
+            }
+            Command::Shutdown => {
+                server.players.sync_to_disk(&world_directory).unwrap();
+                //Todo Sync chunk data
+
+                std::process::exit(0);
+            }
         }
     }
 }
