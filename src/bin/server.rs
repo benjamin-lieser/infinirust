@@ -8,7 +8,7 @@ use tokio::net::{
 
 use infinirust::misc::cast_bytes_mut;
 use infinirust::server::handlers::PackageBlockUpdate;
-use infinirust::server::{BlockUpdateMode, Client, Command, UID};
+use infinirust::server::{Client, Command, UID};
 
 fn main() -> std::io::Result<()> {
     let rt = tokio::runtime::Builder::new_multi_thread()
@@ -22,6 +22,13 @@ fn main() -> std::io::Result<()> {
         let (command_tx, command_rx) = tokio::sync::mpsc::channel(100);
 
         std::thread::spawn(|| infinirust::server::start_world(command_rx, "world".into()));
+
+        let server_ctrlc = command_tx.clone();
+        tokio::spawn(async move {
+            tokio::signal::ctrl_c().await.unwrap();
+            //Send shutdown command to the server. If the server is already gone it exits the process
+            server_ctrlc.send(Command::Shutdown).await.unwrap_or_else(|_| std::process::exit(1));
+        });
 
         // accept connections and process them in a new task
         loop {

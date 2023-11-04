@@ -89,7 +89,7 @@ impl ServerWorld {
             serde_json::from_str(&settings_file).expect("Could not parse settings.json");
 
         let chunks_file =
-            std::fs::read_to_string(world_directory.join("chunks.json")).unwrap_or_default(); //If this file does not exist we assume it to be empty
+            std::fs::read_to_string(world_directory.join("chunks.json")).unwrap_or("[]".into()); //If this file does not exist we assume it to be empty
 
         let chunk_meta_data: Vec<ChunkMeta> =
             serde_json::from_str(&chunks_file).expect("Could not parse chunks.json");

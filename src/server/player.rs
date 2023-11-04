@@ -3,7 +3,7 @@ use std::sync::Arc;
 use anyhow::Ok;
 use serde::{Deserialize, Serialize};
 
-use super::{UID, Client};
+use super::{Client, UID};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Player {
@@ -40,28 +40,46 @@ pub struct Players {
 
 impl Players {
     pub fn new(world_directory: &std::path::Path) -> Self {
-        let player_file = std::fs::read_to_string(world_directory.join("players.json"))
-            .expect("Could not open players.json");
+        let player_file =
+            std::fs::read_to_string(world_directory.join("players.json")).unwrap_or("[]".into());
 
-        let players: Vec<Player> = serde_json::from_str(&player_file).expect("Could not parse players.json");
+        let players: Vec<Player> =
+            serde_json::from_str(&player_file).expect("Could not parse players.json");
         let online = (0..players.len()).map(|_| None).collect();
 
-        Players { registered: players, online }
+        Players {
+            registered: players,
+            online,
+        }
     }
 
     pub fn login(&mut self, name: String, client: Client) -> Option<UID> {
-        let pos = self.registered.iter().enumerate().find(|(_idx,p)| p.name == name);
-        if let Some((pos, player)) = pos { //Already registered
+        let pos = self
+            .registered
+            .iter()
+            .enumerate()
+            .find(|(_idx, p)| p.name == name);
+        if let Some((pos, player)) = pos {
+            //Already registered
             if self.online[pos].is_none() {
-                self.online[pos] = Some(ServerPlayer { player: player.clone(), package_writer: client, uid: pos });
+                self.online[pos] = Some(ServerPlayer {
+                    player: player.clone(),
+                    package_writer: client,
+                    uid: pos,
+                });
                 return Some(pos);
             } else {
                 return None;
             }
-        } else { //Not registered
+        } else {
+            //Not registered
             let uid = self.registered.len();
             self.registered.push(Player::new(name));
-            self.online.push(Some(ServerPlayer { player: self.registered[uid].clone(), package_writer: client, uid }));
+            self.online.push(Some(ServerPlayer {
+                player: self.registered[uid].clone(),
+                package_writer: client,
+                uid,
+            }));
             return Some(uid);
         }
     }
@@ -76,13 +94,12 @@ impl Players {
             if let Some(p) = ram {
                 *disk = p.player.clone();
             }
-
         }
 
         let json = serde_json::to_string(&self.registered)?;
 
-        std::fs::write(world_directory.join("players.json"), json)?;        
-        
+        std::fs::write(world_directory.join("players.json"), json)?;
+
         return Ok(());
     }
 
