@@ -17,8 +17,10 @@ pub fn cast_bytes_mut<T: AsBytes>(data: &mut T) -> &mut [u8] {
     }
 }
 
-pub fn start_server(listen: &str) -> std::process::Child {
-    
-    
-    todo!()
+pub fn start_server(listen: &str, world_directory: &str) -> std::process::Child {
+    std::process::Command::new("cargo")
+    .args(["run", "--bin", "server", "--", listen, world_directory])
+    .stdin(std::process::Stdio::piped())
+    .spawn()
+    .expect("Could not start internal server")
 }

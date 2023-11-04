@@ -14,13 +14,14 @@ pub fn handle_stdin(server: ServerCommand) {
         });
         match command.as_str() {
             "exit" => {
-                _ = server.blocking_send(super::Command::Shutdown);
+                //If the server is already down exit the process
+                server.blocking_send(super::Command::Shutdown).unwrap_or_else(|_| std::process::exit(1));
             }
             _ => {
                 println!("Unknown command");
             }
         }
     }
-    //Reached EOF
-    _ = server.blocking_send(super::Command::Shutdown);
+    //Reached EOF, if the server is already down exit the process
+    server.blocking_send(super::Command::Shutdown).unwrap_or_else(|_| std::process::exit(1));
 }

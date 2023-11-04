@@ -11,17 +11,26 @@ use infinirust::server::handlers::PackageBlockUpdate;
 use infinirust::server::{Client, Command, UID};
 
 fn main() -> std::io::Result<()> {
+
+    let args: Vec<String> = std::env::args().collect();
+
+    let bind = args[1].clone();
+    let world_directory = args[2].clone();
+
     let rt = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()
         .unwrap();
 
     rt.block_on(async {
-        let listener = TcpListener::bind("127.0.0.1:8042").await.unwrap();
+        let listener = TcpListener::bind(bind).await.unwrap();
 
         let (command_tx, command_rx) = tokio::sync::mpsc::channel(100);
 
-        std::thread::spawn(|| infinirust::server::start_world(command_rx, "world".into()));
+        std::thread::spawn(|| infinirust::server::start_world(command_rx, world_directory.into()));
+        
+        let stdin_command_tx = command_tx.clone();
+        std::thread::spawn(|| infinirust::server::stdin::handle_stdin(stdin_command_tx));
 
         let server_ctrlc = command_tx.clone();
         tokio::spawn(async move {

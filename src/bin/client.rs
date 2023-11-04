@@ -1,13 +1,17 @@
-use std::num::NonZeroU32;
+use std::{io::Write, num::NonZeroU32};
 
 use glutin::surface::GlSurface;
-use infinirust::game::{Game, Key};
+use infinirust::{
+    game::{Game, Key},
+    misc::start_server,
+};
 use winit::event::{DeviceEvent, ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 
 fn main() {
-    
-    
-    
+    let args: Vec<String> = std::env::args().collect();
+
+    let mut server_process = start_server("127.0.0.1:8042", &args[1]);
+
     let (event_loop, window, surface, gl_context) = infinirust::window::create_window();
 
     let mut game = Game::new(window.inner_size());
@@ -117,7 +121,14 @@ fn main() {
                 }
                 _ => (),
             },
+            Event::LoopDestroyed => {
+                //close interval server
+                server_process.stdin.take().unwrap().write_all(b"exit\n").unwrap();
+                server_process.wait().unwrap();
+            }
             _ => (),
         }
     });
+
+    
 }
