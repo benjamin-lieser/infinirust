@@ -16,3 +16,9 @@ pub fn cast_bytes_mut<T: AsBytes>(data: &mut T) -> &mut [u8] {
         ::core::slice::from_raw_parts_mut((data as *mut T) as *mut u8, ::core::mem::size_of::<T>())
     }
 }
+
+pub fn start_server(listen: &str) -> std::process::Child {
+    
+    
+    todo!()
+}

@@ -6,8 +6,10 @@ use self::world::ServerWorld;
 pub mod player;
 pub mod world;
 pub mod handlers;
+pub mod stdin;
 
 pub type Client = tokio::sync::mpsc::Sender<Arc<[u8]>>;
+pub type ServerCommand = tokio::sync::mpsc::Sender<Command>;
 pub type UID = usize;
 
 #[derive(Debug)]

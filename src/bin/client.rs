@@ -5,6 +5,9 @@ use infinirust::game::{Game, Key};
 use winit::event::{DeviceEvent, ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 
 fn main() {
+    
+    
+    
     let (event_loop, window, surface, gl_context) = infinirust::window::create_window();
 
     let mut game = Game::new(window.inner_size());
