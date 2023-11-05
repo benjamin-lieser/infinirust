@@ -1,4 +1,6 @@
-use std::io::{Write, Read};
+use std::{io::{Write, Read}, net::TcpStream};
+
+use crate::{server::UID, net::read_string};
 
 pub fn as_bytes(data: &[i32]) -> &[u8] {
     let ptr = data.as_ptr();
@@ -13,9 +15,19 @@ pub fn as_bytes_mut(data: &mut [i32]) -> &mut [u8] {
 /// Only implement for types with repr(C) and where every bit pattern is valid and no padding in the struct
 pub unsafe trait AsBytes: Sized {}
 
+unsafe impl AsBytes for u16 {}
+unsafe impl AsBytes for u64 {}
+unsafe impl AsBytes for usize {}
+
 pub fn cast_bytes_mut<T: AsBytes>(data: &mut T) -> &mut [u8] {
     unsafe {
         ::core::slice::from_raw_parts_mut((data as *mut T) as *mut u8, ::core::mem::size_of::<T>())
+    }
+}
+
+pub fn cast_bytes<T: AsBytes>(data: &T) -> &[u8] {
+    unsafe {
+        ::core::slice::from_raw_parts((data as *const T) as *const u8, ::core::mem::size_of::<T>())
     }
 }
 
@@ -57,4 +69,33 @@ pub fn start_server(world_directory: &str) -> (std::process::Child, String) {
 
     (child, bind)
 
+}
+
+pub fn login(bind: &str, username: &str) -> (TcpStream, u64) {
+    let mut stream = TcpStream::connect(&bind).expect("Could not connect to server");
+    //login package
+    let len = username.len();
+    assert!(len <= u16::MAX as usize);
+    stream.write_all(cast_bytes(&0x0001u16)).unwrap();
+    stream.write_all(cast_bytes(&(len as u16))).unwrap();
+    stream.write_all(username.as_bytes()).unwrap();
+
+    
+    let mut answer = 0u16;
+    stream.read_exact(cast_bytes_mut(&mut answer)).unwrap();
+
+    let uid = match answer {
+        0x00001 => { //Login Failed
+            panic!("Login failed:{}", read_string(&mut stream));
+        }
+        0x00002 => { //Login success
+            let mut uid = 0u64;
+            stream.read_exact(cast_bytes_mut(&mut uid)).unwrap();
+            uid
+        }
+        _ => {
+            panic!("Unvalid package");
+        }
+    };
+    (stream, uid)
 }

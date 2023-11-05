@@ -3,7 +3,7 @@ use std::{io::Write, num::NonZeroU32};
 use glutin::surface::GlSurface;
 use infinirust::{
     game::{Game, Key},
-    misc::start_server,
+    misc::{start_server, login},
 };
 use winit::event::{DeviceEvent, ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 
@@ -11,6 +11,8 @@ fn main() {
     let args: Vec<String> = std::env::args().collect();
 
     let (mut server_process, bind) = start_server(&args[1]);
+
+    let (mut server_tcp, uid) = login(&bind, &args[2]);
 
     let (event_loop, window, surface, gl_context) = infinirust::window::create_window();
 

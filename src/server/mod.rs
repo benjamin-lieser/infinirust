@@ -38,7 +38,7 @@ pub fn start_world(
         match command {
             Command::Login(name, client, back) => {
                 let uid = server.players.login(name, client);
-                _ = back.send(uid);
+                back.send(uid).expect("Could not send uuid back");
             }
             Command::Logout(uid) => {
                 server.players.logout(uid);

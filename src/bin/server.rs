@@ -6,7 +6,7 @@ use tokio::net::{
     TcpListener,
 };
 
-use infinirust::misc::cast_bytes_mut;
+use infinirust::misc::{cast_bytes_mut, cast_bytes};
 use infinirust::server::handlers::PackageBlockUpdate;
 use infinirust::server::{Client, Command, UID};
 
@@ -136,6 +136,11 @@ async fn read_start_packages(
                     server.send(command).await.unwrap();
 
                     if let Some(uid) = rx.await.unwrap() {
+                        //TODO send login success package
+                        let mut package = vec![0x02u8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
+                        package[2..].copy_from_slice(cast_bytes(&uid));
+                        client.send(package.into()).await.unwrap();
+
                         break uid; //Move on to play state
                     }
                 }
@@ -155,6 +160,7 @@ async fn read_start_packages(
         }
     };
     //Go to play state
+
     read_play_packages(stream, server.clone(), uid)
         .await
         .expect_err("Somehow the read_play_packages function returned with Ok");
