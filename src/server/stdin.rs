@@ -1,10 +1,10 @@
-use std::io::BufRead;
+use std::io::{BufRead, Write};
 
 use super::ServerCommand;
 
 
 /// Supposed to be started in its own thread handling sdtin in a blocking way
-pub fn handle_stdin(server: ServerCommand) {
+pub fn handle_stdin(server: ServerCommand, bind: String) {
     let stdin = std::io::stdin();
     for line in stdin.lock().lines() {
         let command = line.unwrap_or_else(|e| {
@@ -17,11 +17,17 @@ pub fn handle_stdin(server: ServerCommand) {
                 //If the server is already down exit the process
                 server.blocking_send(super::Command::Shutdown).unwrap_or_else(|_| std::process::exit(1));
             }
+            "bind" => {
+                //Writes the address to connect to on stdout
+                println!("{}", bind);
+                std::io::stdout().flush().unwrap();
+            }
             _ => {
-                println!("Unknown command");
+                eprintln!("Unknown command");
             }
         }
     }
     //Reached EOF, if the server is already down exit the process
+    eprintln!("Server stdin EOF");
     server.blocking_send(super::Command::Shutdown).unwrap_or_else(|_| std::process::exit(1));
 }

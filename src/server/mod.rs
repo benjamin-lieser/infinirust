@@ -54,7 +54,7 @@ pub fn start_world(
             Command::Shutdown => {
                 server.players.sync_to_disk(&world_directory).unwrap();
                 //Todo Sync chunk data
-                println!("Shutting down.");
+                eprintln!("Shutting down.");
                 std::process::exit(0);
             }
         }

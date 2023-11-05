@@ -14,7 +14,7 @@ fn main() -> std::io::Result<()> {
 
     let args: Vec<String> = std::env::args().collect();
 
-    let bind = args[1].clone();
+    let listen_on = args[1].clone();
     let world_directory = args[2].clone();
 
     let rt = tokio::runtime::Builder::new_multi_thread()
@@ -23,19 +23,27 @@ fn main() -> std::io::Result<()> {
         .unwrap();
 
     rt.block_on(async {
-        let listener = TcpListener::bind(bind).await.unwrap();
+        let (bind, listener) = if listen_on == "internal" { //Bind to loopback and let the OS assign a port
+            let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+            let addr = listener.local_addr().unwrap();
+            (addr.to_string(), listener)
+        } else {
+            let bind = listen_on.clone();
+            (bind, TcpListener::bind(listen_on).await.unwrap())
+        };
 
         let (command_tx, command_rx) = tokio::sync::mpsc::channel(100);
 
         std::thread::spawn(|| infinirust::server::start_world(command_rx, world_directory.into()));
         
         let stdin_command_tx = command_tx.clone();
-        std::thread::spawn(|| infinirust::server::stdin::handle_stdin(stdin_command_tx));
+        std::thread::spawn(|| infinirust::server::stdin::handle_stdin(stdin_command_tx, bind));
 
         let server_ctrlc = command_tx.clone();
         tokio::spawn(async move {
             tokio::signal::ctrl_c().await.unwrap();
             //Send shutdown command to the server. If the server is already gone it exits the process
+            eprintln!("Server recieved ctrl+C");
             server_ctrlc.send(Command::Shutdown).await.unwrap_or_else(|_| std::process::exit(1));
         });
 

@@ -56,7 +56,7 @@ const NEAR_PLAIN: f32 = 0.3;
 const FAR_PLAIN: f32 = 100.0;
 
 impl Game {
-    pub fn new(render_size: PhysicalSize<u32>) -> Self {
+    pub fn new(render_size: PhysicalSize<u32>, bind: &str) -> Self {
         unsafe {
             if let Some(renderer) = get_gl_string(gl::RENDERER) {
                 println!("Running on {}", renderer.to_string_lossy());
@@ -82,7 +82,7 @@ impl Game {
             atlas.bind_texture(gl::TEXTURE0);
             atlas.finalize();
 
-            let world = World::new(&atlas, "localhost:8042".to_owned());
+            let world = World::new(&atlas, bind.to_owned());
 
             let projection = glm::perspective(
                 render_size.width as f32 / render_size.height as f32,

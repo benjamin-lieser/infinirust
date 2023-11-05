@@ -10,11 +10,11 @@ use winit::event::{DeviceEvent, ElementState, Event, KeyboardInput, VirtualKeyCo
 fn main() {
     let args: Vec<String> = std::env::args().collect();
 
-    let mut server_process = start_server("127.0.0.1:8042", &args[1]);
+    let (mut server_process, bind) = start_server(&args[1]);
 
     let (event_loop, window, surface, gl_context) = infinirust::window::create_window();
 
-    let mut game = Game::new(window.inner_size());
+    let mut game = Game::new(window.inner_size(), &bind);
 
     let mut now = std::time::SystemTime::now();
 
@@ -123,6 +123,7 @@ fn main() {
             },
             Event::LoopDestroyed => {
                 //close interval server
+                println!("Loop destroyed");
                 server_process.stdin.take().unwrap().write_all(b"exit\n").unwrap();
                 server_process.wait().unwrap();
             }
