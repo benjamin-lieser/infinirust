@@ -1,9 +1,9 @@
-use std::{collections::HashMap, net::TcpStream};
+use std::{collections::HashMap, net::TcpStream, io::Write};
 
 use nalgebra_glm as glm;
 
 
-use crate::mygl::TextureAtlas;
+use crate::{mygl::TextureAtlas, misc::cast_bytes};
 
 use super::{Camera, Chunk, FreeCamera, CHUNK_SIZE, Y_RANGE};
 
@@ -14,26 +14,24 @@ const VIEW_DISTANCE : i32 = 8;
 pub struct World {
     chunks : HashMap<[i32; 3], Chunk>,
     center : [i32;3],
-    server : String
+    server : TcpStream
 }
 
 impl World {
-    pub fn new(atlas: &TextureAtlas, server : String) -> Self {
+    pub fn new(atlas: &TextureAtlas, mut server : TcpStream) -> Self {
         let mut chunks = HashMap::new();
 
         for x in -VIEW_DISTANCE..VIEW_DISTANCE {
             for y in -Y_RANGE..Y_RANGE {
                 for z in -VIEW_DISTANCE..VIEW_DISTANCE {
-                    let pos = [x, y, z];
-
-                    let mut stream = TcpStream::connect(&server).unwrap();
-
-
-                    chunks.insert(pos, Chunk::new(pos, &mut stream));
-                    chunks.get_mut(&pos).unwrap().write_vbo(atlas);
+                    let pos: [i32;3] = [x, y, z];
+                    server.write_all(b"\x0A\x00").unwrap();
+                    server.write_all(cast_bytes(&pos)).unwrap();
                 }
             }
         }
+
+        
 
         Self { chunks, center : [0,0,0], server }
     }
@@ -47,8 +45,6 @@ impl World {
                 for y in -Y_RANGE..Y_RANGE {
                     for z in (self.center[2] - VIEW_DISTANCE)..(self.center[0] - VIEW_DISTANCE) {
                         let mut chunk = self.chunks.remove(&[x,y,z]).unwrap();
-                        let mut stream = TcpStream::connect(&self.server).unwrap();
-                        chunk.change_pos([x   ,y,z], &mut stream);
                     }
                 }
             }

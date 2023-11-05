@@ -66,6 +66,7 @@ async fn write_packages(
     mut stream: OwnedWriteHalf,
     mut input: tokio::sync::mpsc::Receiver<Arc<[u8]>>,
 ) {
+    //TODO Consider accepting a package enum instead of the written out packages
     loop {
         //This unwraps panics iff the user is logged out
         let package = input.recv().await.unwrap();

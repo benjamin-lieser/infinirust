@@ -6,6 +6,7 @@ mod overlay;
 mod world;
 
 use std::ffi::CStr;
+use std::net::TcpStream;
 
 use glm::Mat4;
 use nalgebra_glm as glm;
@@ -56,7 +57,7 @@ const NEAR_PLAIN: f32 = 0.3;
 const FAR_PLAIN: f32 = 100.0;
 
 impl Game {
-    pub fn new(render_size: PhysicalSize<u32>, bind: &str) -> Self {
+    pub fn new(render_size: PhysicalSize<u32>, tcp: TcpStream) -> Self {
         unsafe {
             if let Some(renderer) = get_gl_string(gl::RENDERER) {
                 println!("Running on {}", renderer.to_string_lossy());
@@ -82,7 +83,7 @@ impl Game {
             atlas.bind_texture(gl::TEXTURE0);
             atlas.finalize();
 
-            let world = World::new(&atlas, bind.to_owned());
+            let world = World::new(&atlas, tcp);
 
             let projection = glm::perspective(
                 render_size.width as f32 / render_size.height as f32,

@@ -18,6 +18,7 @@ pub unsafe trait AsBytes: Sized {}
 unsafe impl AsBytes for u16 {}
 unsafe impl AsBytes for u64 {}
 unsafe impl AsBytes for usize {}
+unsafe impl AsBytes for [i32;3] {}
 
 pub fn cast_bytes_mut<T: AsBytes>(data: &mut T) -> &mut [u8] {
     unsafe {

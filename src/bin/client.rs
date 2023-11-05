@@ -12,11 +12,11 @@ fn main() {
 
     let (mut server_process, bind) = start_server(&args[1]);
 
-    let (mut server_tcp, uid) = login(&bind, &args[2]);
+    let (server_tcp, uid) = login(&bind, &args[2]);
 
     let (event_loop, window, surface, gl_context) = infinirust::window::create_window();
 
-    let mut game = Game::new(window.inner_size(), &bind);
+    let mut game = Game::new(window.inner_size(), server_tcp);
 
     let mut now = std::time::SystemTime::now();
 
