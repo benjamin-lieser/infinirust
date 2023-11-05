@@ -4,6 +4,7 @@ mod input;
 pub mod misc;
 mod overlay;
 mod world;
+mod renderer;
 
 use std::ffi::CStr;
 use std::net::TcpStream;
@@ -18,6 +19,7 @@ pub use chunk::CHUNK_SIZE;
 pub use chunk::Y_RANGE;
 pub use input::Controls;
 pub use world::World;
+pub use renderer::Renderer;
 
 use self::misc::CubeOutlines;
 use self::overlay::Overlay;
@@ -250,41 +252,5 @@ impl Drop for Game {
     }
 }
 
-fn get_gl_string(variant: gl::types::GLenum) -> Option<&'static CStr> {
-    unsafe {
-        let s = gl::GetString(variant);
-        (!s.is_null()).then(|| CStr::from_ptr(s.cast()))
-    }
-}
 
-const VERTEX_SHADER_SOURCE: &[u8] = b"
-#version 410 core
-precision highp float;
 
-layout(location=0) in vec3 position;
-layout(location=1) in vec2 tex;
-
-uniform mat4 mvp;
-
-out vec2 texCord;
-
-void main() {
-    gl_Position = mvp * vec4(position, 1.0);
-    texCord = tex;
-}
-\0";
-
-const FRAGMENT_SHADER_SOURCE: &[u8] = b"
-#version 410 core
-precision highp float;
-
-uniform sampler2D tex_atlas;
-
-layout(location=0) out vec4 fragColor;
-
-in vec2 texCord;
-
-void main() {
-    fragColor = texture(tex_atlas, texCord);
-}
-\0";
