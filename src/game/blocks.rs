@@ -4,13 +4,13 @@ use std::collections::HashMap;
 
 use serde::Deserialize;
 
-use super::Direction;
 
 pub struct Blocks {
 
 }
 #[derive(Debug, Deserialize)]
-pub struct BlockJson {
-    name: String,
-    faces: HashMap<Direction, String>
+pub struct BlockConfig {
+    pub name: String,
+    ///Keys are 'default' 'pos_x' 'neg_x' ... 'neg_z', values are the texture files
+    pub faces: HashMap<String, String>
 }
