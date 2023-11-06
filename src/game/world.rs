@@ -14,7 +14,6 @@ const VIEW_DISTANCE : i32 = 8;
 pub struct World {
     chunks : HashMap<[i32; 3], Chunk>,
     center : [i32;3],
-    server : TcpStream
 }
 
 impl World {

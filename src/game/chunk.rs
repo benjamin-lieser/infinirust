@@ -41,7 +41,7 @@ impl ChunkData {
 pub struct Chunk {
     /// Array of blocks in the chunk
     blocks: ChunkData,
-    /// [0,0,0] is the chunk at origion in the positive direction
+    /// [0,0,0] is the chunk at origion in the positive directions
     position: [i32; 3],
     vao: VAO,
     vertex_pos: VBOWithStorage<u8>,

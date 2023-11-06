@@ -134,6 +134,7 @@ impl Drop for VAO {
 pub struct VBOWithStorage<T: ToGlType> {
     pub vbo: VBO<T>,
     pub data: Vec<T>,
+    pub modified: bool,
 }
 
 impl<T: ToGlType> VBOWithStorage<T> {
@@ -141,10 +142,13 @@ impl<T: ToGlType> VBOWithStorage<T> {
         VBOWithStorage {
             vbo: VBO::new(),
             data: Vec::new(),
+            modified: false,
         }
     }
 
     pub fn copy(&mut self) {
-        self.vbo.copy(&self.data);
+        if self.modified {
+            self.vbo.copy(&self.data);
+        }
     }
 }

@@ -5,12 +5,14 @@ pub mod misc;
 mod overlay;
 mod world;
 mod renderer;
+mod blocks;
 
 use std::ffi::CStr;
 use std::net::TcpStream;
 
 use glm::Mat4;
 use nalgebra_glm as glm;
+use serde::Deserialize;
 use winit::dpi::PhysicalSize;
 
 pub use camera::{Camera, FreeCamera};
@@ -24,7 +26,8 @@ pub use renderer::Renderer;
 use self::misc::CubeOutlines;
 use self::overlay::Overlay;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Deserialize)]
+#[repr(u8)]
 pub enum Direction {
     PosX,
     NegX,

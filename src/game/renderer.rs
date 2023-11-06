@@ -5,7 +5,7 @@ use nalgebra_glm as glm;
 
 use crate::mygl::{get_gl_string, Program, TextureAtlas};
 
-use super::World;
+use super::{FreeCamera, World, Controls, misc::CubeOutlines, overlay::Overlay};
 
 const NEAR_PLAIN: f32 = 0.3;
 const FAR_PLAIN: f32 = 100.0;
@@ -18,6 +18,10 @@ pub struct Renderer {
     program: Program,
     atlas: TextureAtlas,
     projection: Mat4,
+    camera: FreeCamera,
+    controls: Controls,
+    cube_outlines: CubeOutlines,
+    overlay: Overlay,
 }
 
 impl Renderer {
@@ -50,7 +54,16 @@ impl Renderer {
                 NEAR_PLAIN,
                 FAR_PLAIN,
             );
-            Self { world, program, atlas, projection }
+            Self {
+                world,
+                program,
+                atlas,
+                projection,
+                camera: FreeCamera::new([0.0, 0.0, 0.0]),
+                controls: Controls::default(),
+                cube_outlines: CubeOutlines::new(),
+                overlay: Overlay::new(render_size)
+            }
         }
     }
 }

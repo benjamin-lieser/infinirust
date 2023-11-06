@@ -95,7 +95,7 @@ pub fn login(bind: &str, username: &str) -> (TcpStream, u64) {
             uid
         }
         _ => {
-            panic!("Unvalid package");
+            panic!("Invalid package");
         }
     };
     (stream, uid)
