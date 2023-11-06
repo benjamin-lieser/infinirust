@@ -3,7 +3,7 @@ use std::ffi::CStr;
 use nalgebra_glm::Mat4;
 
 pub struct Program {
-    program : gl::types::GLuint
+    pub program : gl::types::GLuint
 }
 
 impl Program {

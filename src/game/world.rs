@@ -3,7 +3,7 @@ use std::{collections::HashMap, net::TcpStream, io::Write};
 use nalgebra_glm as glm;
 
 
-use crate::{mygl::TextureAtlas, misc::cast_bytes};
+use crate::{mygl::{TextureAtlas, Program}, misc::cast_bytes};
 
 use super::{Camera, Chunk, FreeCamera, CHUNK_SIZE, Y_RANGE};
 
@@ -17,22 +17,8 @@ pub struct World {
 }
 
 impl World {
-    pub fn new(atlas: &TextureAtlas, mut server : TcpStream) -> Self {
-        let mut chunks = HashMap::new();
-
-        for x in -VIEW_DISTANCE..VIEW_DISTANCE {
-            for y in -Y_RANGE..Y_RANGE {
-                for z in -VIEW_DISTANCE..VIEW_DISTANCE {
-                    let pos: [i32;3] = [x, y, z];
-                    server.write_all(b"\x0A\x00").unwrap();
-                    server.write_all(cast_bytes(&pos)).unwrap();
-                }
-            }
-        }
-
-        
-
-        Self { chunks, center : [0,0,0], server }
+    pub fn new() -> Self {
+        Self { chunks: HashMap::new(), center: [0,0,0]}
     }
 
     pub fn update_center(&mut self, camera_pos : &[f64;3]) {
@@ -53,19 +39,19 @@ impl World {
 
     pub fn draw(
         &self,
-        program: gl::types::GLuint,
+        program: &Program,
         projection: &nalgebra_glm::Mat4,
         camera: &FreeCamera,
     ) {
         unsafe {
-            gl::UseProgram(program);
+            program.bind();
             gl::Enable(gl::DEPTH_TEST);
             gl::Enable(gl::CULL_FACE);
 
             let [x, y, z] = camera.position();
 
-            let mvp_location = gl::GetUniformLocation(program, "mvp\0".as_ptr().cast());
-            let texture_location = gl::GetUniformLocation(program, "tex_atlas\0".as_ptr().cast());
+            let mvp_location = gl::GetUniformLocation(program.program, "mvp\0".as_ptr().cast());
+            let texture_location = gl::GetUniformLocation(program.program, "tex_atlas\0".as_ptr().cast());
 
             gl::Uniform1i(texture_location, 0);
 

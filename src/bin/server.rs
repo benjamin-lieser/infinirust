@@ -162,10 +162,11 @@ async fn read_start_packages(
     };
     //Go to play state
 
-    read_play_packages(stream, server.clone(), uid)
+    let e = read_play_packages(stream, server.clone(), uid)
         .await
         .expect_err("Somehow the read_play_packages function returned with Ok");
     //Log the player out
+    eprintln!("Player got logged out because of error: {}",e);
     server.send(Command::Logout(uid)).await.unwrap();
 }
 

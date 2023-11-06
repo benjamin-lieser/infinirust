@@ -126,7 +126,9 @@ fn main() {
             Event::LoopDestroyed => {
                 //close interval server
                 println!("Loop destroyed");
-                server_process.stdin.take().unwrap().write_all(b"exit\n").unwrap();
+                let mut stdin = server_process.stdin.take().unwrap();
+                stdin.write_all(b"exit\n").unwrap();
+                stdin.flush().unwrap();
                 server_process.wait().unwrap();
             }
             _ => (),
