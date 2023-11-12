@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use anyhow::{anyhow, Ok};
 use image::io::Reader;
 use image::RgbaImage;
@@ -5,11 +7,13 @@ use image::RgbaImage;
 /// 16x16 pixel texture atlas. It prevents bleeding and supports Mipmapping
 pub struct TextureAtlas {
     texture: gl::types::GLuint,
-    positions: Vec<(f32, f32)>,
+    positions: HashMap<String, (f32, f32)>,
+    next_free: u32,
     image: RgbaImage,
 }
 
 impl TextureAtlas {
+    /// Needs GL context
     pub fn new() -> Self {
         let mut texture: gl::types::GLuint = 0;
         unsafe {
@@ -18,17 +22,22 @@ impl TextureAtlas {
         assert!(texture != 0);
         TextureAtlas {
             texture,
-            positions: vec![(0.0, 0.0); 484],
+            positions: HashMap::new(),
+            next_free: 0,
             image: RgbaImage::new(1024, 1024),
         }
     }
 
-    pub fn add_texture(
-        &mut self,
-        path: impl AsRef<std::path::Path>,
-        id: u32,
-    ) -> anyhow::Result<()> {
-        assert!(id <= 484);
+    pub fn add_texture(&mut self, path: &str) -> anyhow::Result<(f32, f32)> {
+        //Already loaded
+        if let Some((x,y)) = self.positions.get(path) {
+            return Ok((*x,*y));
+        }
+
+        if self.next_free == 22*22 {
+            return Err(anyhow!("Texture atlas is full"));
+        }
+        
         let mut img = Reader::open(path)?.decode()?.to_rgba8();
         if img.dimensions() != (16, 16) {
             return Err(anyhow!("Image has to have 16x16 pixels"));
@@ -37,8 +46,8 @@ impl TextureAtlas {
         //Opengl has (0,0) in the bottom left, image at the top left
         image::imageops::flip_vertical_in_place(&mut img);
 
-        let x = (id % 22) as i32;
-        let y = (id / 22) as i32;
+        let x = (self.next_free % 22) as i32;
+        let y = (self.next_free / 22) as i32;
 
         let pixel_x = x * 48;
         let pixel_y = y * 48;
@@ -57,18 +66,20 @@ impl TextureAtlas {
             }
         }
 
-        self.positions[id as usize] = (pixel_x as f32 / 1024.0, pixel_y as f32 / 1024.0);
+        self.next_free += 1;
 
-        Ok(())
+        self.positions.insert(path.into(), (pixel_x as f32 / 1024.0, pixel_y as f32 / 1024.0));
+        Ok((pixel_x as f32 / 1024.0, pixel_y as f32 / 1024.0))
     }
 
+    /// Saves the internal atlas to disk, mostly for debug
     pub fn save(&self, path: impl AsRef<std::path::Path>) -> anyhow::Result<()> {
         self.image.save(path)?;
         Ok(())
     }
 
-    pub fn get_position(&self, id: u32) -> (f32, f32) {
-        self.positions[id as usize]
+    pub fn get_position(&self, path: &str) -> Option<(f32, f32)> {
+        self.positions.get(path).copied()
     }
 
     pub fn get_size() -> (f32, f32) {
