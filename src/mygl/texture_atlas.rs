@@ -38,7 +38,7 @@ impl TextureAtlas {
             return Err(anyhow!("Texture atlas is full"));
         }
         
-        let mut img = Reader::open(path)?.decode()?.to_rgba8();
+        let mut img = Reader::open("textures/".to_owned() + path)?.decode()?.to_rgba8();
         if img.dimensions() != (16, 16) {
             return Err(anyhow!("Image has to have 16x16 pixels"));
         }

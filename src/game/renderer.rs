@@ -16,7 +16,7 @@ const FAR_PLAIN: f32 = 100.0;
 pub struct Renderer {
     world: Arc<Mutex<World>>,
     program: Program,
-    atlas: TextureAtlas,
+    atlas: Arc<TextureAtlas>,
     projection: Mat4,
     camera: FreeCamera,
     controls: Controls,
@@ -42,9 +42,9 @@ impl Renderer {
             let program = Program::new(VERTEX_SHADER_SOURCE, FRAGMENT_SHADER_SOURCE);
 
             let mut atlas = crate::mygl::TextureAtlas::new();
-            atlas.add_texture("textures/grass_side.png", 0).unwrap();
-            atlas.add_texture("textures/grass_top.png", 1).unwrap();
-            atlas.add_texture("textures/dirt.png", 23).unwrap();
+            atlas.add_texture("grass_side.png").unwrap();
+            atlas.add_texture("grass_top.png").unwrap();
+            atlas.add_texture("dirt.png").unwrap();
             //atlas.save("temp.png").unwrap();
             atlas.bind_texture(gl::TEXTURE0);
             atlas.finalize();
@@ -58,7 +58,7 @@ impl Renderer {
             Self {
                 world,
                 program,
-                atlas,
+                atlas : Arc::new(atlas),
                 projection,
                 camera: FreeCamera::new([0.0, 0.0, 0.0]),
                 controls: Controls::default(),
@@ -163,6 +163,10 @@ impl Renderer {
         }
 
         self.overlay.draw();
+    }
+
+    pub fn atlas(&self) -> Arc<TextureAtlas> {
+        self.atlas.clone()
     }
 
     pub fn resize(&mut self, size: winit::dpi::PhysicalSize<u32>) {

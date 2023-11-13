@@ -69,9 +69,12 @@ async fn write_packages(
     //TODO Consider accepting a package enum instead of the written out packages
     loop {
         //This unwraps panics iff the user is logged out
-        let package = input.recv().await.unwrap();
-
-        stream.write_all(&package).await.unwrap();
+        if let Some(package) = input.recv().await {
+            stream.write_all(&package).await.unwrap();
+        } else {
+            eprintln!("Writer returns");
+            return;
+        }
     }
 }
 

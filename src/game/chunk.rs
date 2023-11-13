@@ -88,7 +88,7 @@ impl Chunk {
                                 &mut self.vertex_pos.data,
                                 &mut self.texture_pos.data,
                                 atlas,
-                                0,
+                                "grass_side.png",
                                 [x as u8, y as u8, z as u8],
                                 Direction::PosZ,
                             );
@@ -98,7 +98,7 @@ impl Chunk {
                                 &mut self.vertex_pos.data,
                                 &mut self.texture_pos.data,
                                 atlas,
-                                0,
+                                "grass_side.png",
                                 [x as u8, y as u8, z as u8],
                                 Direction::NegZ,
                             );
@@ -108,7 +108,7 @@ impl Chunk {
                                 &mut self.vertex_pos.data,
                                 &mut self.texture_pos.data,
                                 atlas,
-                                0,
+                                "grass_side.png",
                                 [x as u8, y as u8, z as u8],
                                 Direction::NegX,
                             );
@@ -118,7 +118,7 @@ impl Chunk {
                                 &mut self.vertex_pos.data,
                                 &mut self.texture_pos.data,
                                 atlas,
-                                0,
+                                "grass_side.png",
                                 [x as u8, y as u8, z as u8],
                                 Direction::PosX,
                             );
@@ -128,7 +128,7 @@ impl Chunk {
                                 &mut self.vertex_pos.data,
                                 &mut self.texture_pos.data,
                                 atlas,
-                                1,
+                                "grass_top.png",
                                 [x as u8, y as u8, z as u8],
                                 Direction::PosY,
                             );
@@ -138,7 +138,7 @@ impl Chunk {
                                 &mut self.vertex_pos.data,
                                 &mut self.texture_pos.data,
                                 atlas,
-                                23,
+                                "dirt.png",
                                 [x as u8, y as u8, z as u8],
                                 Direction::NegY,
                             );
@@ -167,11 +167,11 @@ fn add_face(
     vertex_data: &mut Vec<u8>,
     texture_data: &mut Vec<f32>,
     atlas: &TextureAtlas,
-    texture: u32,
+    texture: &str,
     pos: [u8; 3],
     dir: Direction,
 ) {
-    let (tex_x, tex_y) = atlas.get_position(texture);
+    let (tex_x, tex_y) = atlas.get_position(texture).unwrap();
     let (size_x, size_y) = TextureAtlas::get_size();
     //We do counter clockwiese triangles
 

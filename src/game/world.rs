@@ -1,9 +1,9 @@
-use std::{collections::HashMap, net::TcpStream, io::Write};
+use std::collections::HashMap;
 
 use nalgebra_glm as glm;
 
 
-use crate::{mygl::{TextureAtlas, Program}, misc::cast_bytes};
+use crate::mygl::Program;
 
 use super::{Camera, Chunk, FreeCamera, CHUNK_SIZE, Y_RANGE};
 

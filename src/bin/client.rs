@@ -12,7 +12,7 @@ fn main() {
 
     let (mut server_process, bind) = start_server(&args[1]);
 
-    let (server_tcp, uid) = login(&bind, &args[2]);
+    let (server_tcp, _uid) = login(&bind, &args[2]);
 
     let (event_loop, window, surface, gl_context) = infinirust::window::create_window();
 

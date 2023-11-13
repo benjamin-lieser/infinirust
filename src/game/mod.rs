@@ -6,6 +6,7 @@ mod overlay;
 mod world;
 mod renderer;
 mod blocks;
+mod background;
 
 use std::net::TcpStream;
 use std::sync::Arc;
@@ -51,7 +52,13 @@ impl Game {
     pub fn new(render_size: PhysicalSize<u32>, tcp: TcpStream) -> Self {
         let world = World::new();
         let world = Arc::new(Mutex::new(world));
-        Self { renderer: Renderer::new(world.clone(), render_size) }
+
+        let renderer = Renderer::new(world.clone(), render_size);
+
+        
+
+
+        Self { renderer }
     }
 
     pub fn draw(&mut self, delta_t: f32) {
