@@ -1,6 +1,6 @@
 use std::{io::{Write, Read}, net::TcpStream};
 
-use crate::{server::UID, net::read_string};
+use crate::net::read_string;
 
 pub fn as_bytes(data: &[i32]) -> &[u8] {
     let ptr = data.as_ptr();

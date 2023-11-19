@@ -23,7 +23,9 @@ pub use input::Controls;
 pub use world::World;
 pub use renderer::Renderer;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Deserialize)]
+use self::background::chunk_loader;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(u8)]
 pub enum Direction {
     PosX,
@@ -54,8 +56,12 @@ impl Game {
         let world = Arc::new(Mutex::new(world));
 
         let renderer = Renderer::new(world.clone(), render_size);
+        let atlas = renderer.atlas();
 
-        
+        let (update_tx, update_rx) = tokio::sync::mpsc::channel(100);
+
+        let chunk_loader_world = world.clone();
+        std::thread::spawn(|| chunk_loader(tcp, chunk_loader_world, update_rx, atlas));
 
 
         Self { renderer }
