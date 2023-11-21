@@ -55,10 +55,11 @@ impl Game {
         let world = World::new();
         let world = Arc::new(Mutex::new(world));
 
-        let renderer = Renderer::new(world.clone(), render_size);
+        let (update_tx, update_rx) = tokio::sync::mpsc::channel(100);
+
+        let renderer = Renderer::new(world.clone(), render_size, update_tx);
         let atlas = renderer.atlas();
 
-        let (update_tx, update_rx) = tokio::sync::mpsc::channel(100);
 
         let chunk_loader_world = world.clone();
         std::thread::spawn(|| chunk_loader(tcp, chunk_loader_world, update_rx, atlas));

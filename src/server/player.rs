@@ -67,9 +67,9 @@ impl Players {
                     package_writer: client,
                     uid: pos,
                 });
-                return Some(pos);
+                Some(pos)
             } else {
-                return None;
+                None
             }
         } else {
             //Not registered
@@ -80,7 +80,7 @@ impl Players {
                 package_writer: client,
                 uid,
             }));
-            return Some(uid);
+            Some(uid)
         }
     }
 
@@ -100,7 +100,7 @@ impl Players {
 
         std::fs::write(world_directory.join("players.json"), json)?;
 
-        return Ok(());
+        Ok(())
     }
 
     pub fn client(&self, uid: UID) -> &Client {
@@ -109,11 +109,9 @@ impl Players {
 
     /// Sends a package to all logged in players
     pub fn broadcast(&self, package: Arc<[u8]>) {
-        for player in &self.online {
-            if let Some(p) = player {
-                // Package gets lost if the write channel is full
-                _ = p.package_writer.try_send(package.clone());
-            }
+        for player in self.online.iter().flatten() {
+            // Package gets lost if the write channel is full
+            _ = player.package_writer.try_send(package.clone());
         }
     }
 }

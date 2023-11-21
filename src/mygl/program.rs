@@ -43,7 +43,7 @@ fn create_and_compile_shader(shader_type: gl::types::GLenum, source: &CStr) -> g
         gl::GetShaderiv(shader, gl::COMPILE_STATUS, &mut status);
         if status == 0 {
             gl::GetShaderiv(shader, gl::INFO_LOG_LENGTH, &mut error_length);
-            let mut buffer = vec![0 as u8; error_length as usize];
+            let mut buffer = vec![0u8; error_length as usize];
             gl::GetShaderInfoLog(
                 shader,
                 error_length,
@@ -78,7 +78,7 @@ pub fn create_program(vertex_source: &CStr, fragment_source: &CStr) -> gl::types
         gl::GetProgramiv(program, gl::LINK_STATUS, &mut status);
         if status == 0 {
             gl::GetProgramiv(program, gl::INFO_LOG_LENGTH, &mut error_length);
-            let mut buffer = vec![0 as u8; error_length as usize];
+            let mut buffer = vec![0u8; error_length as usize];
             gl::GetProgramInfoLog(
                 program,
                 error_length,

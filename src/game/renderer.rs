@@ -1,11 +1,11 @@
-use std::sync::{Mutex, Arc};
+use std::sync::{Arc, Mutex};
 
 use glm::Mat4;
 use nalgebra_glm as glm;
 
 use crate::mygl::{get_gl_string, Program, TextureAtlas};
 
-use super::{FreeCamera, World, Controls, misc::CubeOutlines, overlay::Overlay, Camera, Key};
+use super::{misc::CubeOutlines, overlay::Overlay, Camera, Controls, FreeCamera, Key, World, background::Update};
 
 const NEAR_PLAIN: f32 = 0.3;
 const FAR_PLAIN: f32 = 100.0;
@@ -22,11 +22,12 @@ pub struct Renderer {
     controls: Controls,
     cube_outlines: CubeOutlines,
     overlay: Overlay,
-    render_size: winit::dpi::PhysicalSize<u32>
+    render_size: winit::dpi::PhysicalSize<u32>,
+    updates: tokio::sync::mpsc::Sender<Update>
 }
 
 impl Renderer {
-    pub fn new(world: Arc<Mutex<World>>, render_size: winit::dpi::PhysicalSize<u32>) -> Self {
+    pub fn new(world: Arc<Mutex<World>>, render_size: winit::dpi::PhysicalSize<u32>, updates: tokio::sync::mpsc::Sender<Update>) -> Self {
         unsafe {
             if let Some(renderer) = get_gl_string(gl::RENDERER) {
                 println!("Running on {}", renderer.to_string_lossy());
@@ -51,20 +52,21 @@ impl Renderer {
 
             let projection = glm::perspective(
                 render_size.width as f32 / render_size.height as f32,
-                0.785398,
+                std::f32::consts::FRAC_PI_4,
                 NEAR_PLAIN,
                 FAR_PLAIN,
             );
             Self {
                 world,
                 program,
-                atlas : Arc::new(atlas),
+                atlas: Arc::new(atlas),
                 projection,
                 camera: FreeCamera::new([0.0, 0.0, 0.0]),
                 controls: Controls::default(),
                 cube_outlines: CubeOutlines::new(),
                 overlay: Overlay::new(render_size),
-                render_size
+                render_size,
+                updates
             }
         }
     }
@@ -96,10 +98,15 @@ impl Renderer {
             self.camera.go_up(-delta_t * speed);
         }
 
+
         {
             let world = self.world.lock().unwrap();
             world.draw(&self.program, &self.projection, &self.camera);
         }
+
+        //Update background about the current position
+        //For position its ok if it gets lost, for blockupdate not to much TODO
+        _ = self.updates.try_send(Update::Pos(self.camera.clone()));
 
         let distance_to_screen_mid = unsafe {
             let mut depth: f32 = 0.0;
@@ -118,8 +125,7 @@ impl Renderer {
         };
 
         if distance_to_screen_mid <= 10.0 {
-
-            let [x,y,z] = self.camera.position();
+            let [x, y, z] = self.camera.position();
 
             let look_pos = self.camera.view_direction() * (distance_to_screen_mid);
 
@@ -128,21 +134,25 @@ impl Renderer {
                 look_pos.y as f64 + y,
                 look_pos.z as f64 + z,
             ];
-            
+
             let diff_to_int = abs_look_pos.map(|x| (x.round() - x).abs());
 
             let direction = diff_to_int
                 .iter()
                 .enumerate()
                 .min_by(|(_, a), (_, b)| a.total_cmp(b))
-                .map(|(index, _)| index).unwrap();
+                .map(|(index, _)| index)
+                .unwrap();
 
-            
             abs_look_pos[direction] = abs_look_pos[direction].round();
 
             let mut look_block = abs_look_pos.map(|x| x.floor());
 
-            look_block[direction] += if self.camera.view_direction()[direction] <= 0.0 { -1.0 } else { 0.0 };
+            look_block[direction] += if self.camera.view_direction()[direction] <= 0.0 {
+                -1.0
+            } else {
+                0.0
+            };
 
             println!(
                 "{},{},{},{}",
@@ -176,7 +186,7 @@ impl Renderer {
         }
         self.projection = glm::perspective(
             size.width as f32 / size.height as f32,
-            0.785398,
+            std::f32::consts::FRAC_PI_4,
             NEAR_PLAIN,
             FAR_PLAIN,
         );

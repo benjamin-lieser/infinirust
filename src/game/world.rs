@@ -29,7 +29,7 @@ impl World {
 
                 for y in -Y_RANGE..Y_RANGE {
                     for z in (self.center[2] - VIEW_DISTANCE)..(self.center[0] - VIEW_DISTANCE) {
-                        let mut chunk = self.chunks.remove(&[x,y,z]).unwrap();
+                        let chunk = self.chunks.remove(&[x,y,z]).unwrap();
                     }
                 }
             }
@@ -60,7 +60,7 @@ impl World {
 
             let projection_view =projection * camera.view_matrix();
 
-            for (_, chunk) in &self.chunks {
+            for chunk in self.chunks.values() {
                 let [cx, cy, cz] = chunk.position();
 
                 let cx = *cx as f64 * CHUNK_SIZE as f64;

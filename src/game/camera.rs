@@ -16,7 +16,7 @@ pub trait Camera {
     /// y direction
     fn go_up(&mut self, diff: f32);
 }
-
+#[derive(Debug, Clone)]
 pub struct FreeCamera {
     pos: [f64; 3],
     pitch: f32,

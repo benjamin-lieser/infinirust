@@ -67,7 +67,7 @@ impl<T: ToGlType> VBO<T> {
 impl<T: ToGlType> Drop for VBO<T> {
     fn drop(&mut self) {
         unsafe {
-            gl::DeleteBuffers(1, &mut self.id);
+            gl::DeleteBuffers(1, &self.id);
         }
     }
 }
@@ -150,5 +150,10 @@ impl<T: ToGlType> VBOWithStorage<T> {
         if self.modified {
             self.vbo.copy(&self.data);
         }
+    }
+}
+impl<T: ToGlType> Default for VBOWithStorage<T> {
+    fn default() -> Self {
+        Self::new()
     }
 }

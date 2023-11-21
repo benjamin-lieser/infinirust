@@ -111,9 +111,9 @@ impl ServerWorld {
         let chunk_pos = pos.map(|x| x / CHUNK_SIZE as i32);
         let in_chunk_pos = pos.map(|x| x as usize % CHUNK_SIZE);
         if let Some(chunk) = self.loaded_chunks.get_mut(&chunk_pos) {
-            return Some(chunk.block_mut(in_chunk_pos));
+            Some(chunk.block_mut(in_chunk_pos))
         } else {
-            return None;
+            None
         }
     }
 

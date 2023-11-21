@@ -73,7 +73,7 @@ pub fn start_server(world_directory: &str) -> (std::process::Child, String) {
 }
 
 pub fn login(bind: &str, username: &str) -> (TcpStream, u64) {
-    let mut stream = TcpStream::connect(&bind).expect("Could not connect to server");
+    let mut stream = TcpStream::connect(bind).expect("Could not connect to server");
     //login package
     let len = username.len();
     assert!(len <= u16::MAX as usize);
