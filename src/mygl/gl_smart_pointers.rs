@@ -41,7 +41,7 @@ impl<T: ToGlType> VBO<T> {
         }
         VBO {
             id,
-            _phantom: PhantomData::default(),
+            _phantom: PhantomData,
         }
     }
 
@@ -56,7 +56,7 @@ impl<T: ToGlType> VBO<T> {
         unsafe {
             gl::BufferData(
                 gl::ARRAY_BUFFER,
-                (data.len() * std::mem::size_of::<T>()) as GLsizeiptr,
+                std::mem::size_of_val(data) as GLsizeiptr,
                 data.as_ptr().cast(),
                 gl::STATIC_DRAW,
             );
@@ -126,7 +126,7 @@ impl VAO {
 impl Drop for VAO {
     fn drop(&mut self) {
         unsafe {
-            gl::DeleteVertexArrays(1, &mut self.id);
+            gl::DeleteVertexArrays(1, &self.id);
         }
     }
 }
