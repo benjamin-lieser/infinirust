@@ -8,11 +8,12 @@ use tokio::{
     net::tcp::{OwnedReadHalf, OwnedWriteHalf},
 };
 
-use crate::{misc::cast_bytes_mut, mygl::TextureAtlas};
+use crate::{game::Chunk, misc::cast_bytes_mut, mygl::TextureAtlas};
 
 use super::{FreeCamera, World};
 
 pub enum Update {
+    /// The camera position has changed
     Pos(FreeCamera),
 }
 
@@ -26,6 +27,7 @@ pub fn chunk_loader(
     updates: tokio::sync::mpsc::Receiver<Update>,
     atlas: Arc<TextureAtlas>,
 ) {
+    // Start a single thread tokio runtime in this thread
     let rt = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
@@ -46,6 +48,7 @@ pub fn chunk_loader(
 
 async fn manage_world(
     world: Arc<Mutex<World>>,
+    atlas: Arc<TextureAtlas>,
     mut packages: tokio::sync::mpsc::Receiver<Package>,
     mut client: tokio::sync::mpsc::Receiver<Update>,
 ) {
@@ -54,6 +57,9 @@ async fn manage_world(
             package = packages.recv() => {
                 match package {
                     Some(Package::Chunk(pos, data)) => {
+                        //Create the chunk
+                        let mut chunk = Chunk::new(pos, data);
+                        chunk.write_vbo(&atlas)
                         
                     }
                     None => {panic!("package reader crashed")}

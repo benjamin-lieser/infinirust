@@ -6,10 +6,7 @@ use gl::types::GLint;
 use gl::types::GLsizeiptr;
 use gl::types::GLuint;
 
-pub struct VBO<T: ToGlType> {
-    id: GLuint,
-    _phantom: PhantomData<T>,
-}
+use super::GLToken;
 
 pub trait ToGlType {
     fn to_gl_type() -> GLenum;
@@ -32,9 +29,17 @@ impl ToGlType for i8 {
         gl::BYTE
     }
 }
+pub struct VBO<T: ToGlType> {
+    id: GLuint,
+    _phantom: PhantomData<T>,
+    /// It is not send, because the drop function need to be called in the same thread
+    /// It is sync, because all GL calls require the gl token
+    _unsend: PhantomData<crate::misc::UnSend>
+}
+
 
 impl<T: ToGlType> VBO<T> {
-    pub fn new() -> Self {
+    pub fn new(_: GLToken) -> Self {
         let mut id: GLuint = 0;
         unsafe {
             gl::GenBuffers(1, &mut id);
@@ -42,17 +47,18 @@ impl<T: ToGlType> VBO<T> {
         VBO {
             id,
             _phantom: PhantomData,
+            _unsend: PhantomData,
         }
     }
 
-    pub fn bind(&self) {
+    pub fn bind(&self, _: GLToken) {
         unsafe {
             gl::BindBuffer(gl::ARRAY_BUFFER, self.id);
         }
     }
 
-    pub fn copy(&mut self, data: &[T]) {
-        self.bind();
+    pub fn copy(&mut self, glt: GLToken, data: &[T]) {
+        self.bind(glt);
         unsafe {
             gl::BufferData(
                 gl::ARRAY_BUFFER,
@@ -74,18 +80,19 @@ impl<T: ToGlType> Drop for VBO<T> {
 
 pub struct VAO {
     id: GLuint,
+    _unsend: PhantomData<crate::misc::UnSend>,
 }
 
 impl VAO {
-    pub fn new() -> VAO {
+    pub fn new(_ : GLToken) -> VAO {
         let mut id: GLuint = 0;
         unsafe {
             gl::GenVertexArrays(1, &mut id);
         }
-        VAO { id }
+        VAO { id , _unsend: PhantomData }
     }
 
-    pub fn bind(&self) {
+    pub fn bind(&self, _ : GLToken) {
         unsafe {
             gl::BindVertexArray(self.id);
         }
@@ -93,6 +100,7 @@ impl VAO {
 
     pub fn attrib_pointer<T: ToGlType>(
         &mut self,
+        glt : GLToken,
         index: GLuint,
         buffer: &VBO<T>,
         number_components: u8,
@@ -101,8 +109,8 @@ impl VAO {
         normalized: bool,
     ) {
         let data_type = T::to_gl_type();
-        self.bind();
-        buffer.bind();
+        self.bind(glt);
+        buffer.bind(glt);
         unsafe {
             gl::VertexAttribPointer(
                 index,
@@ -115,8 +123,8 @@ impl VAO {
         }
     }
 
-    pub fn enable_array(&mut self, index: GLuint) {
-        self.bind();
+    pub fn enable_array(&mut self, glt: GLToken, index: GLuint) {
+        self.bind(glt);
         unsafe {
             gl::EnableVertexAttribArray(index);
         }
@@ -138,22 +146,17 @@ pub struct VBOWithStorage<T: ToGlType> {
 }
 
 impl<T: ToGlType> VBOWithStorage<T> {
-    pub fn new() -> Self {
+    pub fn new(glt: GLToken) -> Self {
         VBOWithStorage {
-            vbo: VBO::new(),
+            vbo: VBO::new(glt),
             data: Vec::new(),
             modified: false,
         }
     }
 
-    pub fn copy(&mut self) {
+    pub fn copy(&mut self, glt: GLToken) {
         if self.modified {
-            self.vbo.copy(&self.data);
+            self.vbo.copy(glt, &self.data);
         }
-    }
-}
-impl<T: ToGlType> Default for VBOWithStorage<T> {
-    fn default() -> Self {
-        Self::new()
     }
 }

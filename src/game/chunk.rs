@@ -1,6 +1,6 @@
 use std::io::{Write, Read};
 
-use crate::mygl::{TextureAtlas, VBOWithStorage, VAO};
+use crate::mygl::{GLToken, TextureAtlas, VBOWithStorage, VAO};
 
 use crate::game::Direction;
 
@@ -16,8 +16,8 @@ pub struct ChunkData {
 
 impl ChunkData {
 
-    pub fn empty() -> Self {
-        ChunkData { blocks: vec![0;CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE]}
+    pub fn new(data : Vec<u8>) -> Self {
+        ChunkData { blocks: data}
     }
 
     pub fn get(&self, pos: [usize; 3]) -> u8 {
@@ -50,32 +50,25 @@ pub struct Chunk {
 
 impl Chunk {
     /// The next bytes in data have to represent the chunk data
-    pub fn new(position: [i32; 3], data: &mut (impl Read + Write)) -> Self {
+    pub fn new(glt : GLToken, position: [i32; 3], data: Vec<u8>) -> Self {
         let mut chunk = Chunk {
-            blocks: ChunkData::empty(),
+            blocks: ChunkData::new(data),
             position,
-            vao: VAO::new(),
-            vertex_pos: VBOWithStorage::new(),
-            texture_pos: VBOWithStorage::new(),
+            vao: VAO::new(glt),
+            vertex_pos: VBOWithStorage::new(glt),
+            texture_pos: VBOWithStorage::new(glt),
         };
 
-        chunk.blocks.request_from(&position, data);
-
         chunk
             .vao
-            .attrib_pointer(0, &chunk.vertex_pos.vbo, 3, 0, 0, false);
+            .attrib_pointer(glt,0, &chunk.vertex_pos.vbo, 3, 0, 0, false);
         chunk
             .vao
-            .attrib_pointer(1, &chunk.texture_pos.vbo, 2, 0, 0, false);
-        chunk.vao.enable_array(0);
-        chunk.vao.enable_array(1);
+            .attrib_pointer(glt,1, &chunk.texture_pos.vbo, 2, 0, 0, false);
+        chunk.vao.enable_array(glt,0);
+        chunk.vao.enable_array(glt,1);
 
         chunk
-    }
-
-    pub fn change_pos(&mut self, new_pos : [i32;3], server : &mut (impl Write + Read)) {
-        self.blocks.request_from(&new_pos, server);
-        self.position = new_pos;
     }
 
     pub fn write_vbo(&mut self, atlas: &TextureAtlas) {
@@ -151,8 +144,8 @@ impl Chunk {
         self.texture_pos.copy();
     }
 
-    pub fn draw(&self) {
-        self.vao.bind();
+    pub fn draw(&self, glt: GLToken) {
+        self.vao.bind(glt);
         unsafe {
             gl::DrawArrays(gl::TRIANGLES, 0, self.texture_pos.data.len() as i32 / 2);
         }

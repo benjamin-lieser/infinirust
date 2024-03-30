@@ -2,6 +2,14 @@ use std::{io::{Write, Read}, net::TcpStream};
 
 use crate::net::read_string;
 
+/// Not sendable, use with phantom data
+pub struct UnSend(*const ());
+unsafe impl Sync for UnSend {}
+
+/// Not syncable, use with phantom data
+pub struct UnSync(*const ());
+unsafe impl Send for UnSync {}
+
 pub fn as_bytes(data: &[i32]) -> &[u8] {
     let ptr = data.as_ptr();
     unsafe { std::slice::from_raw_parts(ptr.cast(), data.len() * 4) }
