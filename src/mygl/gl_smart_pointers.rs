@@ -1,5 +1,6 @@
 use std::ffi::c_void;
 use std::marker::PhantomData;
+use std::sync::Mutex;
 
 use gl::types::GLenum;
 use gl::types::GLint;
@@ -141,7 +142,7 @@ impl Drop for VAO {
 
 pub struct VBOWithStorage<T: ToGlType> {
     pub vbo: VBO<T>,
-    pub data: Vec<T>,
+    pub data: Mutex<Vec<T>>,
     pub modified: bool,
 }
 
@@ -149,14 +150,14 @@ impl<T: ToGlType> VBOWithStorage<T> {
     pub fn new(glt: GLToken) -> Self {
         VBOWithStorage {
             vbo: VBO::new(glt),
-            data: Vec::new(),
+            data: Mutex::new(Vec::new()),
             modified: false,
         }
     }
 
     pub fn copy(&mut self, glt: GLToken) {
         if self.modified {
-            self.vbo.copy(glt, &self.data);
+            self.vbo.copy(glt, &self.data.lock().unwrap());
         }
     }
 }

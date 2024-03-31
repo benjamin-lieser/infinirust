@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 use glm::Mat4;
 use nalgebra_glm as glm;
 
-use crate::mygl::{get_gl_string, Program, TextureAtlas};
+use crate::mygl::{get_gl_string, GLToken, Program, TextureAtlas};
 
 use super::{misc::CubeOutlines, overlay::Overlay, Camera, Controls, FreeCamera, Key, World, background::Update};
 
@@ -27,7 +27,7 @@ pub struct Renderer {
 }
 
 impl Renderer {
-    pub fn new(world: Arc<Mutex<World>>, render_size: winit::dpi::PhysicalSize<u32>, updates: tokio::sync::mpsc::Sender<Update>) -> Self {
+    pub fn new(glt : GLToken, world: Arc<Mutex<World>>, render_size: winit::dpi::PhysicalSize<u32>, updates: tokio::sync::mpsc::Sender<Update>) -> Self {
         unsafe {
             if let Some(renderer) = get_gl_string(gl::RENDERER) {
                 println!("Running on {}", renderer.to_string_lossy());
@@ -63,15 +63,15 @@ impl Renderer {
                 projection,
                 camera: FreeCamera::new([0.0, 0.0, 0.0]),
                 controls: Controls::default(),
-                cube_outlines: CubeOutlines::new(),
-                overlay: Overlay::new(render_size),
+                cube_outlines: CubeOutlines::new(glt),
+                overlay: Overlay::new(glt, render_size),
                 render_size,
                 updates
             }
         }
     }
 
-    pub fn draw(&mut self, delta_t: f32) {
+    pub fn draw(&mut self, glt : GLToken, delta_t: f32) {
         let speed = 35.0;
 
         if self.controls.forward {
@@ -101,7 +101,7 @@ impl Renderer {
 
         {
             let world = self.world.lock().unwrap();
-            world.draw(&self.program, &self.projection, &self.camera);
+            world.draw(glt, &self.program, &self.projection, &self.camera);
         }
 
         //Update background about the current position
@@ -169,17 +169,17 @@ impl Renderer {
             ));
 
             self.cube_outlines
-                .draw(&(self.projection * self.camera.view_matrix() * model));
+                .draw(glt, &(self.projection * self.camera.view_matrix() * model));
         }
 
-        self.overlay.draw();
+        self.overlay.draw(glt);
     }
 
     pub fn atlas(&self) -> Arc<TextureAtlas> {
         self.atlas.clone()
     }
 
-    pub fn resize(&mut self, size: winit::dpi::PhysicalSize<u32>) {
+    pub fn resize(&mut self, glt : GLToken, size: winit::dpi::PhysicalSize<u32>) {
         self.render_size = size;
         unsafe {
             gl::Viewport(0, 0, size.width as i32, size.height as i32);
@@ -190,7 +190,7 @@ impl Renderer {
             NEAR_PLAIN,
             FAR_PLAIN,
         );
-        self.overlay.resize(size);
+        self.overlay.resize(glt,size);
     }
 
     pub fn mouse_input(&mut self, delta: (f64, f64)) {

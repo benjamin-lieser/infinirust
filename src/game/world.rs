@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use nalgebra_glm as glm;
 
 
-use crate::mygl::Program;
+use crate::mygl::{GLToken, Program};
 
 use super::{Camera, Chunk, FreeCamera, CHUNK_SIZE, Y_RANGE};
 
@@ -39,6 +39,7 @@ impl World {
 
     pub fn draw(
         &self,
+        glt : GLToken,
         program: &Program,
         projection: &nalgebra_glm::Mat4,
         camera: &FreeCamera,
@@ -74,7 +75,7 @@ impl World {
                 ));
                 let mvp: glm::Mat4 = projection_view * model;
                 gl::UniformMatrix4fv(mvp_location, 1, 0, mvp.as_ptr());
-                chunk.draw();
+                chunk.draw(glt);
             }
         }
     }

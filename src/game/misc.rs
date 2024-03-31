@@ -2,7 +2,7 @@ use std::ffi::CStr;
 
 use nalgebra_glm::Mat4;
 
-use crate::mygl::{VAO, VBO, create_program};
+use crate::mygl::{create_program, GLToken, VAO, VBO};
 
 /// draws the outlines of one cube
 pub struct CubeOutlines {
@@ -14,9 +14,9 @@ pub struct CubeOutlines {
 
 #[rustfmt::skip]
 impl CubeOutlines {
-    pub fn new() -> Self {
-        let mut vao = VAO::new();
-        let mut vbo = VBO::new();
+    pub fn new(glt : GLToken) -> Self {
+        let mut vao = VAO::new(glt);
+        let mut vbo = VBO::new(glt);
 
         let lines = [
             // front face
@@ -57,20 +57,20 @@ impl CubeOutlines {
             0.0, 1.0, 1.0
         ];
 
-        vbo.copy(&lines);
-        vao.attrib_pointer(0, &vbo, 3, 0, 0, false);
-        vao.enable_array(0);
+        vbo.copy(glt, &lines);
+        vao.attrib_pointer(glt, 0, &vbo, 3, 0, 0, false);
+        vao.enable_array(glt, 0);
 
         let program = create_program(CStr::from_bytes_with_nul(VERTEX_SHADER_SOURCE).unwrap(), CStr::from_bytes_with_nul(FRAGMENT_SHADER_SOURCE).unwrap());
 
         CubeOutlines { vao, vbo, program }
     }
 
-    pub fn draw(&self, mvp : &Mat4) {
+    pub fn draw(&self, glt : GLToken, mvp : &Mat4) {
         unsafe {
             gl::UseProgram(self.program);
             let mvp_location = gl::GetUniformLocation(self.program, "mvp\0".as_ptr().cast());
-            self.vao.bind();
+            self.vao.bind(glt);
             gl::Enable(gl::DEPTH_TEST);
             gl::UniformMatrix4fv(mvp_location, 1, 0, mvp.as_ptr());
             gl::DrawArrays(gl::LINES, 0, 24);

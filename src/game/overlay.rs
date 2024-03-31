@@ -1,6 +1,6 @@
 use winit::dpi::PhysicalSize;
 
-use crate::mygl::{Program, VBO, VAO};
+use crate::mygl::{GLToken, Program, VAO, VBO};
 
 pub struct Overlay {
     program : Program,
@@ -11,31 +11,31 @@ pub struct Overlay {
 const CROSSHAIR_SIZE : f32 = 0.02;
 
 impl Overlay {
-    pub fn new(render_size : PhysicalSize<u32>) -> Self {
+    pub fn new(glt : GLToken, render_size : PhysicalSize<u32>) -> Self {
         let program = Program::new(VERTEX_SHADER_SOURCE, FRAGMENT_SHADER_SOURCE);
-        let mut vbo = VBO::new();
-        let mut vao = VAO::new();
+        let mut vbo = VBO::new(glt);
+        let mut vao = VAO::new(glt);
 
         let aspect = render_size.width as f32 / render_size.height as f32;
 
         let data = [0.0 , CROSSHAIR_SIZE * aspect, 0.0, -CROSSHAIR_SIZE * aspect, -CROSSHAIR_SIZE, 0.0, CROSSHAIR_SIZE, 0.0];
-        vbo.copy(&data);
-        vao.attrib_pointer(0, &vbo, 2, 0, 0, false);
-        vao.enable_array(0);
+        vbo.copy(glt,&data);
+        vao.attrib_pointer(glt,0, &vbo, 2, 0, 0, false);
+        vao.enable_array(glt,0);
 
         Self { program, vbo, vao }
     }
 
-    pub fn resize(&mut self, render_size : PhysicalSize<u32>) {
+    pub fn resize(&mut self, glt : GLToken, render_size : PhysicalSize<u32>) {
         let aspect = render_size.width as f32 / render_size.height as f32;
 
         let data = [0.0 , CROSSHAIR_SIZE * aspect, 0.0, -CROSSHAIR_SIZE * aspect, -CROSSHAIR_SIZE, 0.0, CROSSHAIR_SIZE, 0.0];
-        self.vbo.copy(&data);
+        self.vbo.copy(glt, &data);
     }
 
-    pub fn draw(&self) {
+    pub fn draw(&self, glt : GLToken) {
         self.program.bind();
-        self.vao.bind();
+        self.vao.bind(glt);
         unsafe {
             gl::Disable(gl::DEPTH_TEST);
             gl::DrawArrays(gl::LINES, 0, 4);

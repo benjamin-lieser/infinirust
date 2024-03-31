@@ -12,7 +12,6 @@ use std::net::TcpStream;
 use std::sync::Arc;
 use std::sync::Mutex;
 
-use serde::Deserialize;
 use winit::dpi::PhysicalSize;
 
 pub use camera::{Camera, FreeCamera};
@@ -22,6 +21,8 @@ pub use chunk::Y_RANGE;
 pub use input::Controls;
 pub use world::World;
 pub use renderer::Renderer;
+
+use crate::mygl::GLToken;
 
 use self::background::chunk_loader;
 
@@ -51,13 +52,13 @@ pub struct Game {
 }
 
 impl Game {
-    pub fn new(render_size: PhysicalSize<u32>, tcp: TcpStream) -> Self {
+    pub fn new(glt : GLToken, render_size: PhysicalSize<u32>, tcp: TcpStream) -> Self {
         let world = World::new();
         let world = Arc::new(Mutex::new(world));
 
         let (update_tx, update_rx) = tokio::sync::mpsc::channel(100);
 
-        let renderer = Renderer::new(world.clone(), render_size, update_tx);
+        let renderer = Renderer::new(glt, world.clone(), render_size, update_tx);
         let atlas = renderer.atlas();
 
 
@@ -68,12 +69,12 @@ impl Game {
         Self { renderer }
     }
 
-    pub fn draw(&mut self, delta_t: f32) {
-        self.renderer.draw(delta_t);
+    pub fn draw(&mut self, glt : GLToken, delta_t: f32) {
+        self.renderer.draw(glt, delta_t);
     }
 
-    pub fn resize(&mut self, size: winit::dpi::PhysicalSize<u32>) {
-        self.renderer.resize(size);
+    pub fn resize(&mut self, glt : GLToken, size: winit::dpi::PhysicalSize<u32>) {
+        self.renderer.resize(glt, size);
     }
 
     pub fn mouse_input(&mut self, delta: (f64, f64)) {
