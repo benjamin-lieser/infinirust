@@ -1,6 +1,5 @@
 use std::ffi::c_void;
 use std::marker::PhantomData;
-use std::sync::Mutex;
 
 use gl::types::GLenum;
 use gl::types::GLint;
@@ -35,9 +34,8 @@ pub struct VBO<T: ToGlType> {
     _phantom: PhantomData<T>,
     /// It is not send, because the drop function need to be called in the same thread
     /// It is sync, because all GL calls require the gl token
-    _unsend: PhantomData<crate::misc::UnSend>
+    _unsend: PhantomData<crate::misc::UnSend>,
 }
-
 
 impl<T: ToGlType> VBO<T> {
     pub fn new(_: GLToken) -> Self {
@@ -85,15 +83,18 @@ pub struct VAO {
 }
 
 impl VAO {
-    pub fn new(_ : GLToken) -> VAO {
+    pub fn new(_: GLToken) -> VAO {
         let mut id: GLuint = 0;
         unsafe {
             gl::GenVertexArrays(1, &mut id);
         }
-        VAO { id , _unsend: PhantomData }
+        VAO {
+            id,
+            _unsend: PhantomData,
+        }
     }
 
-    pub fn bind(&self, _ : GLToken) {
+    pub fn bind(&self, _: GLToken) {
         unsafe {
             gl::BindVertexArray(self.id);
         }
@@ -101,7 +102,7 @@ impl VAO {
 
     pub fn attrib_pointer<T: ToGlType>(
         &mut self,
-        glt : GLToken,
+        glt: GLToken,
         index: GLuint,
         buffer: &VBO<T>,
         number_components: u8,
@@ -134,6 +135,7 @@ impl VAO {
 
 impl Drop for VAO {
     fn drop(&mut self) {
+        // This is save because VOA is not Send and can only be created in the GL thread
         unsafe {
             gl::DeleteVertexArrays(1, &self.id);
         }
@@ -141,23 +143,39 @@ impl Drop for VAO {
 }
 
 pub struct VBOWithStorage<T: ToGlType> {
-    pub vbo: VBO<T>,
-    pub data: Mutex<Vec<T>>,
-    pub modified: bool,
+    vbo: VBO<T>,
+    data: Vec<T>,
+    modified: bool,
 }
 
 impl<T: ToGlType> VBOWithStorage<T> {
     pub fn new(glt: GLToken) -> Self {
         VBOWithStorage {
             vbo: VBO::new(glt),
-            data: Mutex::new(Vec::new()),
+            data: Vec::new(),
             modified: false,
         }
     }
 
+    /// Copies the content of the CPU buffer to the GPU buffer if modified
+    /// This is supposed to be called in the by the main game loop every iteration
     pub fn copy(&mut self, glt: GLToken) {
         if self.modified {
-            self.vbo.copy(glt, &self.data.lock().unwrap());
+            self.vbo.copy(glt, &self.data);
+            self.modified = false;
         }
+    }
+
+    pub fn len(&self) -> usize {
+        self.data.len()
+    }
+
+    pub fn vbo(&self) -> &VBO<T> {
+        &self.vbo
+    }
+
+    pub fn exchange_cpu_buffer(&mut self, buffer: Vec<T>) {
+        self.data = buffer;
+        self.modified = true;
     }
 }

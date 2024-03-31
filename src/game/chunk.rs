@@ -1,5 +1,3 @@
-use std::io::{Write, Read};
-
 use crate::mygl::{GLToken, TextureAtlas, VBOWithStorage, VAO};
 
 use crate::game::Direction;
@@ -11,13 +9,12 @@ pub const Y_RANGE: i32 = 4;
 
 /// Data of a chunk. Is used by server and client
 pub struct ChunkData {
-    blocks : Vec<u8>
+    blocks: Vec<u8>,
 }
 
 impl ChunkData {
-
-    pub fn new(data : Vec<u8>) -> Self {
-        ChunkData { blocks: data}
+    pub fn new(data: Vec<u8>) -> Self {
+        ChunkData { blocks: data }
     }
 
     pub fn get(&self, pos: [usize; 3]) -> u8 {
@@ -26,15 +23,6 @@ impl ChunkData {
 
     pub fn set(&mut self, pos: [usize; 3], block: u8) {
         self.blocks[pos[0] * CHUNK_SIZE * CHUNK_SIZE + pos[1] * CHUNK_SIZE + pos[2]] = block
-    }
-
-    pub fn read_from(&mut self, reader : &mut impl Read) {
-        reader.read_exact(&mut self.blocks).unwrap();
-    }
-
-    pub fn request_from(&mut self, pos : &[i32;3], stream : &mut (impl Read + Write)) {
-        stream.write_all(crate::misc::as_bytes(pos)).unwrap();
-        self.read_from(stream);
     }
 }
 
@@ -50,7 +38,7 @@ pub struct Chunk {
 
 impl Chunk {
     /// The next bytes in data have to represent the chunk data
-    pub fn new(glt : GLToken, position: [i32; 3], data: Vec<u8>) -> Self {
+    pub fn new(glt: GLToken, position: [i32; 3], data: Vec<u8>) -> Self {
         let mut chunk = Chunk {
             blocks: ChunkData::new(data),
             position,
@@ -61,25 +49,28 @@ impl Chunk {
 
         chunk
             .vao
-            .attrib_pointer(glt,0, &chunk.vertex_pos.vbo, 3, 0, 0, false);
+            .attrib_pointer(glt, 0, &chunk.vertex_pos.vbo(), 3, 0, 0, false);
         chunk
             .vao
-            .attrib_pointer(glt,1, &chunk.texture_pos.vbo, 2, 0, 0, false);
-        chunk.vao.enable_array(glt,0);
-        chunk.vao.enable_array(glt,1);
+            .attrib_pointer(glt, 1, &chunk.texture_pos.vbo(), 2, 0, 0, false);
+        chunk.vao.enable_array(glt, 0);
+        chunk.vao.enable_array(glt, 1);
 
         chunk
     }
 
     pub fn write_vbo(&mut self, atlas: &TextureAtlas) {
+        let mut vertex_pos = vec![];
+        let mut texture_pos = vec![];
+
         for x in 0..CHUNK_SIZE {
             for y in 0..CHUNK_SIZE {
                 for z in 0..CHUNK_SIZE {
                     if self.blocks.get([x, y, z]) > 0 {
                         if z == CHUNK_SIZE - 1 || self.blocks.get([x, y, z + 1]) == 0 {
                             add_face(
-                                &mut self.vertex_pos.data,
-                                &mut self.texture_pos.data,
+                                &mut vertex_pos,
+                                &mut texture_pos,
                                 atlas,
                                 "grass_side.png",
                                 [x as u8, y as u8, z as u8],
@@ -88,8 +79,8 @@ impl Chunk {
                         }
                         if z == 0 || self.blocks.get([x, y, z - 1]) == 0 {
                             add_face(
-                                &mut self.vertex_pos.data,
-                                &mut self.texture_pos.data,
+                                &mut vertex_pos,
+                                &mut texture_pos,
                                 atlas,
                                 "grass_side.png",
                                 [x as u8, y as u8, z as u8],
@@ -98,8 +89,8 @@ impl Chunk {
                         }
                         if x == 0 || self.blocks.get([x - 1, y, z]) == 0 {
                             add_face(
-                                &mut self.vertex_pos.data,
-                                &mut self.texture_pos.data,
+                                &mut vertex_pos,
+                                &mut texture_pos,
                                 atlas,
                                 "grass_side.png",
                                 [x as u8, y as u8, z as u8],
@@ -108,8 +99,8 @@ impl Chunk {
                         }
                         if x == CHUNK_SIZE - 1 || self.blocks.get([x + 1, y, z]) == 0 {
                             add_face(
-                                &mut self.vertex_pos.data,
-                                &mut self.texture_pos.data,
+                                &mut vertex_pos,
+                                &mut texture_pos,
                                 atlas,
                                 "grass_side.png",
                                 [x as u8, y as u8, z as u8],
@@ -118,8 +109,8 @@ impl Chunk {
                         }
                         if y == CHUNK_SIZE - 1 || self.blocks.get([x, y + 1, z]) == 0 {
                             add_face(
-                                &mut self.vertex_pos.data,
-                                &mut self.texture_pos.data,
+                                &mut vertex_pos,
+                                &mut texture_pos,
                                 atlas,
                                 "grass_top.png",
                                 [x as u8, y as u8, z as u8],
@@ -128,8 +119,8 @@ impl Chunk {
                         }
                         if y == 0 || self.blocks.get([x, y - 1, z]) == 0 {
                             add_face(
-                                &mut self.vertex_pos.data,
-                                &mut self.texture_pos.data,
+                                &mut vertex_pos,
+                                &mut texture_pos,
                                 atlas,
                                 "dirt.png",
                                 [x as u8, y as u8, z as u8],
@@ -140,14 +131,15 @@ impl Chunk {
                 }
             }
         }
-        self.vertex_pos.copy();
-        self.texture_pos.copy();
+
+        self.vertex_pos.exchange_cpu_buffer(vertex_pos);
+        self.texture_pos.exchange_cpu_buffer(texture_pos);
     }
 
     pub fn draw(&self, glt: GLToken) {
         self.vao.bind(glt);
         unsafe {
-            gl::DrawArrays(gl::TRIANGLES, 0, self.texture_pos.data.len() as i32 / 2);
+            gl::DrawArrays(gl::TRIANGLES, 0, self.texture_pos.len() as i32 / 2);
         }
     }
 
