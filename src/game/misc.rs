@@ -2,7 +2,7 @@ use std::ffi::CStr;
 
 use nalgebra_glm::Mat4;
 
-use crate::mygl::{create_program, GLToken, Program, VAO, VBO};
+use crate::mygl::{GLToken, Program, VAO, VBO};
 
 /// draws the outlines of one cube
 pub struct CubeOutlines {

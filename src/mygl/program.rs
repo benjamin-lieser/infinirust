@@ -86,7 +86,7 @@ fn create_and_compile_shader(
 }
 
 /// Panics if there are shader compiling or linking errors
-pub fn create_program(
+fn create_program(
     glt: GLToken,
     vertex_source: &CStr,
     fragment_source: &CStr,

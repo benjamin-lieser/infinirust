@@ -228,6 +228,7 @@ impl Renderer {
         self.cube_outlines.delete(glt);
         self.overlay.delete(glt);
         Arc::<World>::into_inner(self.world).expect("After the background therad joind this should be the only reference to world").delete(glt);
+        self.program.delete(glt);
 
     }
 }
