@@ -12,7 +12,6 @@ pub struct Settings {
     seed: u32,
 }
 
-use super::BlockUpdateMode;
 pub struct ChunkData {
     blocks: Vec<u8>,
 }
