@@ -1,4 +1,4 @@
-use std::{io::Write, num::NonZeroU32};
+use std::{io::Write, mem::ManuallyDrop, num::NonZeroU32};
 
 use glutin::surface::GlSurface;
 use infinirust::{
@@ -20,7 +20,7 @@ fn main() {
     // It is save to create the GLToken in the main thread
     let glt = unsafe { GLToken::new() };
 
-    let mut game = Game::new(glt, window.inner_size(), server_tcp);
+    let mut game = ManuallyDrop::new(Game::new(glt, window.inner_size(), server_tcp));
 
     let mut now = std::time::SystemTime::now();
 
@@ -128,8 +128,12 @@ fn main() {
                 _ => (),
             },
             Event::LoopDestroyed => {
-                //close interval server
                 println!("Loop destroyed");
+                //This is the last event so we can safely drop the game
+                unsafe {
+                    ManuallyDrop::take(&mut game).exit(glt);
+                }
+                //close interval server
                 let mut stdin = server_process.stdin.take().unwrap();
                 stdin.write_all(b"exit\n").unwrap();
                 stdin.flush().unwrap();

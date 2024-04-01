@@ -10,7 +10,6 @@ mod background;
 
 use std::net::TcpStream;
 use std::sync::Arc;
-use std::sync::Mutex;
 
 use winit::dpi::PhysicalSize;
 
