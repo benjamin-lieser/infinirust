@@ -59,6 +59,10 @@ impl Chunk {
         chunk
     }
 
+    pub fn new_empty(glt: GLToken) -> Self {
+        Self::new(glt, [0;3], vec![])
+    }
+
     pub fn write_vbo(&mut self, atlas: &TextureAtlas) {
         let mut vertex_pos = vec![];
         let mut texture_pos = vec![];

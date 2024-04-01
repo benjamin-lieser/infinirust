@@ -53,7 +53,7 @@ pub struct Game {
 
 impl Game {
     pub fn new(glt : GLToken, render_size: PhysicalSize<u32>, tcp: TcpStream) -> Self {
-        let world = World::new();
+        let world = World::new(glt);
         let world = Arc::new(Mutex::new(world));
 
         let (update_tx, update_rx) = tokio::sync::mpsc::channel(100);
