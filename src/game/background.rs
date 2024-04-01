@@ -57,9 +57,6 @@ async fn manage_world(
             package = packages.recv() => {
                 match package {
                     Some(Package::Chunk(pos, data)) => {
-                        //Create the chunk
-                        let mut chunk = Chunk::new(pos, data);
-                        chunk.write_vbo(&atlas)
                         
                     }
                     None => {panic!("package reader crashed")}

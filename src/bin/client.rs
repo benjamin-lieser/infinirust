@@ -17,7 +17,8 @@ fn main() {
 
     let (event_loop, window, surface, gl_context) = infinirust::window::create_window();
 
-    let glt = GLToken;
+    // It is save to create the GLToken in the main thread
+    let glt = unsafe { GLToken::new() };
 
     let mut game = Game::new(glt, window.inner_size(), server_tcp);
 
@@ -76,7 +77,7 @@ fn main() {
                             NonZeroU32::new(size.width).unwrap(),
                             NonZeroU32::new(size.height).unwrap(),
                         );
-                        game.resize(glt,size);
+                        game.resize(glt, size);
                     }
                 }
                 WindowEvent::Focused(is_focused) => {
@@ -107,7 +108,7 @@ fn main() {
                 let delta_t = current_time.duration_since(now).unwrap();
                 now = current_time;
 
-                game.draw(glt,delta_t.as_secs_f32());
+                game.draw(glt, delta_t.as_secs_f32());
 
                 //game.print_dist();
 

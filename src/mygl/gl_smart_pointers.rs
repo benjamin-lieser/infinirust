@@ -8,36 +8,33 @@ use gl::types::GLuint;
 
 use super::GLToken;
 
-pub trait ToGlType {
+pub trait GLType {
     fn to_gl_type() -> GLenum;
 }
 
-impl ToGlType for f32 {
+impl GLType for f32 {
     fn to_gl_type() -> GLenum {
         gl::FLOAT
     }
 }
 
-impl ToGlType for u8 {
+impl GLType for u8 {
     fn to_gl_type() -> GLenum {
         gl::UNSIGNED_BYTE
     }
 }
 
-impl ToGlType for i8 {
+impl GLType for i8 {
     fn to_gl_type() -> GLenum {
         gl::BYTE
     }
 }
-pub struct VBO<T: ToGlType> {
+pub struct VBO<T: GLType> {
     id: GLuint,
     _phantom: PhantomData<T>,
-    /// It is not send, because the drop function need to be called in the same thread
-    /// It is sync, because all GL calls require the gl token
-    _unsend: PhantomData<crate::misc::UnSend>,
 }
 
-impl<T: ToGlType> VBO<T> {
+impl<T: GLType> VBO<T> {
     pub fn new(_: GLToken) -> Self {
         let mut id: GLuint = 0;
         unsafe {
@@ -46,7 +43,6 @@ impl<T: ToGlType> VBO<T> {
         VBO {
             id,
             _phantom: PhantomData,
-            _unsend: PhantomData,
         }
     }
 
@@ -67,19 +63,26 @@ impl<T: ToGlType> VBO<T> {
             );
         }
     }
-}
 
-impl<T: ToGlType> Drop for VBO<T> {
-    fn drop(&mut self) {
+    pub fn delete(&mut self, glt: GLToken) {
         unsafe {
             gl::DeleteBuffers(1, &self.id);
+        }
+        // This marks the struct as safe to drop
+        self.id = 0;
+    }
+}
+
+impl<T: GLType> Drop for VBO<T> {
+    fn drop(&mut self) {
+        if self.id != 0 {
+            panic!("VBO was not deleted before drop");
         }
     }
 }
 
 pub struct VAO {
     id: GLuint,
-    _unsend: PhantomData<crate::misc::UnSend>,
 }
 
 impl VAO {
@@ -90,7 +93,6 @@ impl VAO {
         }
         VAO {
             id,
-            _unsend: PhantomData,
         }
     }
 
@@ -100,7 +102,7 @@ impl VAO {
         }
     }
 
-    pub fn attrib_pointer<T: ToGlType>(
+    pub fn attrib_pointer<T: GLType>(
         &mut self,
         glt: GLToken,
         index: GLuint,
@@ -131,24 +133,32 @@ impl VAO {
             gl::EnableVertexAttribArray(index);
         }
     }
+
+    pub fn delete(&mut self, glt: GLToken) {
+        unsafe {
+            gl::DeleteVertexArrays(1, &self.id);
+        }
+        // This marks the struct as safe to drop
+        self.id = 0;
+    
+    }
 }
 
 impl Drop for VAO {
     fn drop(&mut self) {
-        // This is save because VOA is not Send and can only be created in the GL thread
-        unsafe {
-            gl::DeleteVertexArrays(1, &self.id);
+        if self.id != 0 {
+            panic!("VAO was not deleted before drop");
         }
     }
 }
 
-pub struct VBOWithStorage<T: ToGlType> {
+pub struct VBOWithStorage<T: GLType> {
     vbo: VBO<T>,
     data: Vec<T>,
     modified: bool,
 }
 
-impl<T: ToGlType> VBOWithStorage<T> {
+impl<T: GLType> VBOWithStorage<T> {
     pub fn new(glt: GLToken) -> Self {
         VBOWithStorage {
             vbo: VBO::new(glt),
@@ -177,5 +187,9 @@ impl<T: ToGlType> VBOWithStorage<T> {
     pub fn exchange_cpu_buffer(&mut self, buffer: Vec<T>) {
         self.data = buffer;
         self.modified = true;
+    }
+
+    pub fn delete(&mut self, glt: GLToken) {
+        self.vbo.delete(glt);
     }
 }
