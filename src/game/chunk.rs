@@ -146,6 +146,12 @@ impl Chunk {
     pub fn position(&self) -> &[i32; 3] {
         &self.position
     }
+
+    pub fn delete(self, glt: GLToken) {
+        self.vao.delete(glt);
+        self.vertex_pos.delete(glt);
+        self.texture_pos.delete(glt);
+    }
 }
 
 fn add_face(

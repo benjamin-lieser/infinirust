@@ -64,7 +64,7 @@ impl<T: GLType> VBO<T> {
         }
     }
 
-    pub fn delete(&mut self, glt: GLToken) {
+    pub fn delete(mut self, _: GLToken) {
         unsafe {
             gl::DeleteBuffers(1, &self.id);
         }
@@ -134,13 +134,12 @@ impl VAO {
         }
     }
 
-    pub fn delete(&mut self, glt: GLToken) {
+    pub fn delete(mut self, _: GLToken) {
         unsafe {
             gl::DeleteVertexArrays(1, &self.id);
         }
         // This marks the struct as safe to drop
         self.id = 0;
-    
     }
 }
 
@@ -189,7 +188,7 @@ impl<T: GLType> VBOWithStorage<T> {
         self.modified = true;
     }
 
-    pub fn delete(&mut self, glt: GLToken) {
+    pub fn delete(self, glt: GLToken) {
         self.vbo.delete(glt);
     }
 }
