@@ -2,14 +2,13 @@ use std::ffi::CStr;
 
 use nalgebra_glm::Mat4;
 
-use crate::mygl::{create_program, GLToken, VAO, VBO};
+use crate::mygl::{create_program, GLToken, Program, VAO, VBO};
 
 /// draws the outlines of one cube
 pub struct CubeOutlines {
     vao: VAO,
-    #[allow(dead_code)] //We dont update the buffer anymore, we just want the Drop glue
     vbo: VBO<f32>,
-    program: gl::types::GLuint
+    program: Program,
 }
 
 #[rustfmt::skip]
@@ -61,20 +60,25 @@ impl CubeOutlines {
         vao.attrib_pointer(glt, 0, &vbo, 3, 0, 0, false);
         vao.enable_array(glt, 0);
 
-        let program = create_program(CStr::from_bytes_with_nul(VERTEX_SHADER_SOURCE).unwrap(), CStr::from_bytes_with_nul(FRAGMENT_SHADER_SOURCE).unwrap());
+        let program = Program::new(glt, VERTEX_SHADER_SOURCE, FRAGMENT_SHADER_SOURCE);
 
         CubeOutlines { vao, vbo, program }
     }
 
     pub fn draw(&self, glt : GLToken, mvp : &Mat4) {
         unsafe {
-            gl::UseProgram(self.program);
-            let mvp_location = gl::GetUniformLocation(self.program, "mvp\0".as_ptr().cast());
+            self.program.bind(glt);
+            self.program.uniform_mat4(glt, CStr::from_bytes_with_nul(b"mvp\0").unwrap(), mvp);
             self.vao.bind(glt);
             gl::Enable(gl::DEPTH_TEST);
-            gl::UniformMatrix4fv(mvp_location, 1, 0, mvp.as_ptr());
             gl::DrawArrays(gl::LINES, 0, 24);
         }
+    }
+
+    pub fn delete(self, glt : GLToken) {
+        self.vao.delete(glt);
+        self.vbo.delete(glt);
+        self.program.delete(glt);
     }
 }
 

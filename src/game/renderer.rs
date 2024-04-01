@@ -12,9 +12,9 @@ const FAR_PLAIN: f32 = 100.0;
 
 /// This struct holds all GL relevant things
 /// All the functions have to be called from the GL thread
-/// It holds a Mutex of the World to render it
+/// It holds a Arc of the World to render it
 pub struct Renderer {
-    world: Arc<Mutex<World>>,
+    world: Arc<World>,
     program: Program,
     atlas: Arc<TextureAtlas>,
     projection: Mat4,
@@ -27,7 +27,7 @@ pub struct Renderer {
 }
 
 impl Renderer {
-    pub fn new(glt : GLToken, world: Arc<Mutex<World>>, render_size: winit::dpi::PhysicalSize<u32>, updates: tokio::sync::mpsc::Sender<Update>) -> Self {
+    pub fn new(glt : GLToken, world: Arc<World>, render_size: winit::dpi::PhysicalSize<u32>, updates: tokio::sync::mpsc::Sender<Update>) -> Self {
         unsafe {
             if let Some(renderer) = get_gl_string(gl::RENDERER) {
                 println!("Running on {}", renderer.to_string_lossy());
@@ -40,7 +40,7 @@ impl Renderer {
                 println!("Shaders version on {}", shaders_version.to_string_lossy());
             }
 
-            let program = Program::new(VERTEX_SHADER_SOURCE, FRAGMENT_SHADER_SOURCE);
+            let program = Program::new(glt,VERTEX_SHADER_SOURCE, FRAGMENT_SHADER_SOURCE);
 
             let mut atlas = crate::mygl::TextureAtlas::new();
             atlas.add_texture("grass_side.png").unwrap();
@@ -99,10 +99,7 @@ impl Renderer {
         }
 
 
-        {
-            let world = self.world.lock().unwrap();
-            world.draw(glt, &self.program, &self.projection, &self.camera);
-        }
+        self.world.draw(glt, &self.program, &self.projection, &self.camera);
 
         //Update background about the current position
         //For position its ok if it gets lost, for blockupdate not to much TODO
@@ -219,6 +216,19 @@ impl Renderer {
                 self.controls.up = pressed;
             }
         }
+    }
+    /// Sends a exit signal to the background
+    pub fn send_exit(&self) {
+        self.updates.blocking_send(Update::Exit).unwrap();
+    }
+
+    /// This function has to be called after the exit thread has been joined
+    /// Otherwise it will panic
+    pub unsafe fn delete(self, glt : GLToken) {
+        self.cube_outlines.delete(glt);
+        self.overlay.delete(glt);
+        Arc::<World>::into_inner(self.world).expect("After the background therad joind this should be the only reference to world").delete(glt);
+
     }
 }
 

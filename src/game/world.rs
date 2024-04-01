@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Mutex};
 
 use nalgebra_glm as glm;
 
@@ -13,9 +13,9 @@ const MAX_CHUNKS: usize =
     4 * (VIEW_DISTANCE as usize + 1) * (VIEW_DISTANCE as usize + 1) * Y_RANGE as usize;
 
 pub struct World {
-    chunks: HashMap<[i32; 3], Chunk>,
+    pub chunks: Mutex<HashMap<[i32; 3], Chunk>>,
     /// Can be used to optain an unsued chunk
-    unused_chunks_rx: tokio::sync::mpsc::Receiver<Chunk>,
+    pub unused_chunks_rx: Mutex<tokio::sync::mpsc::Receiver<Chunk>>,
     /// If a chunk is unused it should be sent here
     unsued_chunks_tx: tokio::sync::mpsc::Sender<Chunk>,
     center: [i32; 3],
@@ -30,8 +30,8 @@ impl World {
                 .expect("Channel can't be full");
         }
         Self {
-            chunks: HashMap::new(),
-            unused_chunks_rx : unused_chunks_rx,
+            chunks: Mutex::new(HashMap::new()),
+            unused_chunks_rx : Mutex::new(unused_chunks_rx),
             unsued_chunks_tx : unused_chunks_tx,
             center: [0, 0, 0],
         }
@@ -48,7 +48,7 @@ impl World {
             for x in (camera_center[0] - VIEW_DISTANCE)..(self.center[0] - VIEW_DISTANCE) {
                 for y in -Y_RANGE..Y_RANGE {
                     for z in (self.center[2] - VIEW_DISTANCE)..(self.center[0] - VIEW_DISTANCE) {
-                        let chunk = self.chunks.remove(&[x, y, z]).unwrap();
+                       
                     }
                 }
             }
@@ -64,7 +64,7 @@ impl World {
         camera: &FreeCamera,
     ) {
         unsafe {
-            program.bind();
+            program.bind(glt);
             gl::Enable(gl::DEPTH_TEST);
             gl::Enable(gl::CULL_FACE);
 
@@ -81,7 +81,9 @@ impl World {
 
             let projection_view = projection * camera.view_matrix();
 
-            for chunk in self.chunks.values() {
+            let chunks = self.chunks.lock().unwrap();
+
+            for chunk in chunks.values() {
                 let [cx, cy, cz] = chunk.position();
 
                 let cx = *cx as f64 * CHUNK_SIZE as f64;
@@ -97,6 +99,19 @@ impl World {
                 gl::UniformMatrix4fv(mvp_location, 1, 0, mvp.as_ptr());
                 chunk.draw(glt);
             }
+        }
+    }
+
+    pub fn delete(self, glt: GLToken) {
+        // Delete all the active chunks
+        for (_, chunk) in self.chunks.into_inner().unwrap().drain() {
+            chunk.delete(glt);
+        }
+        // Delete all the unused chunks
+        let mut unused_chunks = self.unused_chunks_rx.into_inner().unwrap();
+        unused_chunks.close();
+        while let Some(chunk) = unused_chunks.blocking_recv() {
+            chunk.delete(glt);
         }
     }
 }

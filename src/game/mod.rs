@@ -49,12 +49,13 @@ pub enum Key {
 
 pub struct Game {
     renderer: Renderer,
+    background_thread: std::thread::JoinHandle<()>,
 }
 
 impl Game {
     pub fn new(glt : GLToken, render_size: PhysicalSize<u32>, tcp: TcpStream) -> Self {
         let world = World::new(glt);
-        let world = Arc::new(Mutex::new(world));
+        let world = Arc::new(world);
 
         let (update_tx, update_rx) = tokio::sync::mpsc::channel(100);
 
@@ -63,10 +64,10 @@ impl Game {
 
 
         let chunk_loader_world = world.clone();
-        std::thread::spawn(|| chunk_loader(tcp, chunk_loader_world, update_rx, atlas));
+        let background_thread = std::thread::spawn(|| chunk_loader(tcp, chunk_loader_world, update_rx, atlas));
 
 
-        Self { renderer }
+        Self { renderer , background_thread}
     }
 
     pub fn draw(&mut self, glt : GLToken, delta_t: f32) {
@@ -83,5 +84,16 @@ impl Game {
 
     pub fn keyboard_input(&mut self, key: Key, pressed: bool) {
         self.renderer.keyboard_input(key, pressed);
+    }
+
+    pub fn exit(self, glt : GLToken) {
+        // Exit the background thread
+        self.renderer.send_exit();
+        self.background_thread.join().unwrap();
+
+        unsafe {
+            self.renderer.delete(glt);
+        }
+
     }
 }

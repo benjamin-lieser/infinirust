@@ -15,6 +15,10 @@ use super::{FreeCamera, World};
 pub enum Update {
     /// The camera position has changed
     Pos(FreeCamera),
+    /// A block has been updated
+    Block([i32; 3], u8),
+    /// Exit the game
+    Exit,
 }
 
 enum Package {
@@ -23,7 +27,7 @@ enum Package {
 
 pub fn chunk_loader(
     tcp: TcpStream,
-    world: Arc<Mutex<World>>,
+    world: Arc<World>,
     updates: tokio::sync::mpsc::Receiver<Update>,
     atlas: Arc<TextureAtlas>,
 ) {
@@ -41,13 +45,21 @@ pub fn chunk_loader(
         let (loader_tx, loader_rx) = tokio::sync::mpsc::channel(100);
         let (writer_tx, writer_rx) = tokio::sync::mpsc::channel(100);
 
-        tokio::spawn(read_packages(reader, loader_tx));
-        tokio::spawn(write_packages(writer, writer_rx));
+        let read_join_handle = tokio::spawn(read_packages(reader, loader_tx));
+        let write_join_handle = tokio::spawn(write_packages(writer, writer_rx));
+
+        let world_join_handler = tokio::spawn(manage_world(world, atlas, loader_rx, updates));
+        // When manage_world returns, the client has exited
+        world_join_handler.await.unwrap();
+        read_join_handle.abort();
+        write_join_handle.abort();
     });
+
+    rt.shutdown_background();
 }
 
 async fn manage_world(
-    world: Arc<Mutex<World>>,
+    world: Arc<World>,
     atlas: Arc<TextureAtlas>,
     mut packages: tokio::sync::mpsc::Receiver<Package>,
     mut client: tokio::sync::mpsc::Receiver<Update>,
@@ -56,8 +68,15 @@ async fn manage_world(
         tokio::select! {
             package = packages.recv() => {
                 match package {
+                    // Chunkdata recieved
                     Some(Package::Chunk(pos, data)) => {
-                        
+                        // Both locks in this section are sync, but we do not await here
+                        let mut unused_chunks_rx = world.unused_chunks_rx.lock().unwrap();
+                        let mut chunk = unused_chunks_rx.try_recv().expect("No available chunks");
+                        chunk.load(data, pos);
+                        chunk.write_vbo(&atlas);
+                        let mut chunks = world.chunks.lock().unwrap();
+                        chunks.insert(pos, chunk);
                     }
                     None => {panic!("package reader crashed")}
                 }
@@ -66,6 +85,12 @@ async fn manage_world(
                 match update {
                     Some(Update::Pos(camera)) => {
 
+                    }
+                    Some(Update::Block(pos, block)) => {
+
+                    }
+                    Some(Update::Exit) => {
+                        return;
                     }
                     None => {panic!("client crashed")}
                 }

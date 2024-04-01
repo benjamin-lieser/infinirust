@@ -63,6 +63,11 @@ impl Chunk {
         Self::new(glt, [0;3], vec![])
     }
 
+    pub fn load(&mut self, data: Vec<u8>, position: [i32; 3]) {
+        self.blocks = ChunkData::new(data);
+        self.position = position;
+    }
+
     pub fn write_vbo(&mut self, atlas: &TextureAtlas) {
         let mut vertex_pos = vec![];
         let mut texture_pos = vec![];

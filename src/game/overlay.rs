@@ -12,7 +12,7 @@ const CROSSHAIR_SIZE : f32 = 0.02;
 
 impl Overlay {
     pub fn new(glt : GLToken, render_size : PhysicalSize<u32>) -> Self {
-        let program = Program::new(VERTEX_SHADER_SOURCE, FRAGMENT_SHADER_SOURCE);
+        let program = Program::new(glt,VERTEX_SHADER_SOURCE, FRAGMENT_SHADER_SOURCE);
         let mut vbo = VBO::new(glt);
         let mut vao = VAO::new(glt);
 
@@ -34,12 +34,18 @@ impl Overlay {
     }
 
     pub fn draw(&self, glt : GLToken) {
-        self.program.bind();
+        self.program.bind(glt);
         self.vao.bind(glt);
         unsafe {
             gl::Disable(gl::DEPTH_TEST);
             gl::DrawArrays(gl::LINES, 0, 4);
         }
+    }
+
+    pub fn delete(self, glt : GLToken) {
+        self.vbo.delete(glt);
+        self.vao.delete(glt);
+        self.program.delete(glt);
     }
 }
 
