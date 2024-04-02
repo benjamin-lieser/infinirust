@@ -118,4 +118,16 @@ impl Players {
             _ = player.package_writer.try_send(package.clone());
         }
     }
+
+    /// Send a package to all players fullfilling predicate
+    pub fn broadcast_filtered(
+        &self,
+        package: Arc<[u8]>,
+        predicate: impl Fn(&ServerPlayer) -> bool,
+    ) {
+        for player in self.online.iter().flatten().filter(|p| predicate(p)) {
+            // Package gets lost if the write channel is full
+            _ = player.package_writer.try_send(package.clone());
+        }
+    }
 }

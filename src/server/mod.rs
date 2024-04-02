@@ -62,7 +62,8 @@ pub fn start_world(
                     pitch,
                     yaw,
                 };
-                server.players.broadcast(package.to_arc());
+                // Send it to all other players
+                server.players.broadcast_filtered(package.to_arc(), |p| p.uid != uid);
             }
             Command::BlockUpdate(pos, block) => {
                 let package = server.world.process_block_update(&pos, block);
