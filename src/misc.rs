@@ -20,6 +20,15 @@ pub fn as_bytes_mut(data: &mut [i32]) -> &mut [u8] {
     unsafe { std::slice::from_raw_parts_mut(ptr.cast(), data.len() * 4) }
 }
 
+pub fn first_none<T>(data: &[Option<T>]) -> Option<usize> {
+    for (i, d) in data.iter().enumerate() {
+        if d.is_none() {
+            return Some(i);
+        }
+    }
+    None
+}
+
 /// Only implement for types with repr(C) and where every bit pattern is valid and no padding in the struct
 pub unsafe trait AsBytes: Sized {}
 

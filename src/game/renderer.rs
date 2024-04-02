@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use glm::Mat4;
 use nalgebra_glm as glm;
@@ -170,6 +170,9 @@ impl Renderer {
         }
 
         self.overlay.draw(glt);
+
+
+        self.updates.try_send(Update::Pos(self.camera.clone())).unwrap();
     }
 
     pub fn atlas(&self) -> Arc<TextureAtlas> {

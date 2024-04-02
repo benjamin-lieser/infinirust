@@ -4,16 +4,17 @@ use nalgebra_glm as glm;
 
 use crate::mygl::{GLToken, Program};
 
-use super::{Camera, Chunk, FreeCamera, CHUNK_SIZE, Y_RANGE};
+use super::{chunk, Camera, Chunk, FreeCamera, CHUNK_SIZE, Y_RANGE};
 
-const VIEW_DISTANCE: i32 = 8;
+pub const VIEW_DISTANCE: i32 = 2;
 
 /// The maximum number of chunks that can be loaded at once
 const MAX_CHUNKS: usize =
-    4 * (VIEW_DISTANCE as usize + 1) * (VIEW_DISTANCE as usize + 1) * Y_RANGE as usize;
+    4 * (VIEW_DISTANCE as usize + 1) * (VIEW_DISTANCE as usize + 1) * 2 * Y_RANGE as usize;
 
 pub struct World {
-    pub chunks: Mutex<Vec<Chunk>>,
+    /// The indicies have to be stable, therefore we have the Option
+    pub chunks: Mutex<Vec<Option<Chunk>>>,
     pub unused_chunks: Mutex<Vec<Chunk>>,
 }
 
@@ -23,8 +24,12 @@ impl World {
         for _ in 0..MAX_CHUNKS {
             unused_chunks.push(Chunk::new_empty(glt));
         }
+        let mut chunks = Vec::new();
+        for _ in 0..MAX_CHUNKS {
+            chunks.push(None);
+        }
         Self {
-            chunks: Mutex::new(Vec::new()),
+            chunks: Mutex::new(chunks),
             unused_chunks : Mutex::new(unused_chunks)
         }
     }
@@ -54,23 +59,25 @@ impl World {
 
             let projection_view = projection * camera.view_matrix();
 
-            let chunks = self.chunks.lock().unwrap();
+            let mut chunks = self.chunks.lock().unwrap();
 
-            for chunk in chunks.iter() {
-                let [cx, cy, cz] = chunk.position();
+            for chunk in chunks.iter_mut() {
+                if let Some(chunk) = chunk {
+                    let [cx, cy, cz] = chunk.position();
 
-                let cx = *cx as f64 * CHUNK_SIZE as f64;
-                let cy = *cy as f64 * CHUNK_SIZE as f64;
-                let cz = *cz as f64 * CHUNK_SIZE as f64;
+                    let cx = *cx as f64 * CHUNK_SIZE as f64;
+                    let cy = *cy as f64 * CHUNK_SIZE as f64;
+                    let cz = *cz as f64 * CHUNK_SIZE as f64;
 
-                let model = glm::translation(&glm::vec3(
-                    (cx - x) as f32,
-                    (cy - y) as f32,
-                    (cz - z) as f32,
-                ));
-                let mvp: glm::Mat4 = projection_view * model;
-                gl::UniformMatrix4fv(mvp_location, 1, 0, mvp.as_ptr());
-                chunk.draw(glt);
+                    let model = glm::translation(&glm::vec3(
+                        (cx - x) as f32,
+                        (cy - y) as f32,
+                        (cz - z) as f32,
+                    ));
+                    let mvp: glm::Mat4 = projection_view * model;
+                    gl::UniformMatrix4fv(mvp_location, 1, 0, mvp.as_ptr());
+                    chunk.draw(glt);
+                }
             }
         }
     }
@@ -78,7 +85,9 @@ impl World {
     pub fn delete(self, glt: GLToken) {
         // Delete all the active chunks
         for chunk in self.chunks.into_inner().unwrap() {
-            chunk.delete(glt);
+            if let Some(chunk) = chunk {
+                chunk.delete(glt);
+            }
         }
         // Delete all the unused chunks
         for chunk in self.unused_chunks.into_inner().unwrap() {

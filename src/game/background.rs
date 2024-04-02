@@ -1,6 +1,5 @@
 use std::{
-    net::TcpStream,
-    sync::{Arc, Mutex},
+    collections::HashMap, net::TcpStream, sync::{Arc, Mutex}
 };
 
 use tokio::{
@@ -8,7 +7,7 @@ use tokio::{
     net::tcp::{OwnedReadHalf, OwnedWriteHalf},
 };
 
-use crate::{game::Chunk, misc::cast_bytes_mut, mygl::TextureAtlas};
+use crate::{game::{world::VIEW_DISTANCE, Camera, Chunk, CHUNK_SIZE, Y_RANGE}, misc::{cast_bytes, cast_bytes_mut, first_none}, mygl::TextureAtlas};
 
 use super::{FreeCamera, World};
 
@@ -66,6 +65,9 @@ async fn manage_world(
     mut client: tokio::sync::mpsc::Receiver<Update>,
 
 ) {
+    let mut current_world_center = [0i32; 2]; // x, z
+    let mut active_chunk_ids = HashMap::<[i32;3], usize>::new();
+
     loop {
         tokio::select! {
             package = in_packages.recv() => {
@@ -75,12 +77,19 @@ async fn manage_world(
                         // Both locks in this section are sync, but we do not await here
                         let mut chunk = {
                             let mut unused_chunks_rx = world.unused_chunks.lock().unwrap();
+                            println!("unused_chunks_rx: {:?}", unused_chunks_rx.len());
                             unused_chunks_rx.pop().expect("No available chunks")
                         };
                         chunk.load(data, pos);
                         chunk.write_vbo(&atlas);
-                        let mut chunks = world.chunks.lock().unwrap();
-                        chunks.push(chunk);
+                        {
+                            // This lock is time critical for the renderer thread, so be quick about it
+                            let mut chunks = world.chunks.lock().unwrap();
+                            let slot = first_none(&chunks).expect("No available slot, this should be impossible");
+                            active_chunk_ids.insert(pos, slot);
+                            chunks[slot] = Some(chunk);
+                        }
+
                     }
                     None => {panic!("package reader crashed")}
                 }
@@ -88,7 +97,40 @@ async fn manage_world(
             update = client.recv() => {
                 match update {
                     Some(Update::Pos(camera)) => {
-
+                        let camera_pos = camera.position();
+                        let camera_center = [
+                            camera_pos[0] as i32 / CHUNK_SIZE as i32,
+                            camera_pos[2] as i32 / CHUNK_SIZE as i32,
+                        ];
+                        if camera_center != current_world_center {
+                            // Remove chunks that are too far away
+                            {
+                                let mut unused_chunks = world.unused_chunks.lock().unwrap();
+                                let mut chunks = world.chunks.lock().unwrap();
+                                active_chunk_ids.retain(|pos, slot| {
+                                    if (pos[0] - camera_center[0]).abs() > VIEW_DISTANCE || (pos[2] - camera_center[1]).abs() > VIEW_DISTANCE {
+                                        unused_chunks.push(chunks[*slot].take().expect("There should be a chunk in this slot"));
+                                        false
+                                    } else {
+                                        true
+                                    }
+                                });
+                            }
+                            // Load new chunks
+                            for x in -VIEW_DISTANCE..=VIEW_DISTANCE {
+                                for z in -VIEW_DISTANCE..=VIEW_DISTANCE {
+                                    let pos = [camera_center[0] + x, 0, camera_center[1] + z];
+                                    if !active_chunk_ids.contains_key(&pos) {
+                                        for y in -Y_RANGE..Y_RANGE {
+                                            let pos = [pos[0], y, pos[2]];
+                                            println!("Requesting chunk: {:?}", pos);
+                                            out_packages.send(request_chunk_package(pos)).await.unwrap();
+                                        }
+                                    }
+                                }
+                            }
+                            current_world_center = camera_center;
+                        }
                     }
                     Some(Update::Block(pos, block)) => {
 
@@ -115,6 +157,13 @@ async fn write_packages(
             return;
         }
     }
+}
+
+fn request_chunk_package(pos: [i32; 3]) -> Box<[u8]> {
+    let mut package = vec![0u8; 14];
+    package[0..2].copy_from_slice(cast_bytes(&0x000Au16));
+    package[2..].copy_from_slice(cast_bytes(&pos));
+    package.into_boxed_slice()
 }
 
 async fn read_packages(
