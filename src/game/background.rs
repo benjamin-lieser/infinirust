@@ -67,7 +67,7 @@ async fn manage_world(
     out_packages: tokio::sync::mpsc::Sender<Box<[u8]>>,
     mut client: tokio::sync::mpsc::Receiver<Update>,
 ) {
-    let mut current_world_center = [0i32; 2]; // x, z
+    let mut current_world_center = [i32::MIN; 2]; // x, z
     let mut active_chunk_ids = HashMap::<[i32; 3], usize>::new();
 
     loop {
