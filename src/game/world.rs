@@ -29,15 +29,6 @@ impl World {
         }
     }
 
-    pub fn update_center(&mut self, camera_pos: &[f64; 3]) {
-        let camera_center = [
-            camera_pos[0] as i32 / CHUNK_SIZE as i32,
-            camera_pos[1] as i32 / CHUNK_SIZE as i32,
-            camera_pos[2] as i32 / CHUNK_SIZE as i32,
-        ];
-        todo!()
-    }
-
     pub fn draw(
         &self,
         glt: GLToken,
