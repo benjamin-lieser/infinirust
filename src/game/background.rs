@@ -24,6 +24,7 @@ pub enum Update {
 
 enum Package {
     Chunk([i32; 3], Vec<u8>),
+    PlayerPositionUpdate(ServerPackagePlayerPosition)
 }
 
 pub fn chunk_loader(
@@ -94,7 +95,10 @@ async fn manage_world(
                             }
                             chunks[slot] = Some(chunk);
                         }
-
+                    }
+                    Some(Package::PlayerPositionUpdate(package)) => {
+                        // Update player position
+                        world.players.lock().unwrap().update(&package);
                     }
                     None => {panic!("package reader crashed")}
                 }
@@ -202,7 +206,7 @@ async fn read_packages(
             }
             0x000C => {
                 let player_pos = ServerPackagePlayerPosition::new(&mut reader).await;
-                
+                chunk_loader.send(Package::PlayerPositionUpdate(player_pos)).await.unwrap();
             }
             _ => {
                 panic!("Client: Invalid Package type {package_type}")

@@ -33,6 +33,12 @@ impl FreeCamera {
             yaw: 0.0,
         }
     }
+
+    pub fn update(&mut self, pos: [f64; 3], pitch: f32, yaw: f32) {
+        self.pos = pos;
+        self.pitch = pitch;
+        self.yaw = yaw;
+    }
 }
 
 impl Camera for FreeCamera {

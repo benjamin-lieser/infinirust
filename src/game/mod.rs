@@ -23,6 +23,7 @@ pub use world::World;
 pub use renderer::Renderer;
 
 use crate::mygl::GLToken;
+use crate::mygl::TextureAtlas;
 
 use self::background::chunk_loader;
 
@@ -52,14 +53,30 @@ pub struct Game {
     background_thread: std::thread::JoinHandle<()>,
 }
 
+fn create_atlas(glt: GLToken) -> TextureAtlas {
+    let mut atlas = crate::mygl::TextureAtlas::new();
+    atlas.add_texture("grass_side.png").unwrap();
+    atlas.add_texture("grass_top.png").unwrap();
+    atlas.add_texture("dirt.png").unwrap();
+    atlas.add_texture("end_bricks.png").unwrap();
+    //atlas.save("temp.png").unwrap();
+    atlas.bind_texture(gl::TEXTURE0);
+    unsafe {
+        atlas.finalize();
+    }
+    atlas
+}
+
 impl Game {
     pub fn new(glt : GLToken, render_size: PhysicalSize<u32>, tcp: TcpStream) -> Self {
-        let world = World::new(glt);
+        let atlas = create_atlas(glt);
+
+        let world = World::new(glt, &atlas);
         let world = Arc::new(world);
 
         let (update_tx, update_rx) = tokio::sync::mpsc::channel(100);
 
-        let renderer = Renderer::new(glt, world.clone(), render_size, update_tx);
+        let renderer = Renderer::new(glt, world.clone(), Arc::new(atlas),render_size, update_tx);
         let atlas = renderer.atlas();
 
 

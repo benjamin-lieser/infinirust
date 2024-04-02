@@ -1,14 +1,63 @@
-use crate::{mygl::{GLToken, TextureAtlas, VAO, VBO}, server::UID};
+use gl::types::GLint;
+use nalgebra_glm as glm;
 
-use super::{chunk::add_face, FreeCamera};
+use crate::{mygl::{GLToken, TextureAtlas, VAO, VBO}, net::ServerPackagePlayerPosition, server::UID};
+
+use super::{chunk::add_face, Camera, FreeCamera};
 
 pub struct Player {
     pub name: String,
     pub camera: FreeCamera,
     pub uid: UID,
-    pub vao: VAO,
-    pub vertex_vbo: VBO<u8>,
-    pub texture_vbo: VBO<f32>,
+}
+
+pub struct Players {
+    players: Vec<Player>,
+    render: PlayerRender,
+}
+
+impl Players {
+    pub fn new(glt: GLToken, atlas: &TextureAtlas) -> Self {
+        Self {
+            players: vec![],
+            render: PlayerRender::new(glt, atlas),
+        }
+    }
+
+    pub fn add_player(&mut self, name: String, uid: UID, camera: FreeCamera) {
+        self.players.push(Player {
+            name,
+            camera: camera,
+            uid,
+        });
+    }
+
+    pub fn update(&mut self, package: &ServerPackagePlayerPosition) {
+        for player in self.players.iter_mut() {
+            if player.uid == package.uid as usize {
+                player.camera.update(package.pos, package.pitch, package.yaw);
+            }
+        }
+    }
+
+    pub unsafe fn draw(&self, glt: GLToken, projection_view: &nalgebra_glm::Mat4, pos : &[f64;3], mvp_location: GLint) {
+        for player in self.players.iter() {
+            let [x, y, z] = player.camera.position();
+            let model_trans = glm::translation(&glm::vec3(
+                (x - pos[0]) as f32,
+                (y - pos[1]) as f32,
+                (z - pos[2]) as f32,
+            ));
+            let model = model_trans * player.camera.view_matrix();
+            let mvp = projection_view * model;
+            gl::UniformMatrix4fv(mvp_location, 1, 0, mvp.as_ptr());
+            self.render.draw(glt);
+        }
+    }
+
+    pub fn delete(self, glt: GLToken) {
+        self.render.delete(glt);
+    }
 }
 
 pub struct PlayerRender {
@@ -50,8 +99,16 @@ impl PlayerRender {
         }
     }
 
-    pub fn draw(&self, glt: GLToken, camera: &FreeCamera) {
+    pub fn draw(&self, glt: GLToken) {
         self.vao.bind(glt);
-        //TODO
+        unsafe {
+            gl::DrawArrays(gl::TRIANGLES, 0, 12);
+        }
+    }
+
+    pub fn delete(self, glt: GLToken) {
+        self.vao.delete(glt);
+        self.vertex_vbo.delete(glt);
+        self.texture_vbo.delete(glt);
     }
 }

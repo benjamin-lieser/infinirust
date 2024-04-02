@@ -27,7 +27,7 @@ pub struct Renderer {
 }
 
 impl Renderer {
-    pub fn new(glt : GLToken, world: Arc<World>, render_size: winit::dpi::PhysicalSize<u32>, updates: tokio::sync::mpsc::Sender<Update>) -> Self {
+    pub fn new(glt : GLToken, world: Arc<World>, atlas : Arc<TextureAtlas> ,render_size: winit::dpi::PhysicalSize<u32>, updates: tokio::sync::mpsc::Sender<Update>) -> Self {
         unsafe {
             if let Some(renderer) = get_gl_string(gl::RENDERER) {
                 println!("Running on {}", renderer.to_string_lossy());
@@ -42,15 +42,6 @@ impl Renderer {
 
             let program = Program::new(glt,VERTEX_SHADER_SOURCE, FRAGMENT_SHADER_SOURCE);
 
-            let mut atlas = crate::mygl::TextureAtlas::new();
-            atlas.add_texture("grass_side.png").unwrap();
-            atlas.add_texture("grass_top.png").unwrap();
-            atlas.add_texture("dirt.png").unwrap();
-            atlas.add_texture("end_bricks.png").unwrap();
-            //atlas.save("temp.png").unwrap();
-            atlas.bind_texture(gl::TEXTURE0);
-            atlas.finalize();
-
             let projection = glm::perspective(
                 render_size.width as f32 / render_size.height as f32,
                 std::f32::consts::FRAC_PI_4,
@@ -60,7 +51,7 @@ impl Renderer {
             Self {
                 world,
                 program,
-                atlas: Arc::new(atlas),
+                atlas: atlas,
                 projection,
                 camera: FreeCamera::new([0.0, 0.0, 0.0]),
                 controls: Controls::default(),
