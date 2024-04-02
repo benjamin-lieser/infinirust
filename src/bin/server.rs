@@ -7,7 +7,7 @@ use tokio::net::{
 };
 
 use infinirust::misc::{cast_bytes_mut, cast_bytes};
-use infinirust::server::handlers::PackageBlockUpdate;
+use infinirust::net::PackageBlockUpdate;
 use infinirust::server::{Client, Command, UID};
 
 fn main() -> std::io::Result<()> {
@@ -32,13 +32,15 @@ fn main() -> std::io::Result<()> {
             (bind, TcpListener::bind(listen_on).await.unwrap())
         };
 
+        // Channel to send commands to the server world (shared state of the server)
         let (command_tx, command_rx) = tokio::sync::mpsc::channel(100);
-
         std::thread::spawn(|| infinirust::server::start_world(command_rx, world_directory.into()));
         
+        // Spwan the stdin thread and give it access to send server world commands
         let stdin_command_tx = command_tx.clone();
         std::thread::spawn(|| infinirust::server::stdin::handle_stdin(stdin_command_tx, bind));
 
+        // Spwan a task which handles the ctrl+c signal and sends a shutdown command to the server
         let server_ctrlc = command_tx.clone();
         tokio::spawn(async move {
             tokio::signal::ctrl_c().await.unwrap();
@@ -72,30 +74,30 @@ async fn write_packages(
         if let Some(package) = input.recv().await {
             stream.write_all(&package).await.unwrap();
         } else {
-            eprintln!("Writer returns");
+            eprintln!("Server Writer returns");
             return;
         }
     }
 }
 
 /// Read the packages when the server is in `play` state
-/// It will never return Ok. todo never type if it gets stable
-/// If it returns Err the user has to be logged out
+/// It will never return Ok. TODO never type if it gets stable
+/// If it returns Err the user will be logged out
 async fn read_play_packages(
     mut stream: OwnedReadHalf,
     server: tokio::sync::mpsc::Sender<Command>,
     uid: UID,
 ) -> Result<(), anyhow::Error> {
     loop {
-        let mut package_type = [0u8; 2];
-        stream.read_exact(&mut package_type).await?;
+        let mut package_type = 0u16;
+        stream.read_exact(&mut cast_bytes_mut(&mut package_type)).await?;
 
-        match u16::from_le_bytes(package_type) {
+        match package_type {
             // Request chunk data
             0x000A => {
                 let mut pos = [0i32; 3];
                 stream
-                    .read_exact(infinirust::misc::cast_bytes_mut(&mut pos))
+                    .read_exact(cast_bytes_mut(&mut pos))
                     .await?;
                 let command = Command::ChunkData(pos, uid);
                 server

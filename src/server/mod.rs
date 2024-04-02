@@ -5,7 +5,6 @@ use self::world::ServerWorld;
 
 pub mod player;
 pub mod world;
-pub mod handlers;
 pub mod stdin;
 
 pub type Client = tokio::sync::mpsc::Sender<Arc<[u8]>>;

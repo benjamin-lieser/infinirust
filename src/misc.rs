@@ -29,6 +29,9 @@ unsafe impl AsBytes for u64 {}
 unsafe impl AsBytes for usize {}
 unsafe impl AsBytes for [i32;3] {}
 
+/// This is save, because all AsBytes types are repr(C) and have no padding
+/// &mut T has to be properly aligned, so we can use the &mut\[u8\] to write to it
+/// There cannot be aliasing because data will be mutably borrowed as long as the retunr value lives
 pub fn cast_bytes_mut<T: AsBytes>(data: &mut T) -> &mut [u8] {
     unsafe {
         ::core::slice::from_raw_parts_mut((data as *mut T) as *mut u8, ::core::mem::size_of::<T>())
