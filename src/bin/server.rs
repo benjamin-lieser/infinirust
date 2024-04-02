@@ -7,7 +7,7 @@ use tokio::net::{
 };
 
 use infinirust::misc::{cast_bytes_mut, cast_bytes};
-use infinirust::net::PackageBlockUpdate;
+use infinirust::net::{ClientPackagePlayerPosition, Package, PackageBlockUpdate};
 use infinirust::server::{Client, Command, ServerCommand, NOUSER, UID};
 
 fn main() -> std::io::Result<()> {
@@ -115,6 +115,10 @@ async fn read_play_packages(
                     .send((uid, Command::BlockUpdate(package.pos, package.block)))
                     .await
                     .expect("This should never happen. The internal server is not responding");
+            }
+            // Player position
+            0x000C => {
+                ClientPackagePlayerPosition::read_and_handle(&mut stream, &server, uid).await;
             }
             _ => {
                 return Err(anyhow!("Invalid package type"));

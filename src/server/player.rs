@@ -107,6 +107,10 @@ impl Players {
         &self.online[uid].as_ref().unwrap().package_writer
     }
 
+    pub fn get_player_mut(&mut self, uid: UID) -> &mut Player {
+        &mut self.online[uid].as_mut().unwrap().player
+    }
+
     /// Sends a package to all logged in players
     pub fn broadcast(&self, package: Arc<[u8]>) {
         for player in self.online.iter().flatten() {

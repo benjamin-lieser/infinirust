@@ -1,7 +1,10 @@
 use std::sync::Arc;
 
+use crate::net::ServerPackagePlayerPosition;
+
 use self::player::Players;
 use self::world::ServerWorld;
+use crate::net::Package;
 
 pub mod player;
 pub mod world;
@@ -49,7 +52,17 @@ pub fn start_world(
                 _ = server.players.client(uid).try_send(server.world.get_chunk_data(&pos));
             }
             Command::PlayerPosition(pos, pitch, yaw) => {
-                
+                let player = server.players.get_player_mut(uid);
+                player.pos = pos;
+                player.pitch = pitch;
+                player.yaw = yaw;
+                let package = ServerPackagePlayerPosition {
+                    uid: uid as u64,
+                    pos,
+                    pitch,
+                    yaw,
+                };
+                server.players.broadcast(package.to_bytes());
             }
             Command::BlockUpdate(pos, block) => {
                 let package = server.world.process_block_update(&pos, block);
