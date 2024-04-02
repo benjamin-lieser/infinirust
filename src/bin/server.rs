@@ -148,11 +148,6 @@ async fn read_start_packages(mut stream: OwnedReadHalf, server: ServerCommand, c
                     server.send((NOUSER, command)).await.unwrap();
 
                     if let Some(uid) = rx.await.unwrap() {
-                        //send login success package
-                        let mut package =
-                            vec![0x02u8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
-                        package[2..].copy_from_slice(cast_bytes(&uid));
-                        client.send(package.into()).await.unwrap();
 
                         break uid; //Move on to play state
                     }
