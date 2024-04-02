@@ -49,12 +49,15 @@ impl Players {
     pub unsafe fn draw(&self, glt: GLToken, projection_view: &nalgebra_glm::Mat4, pos : &[f64;3], mvp_location: GLint) {
         for player in self.players.iter() {
             let [x, y, z] = player.camera.position();
+
+            let model_center = glm::translation(&glm::vec3(-0.5, -0.5, -0.5));
+
             let model_trans = glm::translation(&glm::vec3(
                 (x - pos[0]) as f32,
                 (y - pos[1]) as f32,
                 (z - pos[2]) as f32,
             ));
-            let model = model_trans * player.camera.view_matrix();
+            let model = model_trans * player.camera.view_matrix() * model_center;
             let mvp = projection_view * model;
             gl::UniformMatrix4fv(mvp_location, 1, 0, mvp.as_ptr());
             self.render.draw(glt);
