@@ -109,9 +109,9 @@ pub struct ServerPlayerLogin {
 impl ServerPlayerLogin {
     pub fn to_arc(&self) -> Arc<[u8]> {
         assert!(self.name.len() <= u16::MAX as usize);
-        let mut bytes = vec![0u8; std::mem::size_of::<Self>() + 8 + 2 + self.name.len()];
+        let mut bytes = vec![0u8; 2 + 8 + 2 + self.name.len()];
         bytes[0..2].copy_from_slice(&3u16.to_le_bytes());
-        bytes[2..4].copy_from_slice(&(self.name.len() as u16).to_be_bytes());
+        bytes[2..4].copy_from_slice(&(self.name.len() as u16).to_le_bytes());
         bytes[4..4+self.name.len()].copy_from_slice(self.name.as_bytes());
         bytes[4+self.name.len()..].copy_from_slice(cast_bytes(&self.uid));
         bytes.into()

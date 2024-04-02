@@ -108,7 +108,7 @@ impl PlayerRender {
     pub fn draw(&self, glt: GLToken) {
         self.vao.bind(glt);
         unsafe {
-            gl::DrawArrays(gl::TRIANGLES, 0, 12);
+            gl::DrawArrays(gl::TRIANGLES, 0, 36);
         }
     }
 

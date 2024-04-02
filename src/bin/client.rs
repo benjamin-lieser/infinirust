@@ -11,9 +11,12 @@ use winit::event::{DeviceEvent, ElementState, Event, KeyboardInput, VirtualKeyCo
 fn main() {
     let args: Vec<String> = std::env::args().collect();
 
-    let (mut server_process, bind) = start_server(&args[1]);
-
-    let (server_tcp, uid) = login(&bind, &args[2]);
+    let ((server_tcp, uid), mut server_process) = if !args[1].contains(':') {
+        let (server_process, bind) = start_server(&args[1]);
+        (login(&bind, &args[2]), Some(server_process))
+    } else {
+        (login(&args[1], &args[2]), None)
+    };
 
     let (event_loop, window, surface, gl_context) = infinirust::window::create_window();
 
@@ -133,11 +136,13 @@ fn main() {
                 unsafe {
                     ManuallyDrop::take(&mut game).exit(glt);
                 }
-                //close interval server
-                let mut stdin = server_process.stdin.take().unwrap();
-                stdin.write_all(b"exit\n").unwrap();
-                stdin.flush().unwrap();
-                server_process.wait().unwrap();
+                //close interval server if it was started
+                if let Some(ref mut server_process) = &mut server_process {
+                    let mut stdin = server_process.stdin.take().unwrap();
+                    stdin.write_all(b"exit\n").unwrap();
+                    stdin.flush().unwrap();
+                    server_process.wait().unwrap();
+                }
             }
             _ => (),
         }
