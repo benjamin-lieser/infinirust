@@ -1,5 +1,10 @@
 # Infinirust
 A multiplayer voxel game implemented in Rust
+## Features
+- Procedially generated voxel world
+- Multiple Players can join a server
+- Block Update are propagated to the players (TODO)
+- Player positions are propagated (TODO)
 ## Technical Features
 - Async TCP Server
 - Multithreaded OpenGL Client, to prevent lag spikes
