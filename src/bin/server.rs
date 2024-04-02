@@ -95,7 +95,7 @@ async fn read_play_packages(
             0x000A => {
                 let mut pos = [0i32; 3];
                 stream
-                    .read_exact(infinirust::misc::as_bytes_mut(&mut pos))
+                    .read_exact(infinirust::misc::cast_bytes_mut(&mut pos))
                     .await?;
                 let command = Command::ChunkData(pos, uid);
                 server

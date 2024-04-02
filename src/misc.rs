@@ -10,16 +10,8 @@ unsafe impl Sync for UnSend {}
 pub struct UnSync(*const ());
 unsafe impl Send for UnSync {}
 
-pub fn as_bytes(data: &[i32]) -> &[u8] {
-    let ptr = data.as_ptr();
-    unsafe { std::slice::from_raw_parts(ptr.cast(), data.len() * 4) }
-}
-
-pub fn as_bytes_mut(data: &mut [i32]) -> &mut [u8] {
-    let ptr = data.as_mut_ptr();
-    unsafe { std::slice::from_raw_parts_mut(ptr.cast(), data.len() * 4) }
-}
-
+/// Returns the index of the first None in the slice
+/// None if there is no None
 pub fn first_none<T>(data: &[Option<T>]) -> Option<usize> {
     for (i, d) in data.iter().enumerate() {
         if d.is_none() {
