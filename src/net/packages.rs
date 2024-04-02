@@ -26,7 +26,13 @@ pub trait Package: Default + AsBytes {
         package.handle(command, uid).await;
     }
 
-    fn to_bytes(&self) -> Arc<[u8]> {
+    fn to_arc(&self) -> Arc<[u8]> {
+        let mut bytes = vec![0u8; std::mem::size_of::<Self>() + 2];
+        bytes[0..2].copy_from_slice(&Self::id().to_le_bytes());
+        bytes[2..].copy_from_slice(cast_bytes(self));
+        bytes.into()
+    }
+    fn to_box(&self) -> Box<[u8]> {
         let mut bytes = vec![0u8; std::mem::size_of::<Self>() + 2];
         bytes[0..2].copy_from_slice(&Self::id().to_le_bytes());
         bytes[2..].copy_from_slice(cast_bytes(self));

@@ -3,6 +3,8 @@ use nalgebra_glm as glm;
 
 pub trait Camera {
     fn position(&self) -> [f64; 3];
+    fn pitch(&self) -> f32;
+    fn yaw(&self) -> f32;
     fn view_matrix(&self) -> Mat4;
     fn view_direction(&self) -> glm::Vec3;
 
@@ -36,6 +38,12 @@ impl FreeCamera {
 impl Camera for FreeCamera {
     fn position(&self) -> [f64; 3] {
         self.pos
+    }
+    fn pitch(&self) -> f32 {
+        self.pitch
+    }
+    fn yaw(&self) -> f32 {
+        self.yaw
     }
 
     fn change_pitch(&mut self, diff: f32) {

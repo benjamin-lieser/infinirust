@@ -8,7 +8,7 @@ use tokio::{
 use crate::{
     game::{world::VIEW_DISTANCE, Camera, CHUNK_SIZE, Y_RANGE},
     misc::{cast_bytes, cast_bytes_mut, first_none},
-    mygl::TextureAtlas,
+    mygl::TextureAtlas, net::{ClientPackagePlayerPosition, Package as NetworkPackage, ServerPackagePlayerPosition},
 };
 
 use super::{FreeCamera, World};
@@ -102,6 +102,12 @@ async fn manage_world(
             update = client.recv() => {
                 match update {
                     Some(Update::Pos(camera)) => {
+                        let position_package = ClientPackagePlayerPosition {
+                            pos: camera.position(),
+                            pitch: camera.pitch(),
+                            yaw: camera.yaw(),
+                        };
+                        out_packages.send(position_package.to_box()).await.unwrap();
                         let camera_pos = camera.position();
                         let camera_center = [
                             camera_pos[0] as i32 / CHUNK_SIZE as i32,
@@ -128,7 +134,6 @@ async fn manage_world(
                                     if !active_chunk_ids.contains_key(&pos) {
                                         for y in -Y_RANGE..Y_RANGE {
                                             let pos = [pos[0], y, pos[2]];
-                                            println!("Requesting chunk: {:?}", pos);
                                             out_packages.send(request_chunk_package(pos)).await.unwrap();
                                         }
                                     }
@@ -191,12 +196,15 @@ async fn read_packages(
                 reader.read_exact(&mut data).await.unwrap();
                 chunk_loader.send(Package::Chunk(pos, data)).await.unwrap();
             }
-            0x0000B => {
+            0x000B => {
                 //Block Update
                 todo!();
             }
+            0x000C => {
+                ServerPackagePlayerPosition::new(&mut reader).await;
+            }
             _ => {
-                panic!("Client: Invalid Package type")
+                panic!("Client: Invalid Package type {package_type}")
             }
         }
     }

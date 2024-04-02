@@ -62,7 +62,7 @@ pub fn start_world(
                     pitch,
                     yaw,
                 };
-                server.players.broadcast(package.to_bytes());
+                server.players.broadcast(package.to_arc());
             }
             Command::BlockUpdate(pos, block) => {
                 let package = server.world.process_block_update(&pos, block);

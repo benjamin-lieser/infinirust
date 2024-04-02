@@ -31,7 +31,7 @@ pub struct ServerPlayer {
     pub uid: usize,
 }
 
-/// Both fields have to be same length, online is None when not logged in
+/// Both Vec have to be same length, online is None when not logged in
 #[derive(Debug)]
 pub struct Players {
     registered: Vec<Player>,
