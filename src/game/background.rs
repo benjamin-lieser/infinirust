@@ -75,9 +75,8 @@ async fn manage_world(
                     // Chunkdata recieved
                     Some(Package::Chunk(pos, data)) => {
                         // Both locks in this section are sync, but we do not await here
+                        let mut unused_chunks_rx = world.unused_chunks.lock().unwrap();
                         let mut chunk = {
-                            let mut unused_chunks_rx = world.unused_chunks.lock().unwrap();
-                            println!("unused_chunks_rx: {:?}", unused_chunks_rx.len());
                             unused_chunks_rx.pop().expect("No available chunks")
                         };
                         chunk.load(data, pos);
@@ -86,7 +85,11 @@ async fn manage_world(
                             // This lock is time critical for the renderer thread, so be quick about it
                             let mut chunks = world.chunks.lock().unwrap();
                             let slot = first_none(&chunks).expect("No available slot, this should be impossible");
-                            active_chunk_ids.insert(pos, slot);
+                            
+                            if let Some(slot) = active_chunk_ids.insert(pos, slot) {
+                                unused_chunks_rx.push(chunks[slot].take().expect("There should be a chunk in this slot"));
+
+                            }
                             chunks[slot] = Some(chunk);
                         }
 

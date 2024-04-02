@@ -7,8 +7,8 @@ use crate::mygl::{get_gl_string, GLToken, Program, TextureAtlas};
 
 use super::{misc::CubeOutlines, overlay::Overlay, Camera, Controls, FreeCamera, Key, World, background::Update};
 
-const NEAR_PLAIN: f32 = 0.3;
-const FAR_PLAIN: f32 = 100.0;
+const NEAR_PLAIN: f32 = 0.7;
+const FAR_PLAIN: f32 = 300.0;
 
 /// This struct holds all GL relevant things
 /// All the functions have to be called from the GL thread
