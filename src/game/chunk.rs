@@ -5,7 +5,7 @@ use crate::game::Direction;
 pub const CHUNK_SIZE: usize = 16;
 
 /// Range y chunks go from -Y_RANGE to Y_RANGE - 1
-pub const Y_RANGE: i32 = 2;
+pub const Y_RANGE: i32 = 4;
 
 /// Data of a chunk. The blocks are stored in a 1D array
 pub struct ChunkData {

@@ -6,7 +6,7 @@ use crate::mygl::{GLToken, Program};
 
 use super::{chunk, Camera, Chunk, FreeCamera, CHUNK_SIZE, Y_RANGE};
 
-pub const VIEW_DISTANCE: i32 = 2;
+pub const VIEW_DISTANCE: i32 = 8;
 
 /// The maximum number of chunks that can be loaded at once
 const MAX_CHUNKS: usize =
