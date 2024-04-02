@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::misc::cast_bytes;
-use crate::net::ServerPackagePlayerPosition;
+use crate::net::{ServerPackagePlayerPosition, ServerPlayerLogin};
 
 use self::player::Players;
 use self::world::ServerWorld;
@@ -59,6 +59,16 @@ pub fn start_world(
                         yaw: player.yaw,
                     };
                     server.players.client(uid).try_send(package.to_arc()).unwrap();
+                    //Send login package of all online players
+                    for player in server.players.online() {
+                        if player.uid != uid {
+                            let package = ServerPlayerLogin {
+                                uid: player.uid as u64,
+                                name: player.player.name.clone(),
+                            };
+                            server.players.client(uid).try_send(package.to_arc()).unwrap();
+                        }
+                    }
                 }
             }
             Command::Logout => {

@@ -53,6 +53,10 @@ impl Players {
         }
     }
 
+    pub fn online(&self) -> impl Iterator<Item = &ServerPlayer> {
+        self.online.iter().flatten()
+    }
+
     pub fn login(&mut self, name: String, client: Client) -> Option<UID> {
         let pos = self
             .registered

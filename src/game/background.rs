@@ -9,7 +9,7 @@ use crate::{
     game::{world::VIEW_DISTANCE, Camera, CHUNK_SIZE, Y_RANGE},
     misc::{cast_bytes, cast_bytes_mut, first_none},
     mygl::TextureAtlas,
-    net::{ClientPackagePlayerPosition, Package as NetworkPackage, ServerPackagePlayerPosition}, server::UID,
+    net::{ClientPackagePlayerPosition, Package as NetworkPackage, ServerPackagePlayerPosition, ServerPlayerLogin}, server::UID,
 };
 
 use super::{FreeCamera, World};
@@ -26,6 +26,7 @@ pub enum Update {
 enum Package {
     Chunk([i32; 3], Vec<u8>),
     PlayerPositionUpdate(ServerPackagePlayerPosition),
+    PlayerLogin(ServerPlayerLogin),
 }
 
 pub fn background_thread(
@@ -102,6 +103,10 @@ async fn manage_world(
                     Some(Package::PlayerPositionUpdate(package)) => {
                         // Update player position
                         world.players.lock().unwrap().update(&package);
+                    }
+                    Some(Package::PlayerLogin(package)) => {
+                        // Add player to world
+                        world.players.lock().unwrap().add_player(package.name, package.uid as UID, FreeCamera::new([0.0,0.0,0.0]));
                     }
                     None => {panic!("package reader crashed")}
                 }
@@ -213,6 +218,11 @@ async fn read_packages(
                     .send(Package::PlayerPositionUpdate(player_pos))
                     .await
                     .unwrap();
+            }
+            0x0003 => {
+                // Other player logs in
+                let login_package = ServerPlayerLogin::new(&mut reader).await;
+                chunk_loader.send(Package::PlayerLogin(login_package)).await.unwrap();
             }
             _ => {
                 panic!("Client: Invalid Package type {package_type}")
