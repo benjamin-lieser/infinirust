@@ -103,6 +103,10 @@ async fn manage_world(
                     Some(Package::PlayerPositionUpdate(package)) => {
                         // Update player position
                         world.players.lock().unwrap().update(&package);
+                        if package.uid as UID == uid {
+                            // Force update
+                            current_world_center = [i32::MIN; 2];
+                        }
                     }
                     Some(Package::PlayerLogin(package)) => {
                         // Add player to world

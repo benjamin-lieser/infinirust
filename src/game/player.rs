@@ -50,6 +50,8 @@ impl Players {
         for player in self.players.iter() {
             let [x, y, z] = player.camera.position();
 
+            //TODO this is still a bit off
+
             let model_center = glm::translation(&glm::vec3(-0.5, -0.5, -0.5));
 
             let model_trans = glm::translation(&glm::vec3(

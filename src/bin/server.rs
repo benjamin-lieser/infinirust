@@ -33,7 +33,7 @@ fn main() -> std::io::Result<()> {
         };
 
         // Channel to send commands to the server world (shared state of the server)
-        let (command_tx, command_rx) = tokio::sync::mpsc::channel(100);
+        let (command_tx, command_rx) = tokio::sync::mpsc::channel(10000);
         std::thread::spawn(|| infinirust::server::start_world(command_rx, world_directory.into()));
 
         // Spwan the stdin thread and give it access to send server world commands
@@ -57,7 +57,7 @@ fn main() -> std::io::Result<()> {
             let (stream, _) = listener.accept().await.unwrap();
             let (read, write) = stream.into_split();
 
-            let (write_tx, write_rx) = tokio::sync::mpsc::channel(100);
+            let (write_tx, write_rx) = tokio::sync::mpsc::channel(10000);
 
             tokio::task::spawn(write_packages(write, write_rx));
             tokio::task::spawn(read_start_packages(read, command_tx.clone(), write_tx));
