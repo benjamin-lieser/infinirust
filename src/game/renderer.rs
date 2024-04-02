@@ -28,38 +28,36 @@ pub struct Renderer {
 
 impl Renderer {
     pub fn new(glt : GLToken, world: Arc<World>, atlas : Arc<TextureAtlas> ,render_size: winit::dpi::PhysicalSize<u32>, updates: tokio::sync::mpsc::Sender<Update>) -> Self {
-        unsafe {
-            if let Some(renderer) = get_gl_string(gl::RENDERER) {
-                println!("Running on {}", renderer.to_string_lossy());
-            }
-            if let Some(version) = get_gl_string(gl::VERSION) {
-                println!("OpenGL Version {}", version.to_string_lossy());
-            }
+        if let Some(renderer) = get_gl_string(gl::RENDERER) {
+            println!("Running on {}", renderer.to_string_lossy());
+        }
+        if let Some(version) = get_gl_string(gl::VERSION) {
+            println!("OpenGL Version {}", version.to_string_lossy());
+        }
 
-            if let Some(shaders_version) = get_gl_string(gl::SHADING_LANGUAGE_VERSION) {
-                println!("Shaders version on {}", shaders_version.to_string_lossy());
-            }
+        if let Some(shaders_version) = get_gl_string(gl::SHADING_LANGUAGE_VERSION) {
+            println!("Shaders version on {}", shaders_version.to_string_lossy());
+        }
 
-            let program = Program::new(glt,VERTEX_SHADER_SOURCE, FRAGMENT_SHADER_SOURCE);
+        let program = Program::new(glt,VERTEX_SHADER_SOURCE, FRAGMENT_SHADER_SOURCE);
 
-            let projection = glm::perspective(
-                render_size.width as f32 / render_size.height as f32,
-                std::f32::consts::FRAC_PI_4,
-                NEAR_PLAIN,
-                FAR_PLAIN,
-            );
-            Self {
-                world,
-                program,
-                atlas: atlas,
-                projection,
-                camera: FreeCamera::new([0.0, 0.0, 0.0]),
-                controls: Controls::default(),
-                cube_outlines: CubeOutlines::new(glt),
-                overlay: Overlay::new(glt, render_size),
-                render_size,
-                updates
-            }
+        let projection = glm::perspective(
+            render_size.width as f32 / render_size.height as f32,
+            std::f32::consts::FRAC_PI_4,
+            NEAR_PLAIN,
+            FAR_PLAIN,
+        );
+        Self {
+            world,
+            program,
+            atlas: atlas,
+            projection,
+            camera: FreeCamera::new([0.0, 0.0, 0.0]),
+            controls: Controls::default(),
+            cube_outlines: CubeOutlines::new(glt),
+            overlay: Overlay::new(glt, render_size),
+            render_size,
+            updates
         }
     }
 

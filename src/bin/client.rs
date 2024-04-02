@@ -13,14 +13,14 @@ fn main() {
 
     let (mut server_process, bind) = start_server(&args[1]);
 
-    let (server_tcp, _uid) = login(&bind, &args[2]);
+    let (server_tcp, uid) = login(&bind, &args[2]);
 
     let (event_loop, window, surface, gl_context) = infinirust::window::create_window();
 
     // It is save to create the GLToken in the main thread
     let glt = unsafe { GLToken::new() };
 
-    let mut game = ManuallyDrop::new(Game::new(glt, window.inner_size(), server_tcp));
+    let mut game = ManuallyDrop::new(Game::new(glt, window.inner_size(), server_tcp, uid as usize, args[2].clone()));
 
     let mut now = std::time::SystemTime::now();
 

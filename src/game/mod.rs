@@ -11,6 +11,7 @@ mod player;
 
 use std::net::TcpStream;
 use std::sync::Arc;
+use std::default::Default;
 
 use winit::dpi::PhysicalSize;
 
@@ -24,8 +25,10 @@ pub use renderer::Renderer;
 
 use crate::mygl::GLToken;
 use crate::mygl::TextureAtlas;
+use crate::server::UID;
 
-use self::background::chunk_loader;
+use self::background::background_thread;
+use self::player::Player;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(u8)]
@@ -68,10 +71,16 @@ fn create_atlas(glt: GLToken) -> TextureAtlas {
 }
 
 impl Game {
-    pub fn new(glt : GLToken, render_size: PhysicalSize<u32>, tcp: TcpStream) -> Self {
+    pub fn new(glt : GLToken, render_size: PhysicalSize<u32>, tcp: TcpStream, uid : UID, name : String) -> Self {
         let atlas = create_atlas(glt);
 
-        let world = World::new(glt, &atlas);
+        let local_player = Player {
+            name,
+            uid,
+            camera : FreeCamera::new([0.0,0.0,0.0]),
+        };
+
+        let world = World::new(glt, &atlas, local_player);
         let world = Arc::new(world);
 
         let (update_tx, update_rx) = tokio::sync::mpsc::channel(100);
@@ -81,7 +90,7 @@ impl Game {
 
 
         let chunk_loader_world = world.clone();
-        let background_thread = std::thread::spawn(|| chunk_loader(tcp, chunk_loader_world, update_rx, atlas));
+        let background_thread = std::thread::spawn(move || background_thread(tcp, chunk_loader_world, update_rx, atlas, uid));
 
 
         Self { renderer , background_thread}

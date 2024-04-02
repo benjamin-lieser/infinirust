@@ -42,7 +42,7 @@ pub fn start_world(
         match command {
             Command::Login(name, client, back) => {
                 let uid = server.players.login(name, client);
-                back.send(uid).expect("Could not send uuid back");
+                back.send(uid).expect("Could not send uid back");
             }
             Command::Logout => {
                 server.players.logout(uid);
@@ -71,7 +71,7 @@ pub fn start_world(
             }
             Command::Shutdown => {
                 server.players.sync_to_disk(&world_directory).unwrap();
-                //Todo Sync chunk data
+                //TODO Sync chunk data
                 eprintln!("Server shut down after saving to disk");
                 std::process::exit(0);
             }

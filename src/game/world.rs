@@ -2,7 +2,7 @@ use std::sync::Mutex;
 
 use nalgebra_glm as glm;
 
-use crate::mygl::{GLToken, Program, TextureAtlas};
+use crate::{mygl::{GLToken, Program, TextureAtlas}, game::player::Player};
 
 use super::{player::Players, Camera, Chunk, FreeCamera, CHUNK_SIZE, Y_RANGE};
 
@@ -20,7 +20,7 @@ pub struct World {
 }
 
 impl World {
-    pub fn new(glt: GLToken, texture_atlas: &TextureAtlas) -> Self {
+    pub fn new(glt: GLToken, texture_atlas: &TextureAtlas, local_player : Player) -> Self {
         let mut unused_chunks = Vec::new();
         for _ in 0..MAX_CHUNKS {
             unused_chunks.push(Chunk::new_empty(glt));
@@ -32,7 +32,7 @@ impl World {
         Self {
             chunks: Mutex::new(chunks),
             unused_chunks : Mutex::new(unused_chunks),
-            players: Mutex::new(Players::new(glt, texture_atlas)),
+            players: Mutex::new(Players::new(glt, texture_atlas, local_player)),
         }
     }
 

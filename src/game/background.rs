@@ -8,7 +8,8 @@ use tokio::{
 use crate::{
     game::{world::VIEW_DISTANCE, Camera, CHUNK_SIZE, Y_RANGE},
     misc::{cast_bytes, cast_bytes_mut, first_none},
-    mygl::TextureAtlas, net::{ClientPackagePlayerPosition, Package as NetworkPackage, ServerPackagePlayerPosition},
+    mygl::TextureAtlas,
+    net::{ClientPackagePlayerPosition, Package as NetworkPackage, ServerPackagePlayerPosition}, server::UID,
 };
 
 use super::{FreeCamera, World};
@@ -24,14 +25,15 @@ pub enum Update {
 
 enum Package {
     Chunk([i32; 3], Vec<u8>),
-    PlayerPositionUpdate(ServerPackagePlayerPosition)
+    PlayerPositionUpdate(ServerPackagePlayerPosition),
 }
 
-pub fn chunk_loader(
+pub fn background_thread(
     tcp: TcpStream,
     world: Arc<World>,
     updates: tokio::sync::mpsc::Receiver<Update>,
     atlas: Arc<TextureAtlas>,
+    uid: UID,
 ) {
     // Start a single thread tokio runtime in this thread
     let rt = tokio::runtime::Builder::new_current_thread()
@@ -51,7 +53,7 @@ pub fn chunk_loader(
         let write_join_handle = tokio::spawn(write_packages(writer, writer_rx));
 
         let world_join_handler =
-            tokio::spawn(manage_world(world, atlas, loader_rx, writer_tx, updates));
+            tokio::spawn(manage_world(world, atlas, loader_rx, writer_tx, updates, uid));
         // When manage_world returns, the client has exited
         world_join_handler.await.unwrap();
         read_join_handle.abort();
@@ -67,6 +69,7 @@ async fn manage_world(
     mut in_packages: tokio::sync::mpsc::Receiver<Package>,
     out_packages: tokio::sync::mpsc::Sender<Box<[u8]>>,
     mut client: tokio::sync::mpsc::Receiver<Update>,
+    uid: UID
 ) {
     let mut current_world_center = [i32::MIN; 2]; // x, z
     let mut active_chunk_ids = HashMap::<[i32; 3], usize>::new();
@@ -98,7 +101,11 @@ async fn manage_world(
                     }
                     Some(Package::PlayerPositionUpdate(package)) => {
                         // Update player position
-                        world.players.lock().unwrap().update(&package);
+                        if package.uid == uid as u64 {
+                            
+                        } else {
+                            world.players.lock().unwrap().update(&package);
+                        }
                     }
                     None => {panic!("package reader crashed")}
                 }
@@ -206,7 +213,10 @@ async fn read_packages(
             }
             0x000C => {
                 let player_pos = ServerPackagePlayerPosition::new(&mut reader).await;
-                chunk_loader.send(Package::PlayerPositionUpdate(player_pos)).await.unwrap();
+                chunk_loader
+                    .send(Package::PlayerPositionUpdate(player_pos))
+                    .await
+                    .unwrap();
             }
             _ => {
                 panic!("Client: Invalid Package type {package_type}")

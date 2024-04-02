@@ -12,14 +12,17 @@ pub struct Player {
 }
 
 pub struct Players {
+    /// Other Players
     players: Vec<Player>,
+    local_player: Player,
     render: PlayerRender,
 }
 
 impl Players {
-    pub fn new(glt: GLToken, atlas: &TextureAtlas) -> Self {
+    pub fn new(glt: GLToken, atlas: &TextureAtlas, local_player : Player) -> Self {
         Self {
             players: vec![],
+            local_player,
             render: PlayerRender::new(glt, atlas),
         }
     }
@@ -37,6 +40,9 @@ impl Players {
             if player.uid == package.uid as usize {
                 player.camera.update(package.pos, package.pitch, package.yaw);
             }
+        }
+        if self.local_player.uid == package.uid as usize {
+            self.local_player.camera.update(package.pos, package.pitch, package.yaw);
         }
     }
 
