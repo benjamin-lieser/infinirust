@@ -4,7 +4,7 @@ use nalgebra_glm as glm;
 
 use crate::mygl::{GLToken, Program};
 
-use super::{chunk, Camera, Chunk, FreeCamera, CHUNK_SIZE, Y_RANGE};
+use super::{Camera, Chunk, FreeCamera, CHUNK_SIZE, Y_RANGE};
 
 pub const VIEW_DISTANCE: i32 = 8;
 

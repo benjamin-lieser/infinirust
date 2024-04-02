@@ -1,13 +1,15 @@
-use std::{
-    collections::HashMap, net::TcpStream, sync::{Arc, Mutex}
-};
+use std::{collections::HashMap, net::TcpStream, sync::Arc};
 
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::tcp::{OwnedReadHalf, OwnedWriteHalf},
 };
 
-use crate::{game::{world::VIEW_DISTANCE, Camera, Chunk, CHUNK_SIZE, Y_RANGE}, misc::{cast_bytes, cast_bytes_mut, first_none}, mygl::TextureAtlas};
+use crate::{
+    game::{world::VIEW_DISTANCE, Camera, CHUNK_SIZE, Y_RANGE},
+    misc::{cast_bytes, cast_bytes_mut, first_none},
+    mygl::TextureAtlas,
+};
 
 use super::{FreeCamera, World};
 
@@ -47,7 +49,8 @@ pub fn chunk_loader(
         let read_join_handle = tokio::spawn(read_packages(reader, loader_tx));
         let write_join_handle = tokio::spawn(write_packages(writer, writer_rx));
 
-        let world_join_handler = tokio::spawn(manage_world(world, atlas, loader_rx, writer_tx, updates));
+        let world_join_handler =
+            tokio::spawn(manage_world(world, atlas, loader_rx, writer_tx, updates));
         // When manage_world returns, the client has exited
         world_join_handler.await.unwrap();
         read_join_handle.abort();
@@ -63,10 +66,9 @@ async fn manage_world(
     mut in_packages: tokio::sync::mpsc::Receiver<Package>,
     out_packages: tokio::sync::mpsc::Sender<Box<[u8]>>,
     mut client: tokio::sync::mpsc::Receiver<Update>,
-
 ) {
     let mut current_world_center = [0i32; 2]; // x, z
-    let mut active_chunk_ids = HashMap::<[i32;3], usize>::new();
+    let mut active_chunk_ids = HashMap::<[i32; 3], usize>::new();
 
     loop {
         tokio::select! {
@@ -85,7 +87,7 @@ async fn manage_world(
                             // This lock is time critical for the renderer thread, so be quick about it
                             let mut chunks = world.chunks.lock().unwrap();
                             let slot = first_none(&chunks).expect("No available slot, this should be impossible");
-                            
+
                             if let Some(slot) = active_chunk_ids.insert(pos, slot) {
                                 unused_chunks_rx.push(chunks[slot].take().expect("There should be a chunk in this slot"));
 
@@ -135,7 +137,7 @@ async fn manage_world(
                             current_world_center = camera_center;
                         }
                     }
-                    Some(Update::Block(pos, block)) => {
+                    Some(Update::Block(_pos, _block)) => {
 
                     }
                     Some(Update::Exit) => {
