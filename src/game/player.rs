@@ -14,7 +14,7 @@ pub struct Player {
 pub struct Players {
     /// Other Players
     players: Vec<Player>,
-    local_player: Player,
+    pub local_player: Player,
     render: PlayerRender,
 }
 

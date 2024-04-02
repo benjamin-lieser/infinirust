@@ -101,11 +101,7 @@ async fn manage_world(
                     }
                     Some(Package::PlayerPositionUpdate(package)) => {
                         // Update player position
-                        if package.uid == uid as u64 {
-                            
-                        } else {
-                            world.players.lock().unwrap().update(&package);
-                        }
+                        world.players.lock().unwrap().update(&package);
                     }
                     None => {panic!("package reader crashed")}
                 }

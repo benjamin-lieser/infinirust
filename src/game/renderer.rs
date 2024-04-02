@@ -5,7 +5,10 @@ use nalgebra_glm as glm;
 
 use crate::mygl::{get_gl_string, GLToken, Program, TextureAtlas};
 
-use super::{misc::CubeOutlines, overlay::Overlay, Camera, Controls, FreeCamera, Key, World, background::Update};
+use super::{
+    background::Update, camera, misc::CubeOutlines, overlay::Overlay, Camera, Controls, FreeCamera,
+    Key, World,
+};
 
 const NEAR_PLAIN: f32 = 0.7;
 const FAR_PLAIN: f32 = 300.0;
@@ -18,16 +21,21 @@ pub struct Renderer {
     program: Program,
     atlas: Arc<TextureAtlas>,
     projection: Mat4,
-    camera: FreeCamera,
     controls: Controls,
     cube_outlines: CubeOutlines,
     overlay: Overlay,
     render_size: winit::dpi::PhysicalSize<u32>,
-    updates: tokio::sync::mpsc::Sender<Update>
+    updates: tokio::sync::mpsc::Sender<Update>,
 }
 
 impl Renderer {
-    pub fn new(glt : GLToken, world: Arc<World>, atlas : Arc<TextureAtlas> ,render_size: winit::dpi::PhysicalSize<u32>, updates: tokio::sync::mpsc::Sender<Update>) -> Self {
+    pub fn new(
+        glt: GLToken,
+        world: Arc<World>,
+        atlas: Arc<TextureAtlas>,
+        render_size: winit::dpi::PhysicalSize<u32>,
+        updates: tokio::sync::mpsc::Sender<Update>,
+    ) -> Self {
         if let Some(renderer) = get_gl_string(gl::RENDERER) {
             println!("Running on {}", renderer.to_string_lossy());
         }
@@ -39,7 +47,7 @@ impl Renderer {
             println!("Shaders version on {}", shaders_version.to_string_lossy());
         }
 
-        let program = Program::new(glt,VERTEX_SHADER_SOURCE, FRAGMENT_SHADER_SOURCE);
+        let program = Program::new(glt, VERTEX_SHADER_SOURCE, FRAGMENT_SHADER_SOURCE);
 
         let projection = glm::perspective(
             render_size.width as f32 / render_size.height as f32,
@@ -52,48 +60,53 @@ impl Renderer {
             program,
             atlas: atlas,
             projection,
-            camera: FreeCamera::new([0.0, 0.0, 0.0]),
             controls: Controls::default(),
             cube_outlines: CubeOutlines::new(glt),
             overlay: Overlay::new(glt, render_size),
             render_size,
-            updates
+            updates,
         }
     }
 
-    pub fn draw(&mut self, glt : GLToken, delta_t: f32) {
+    pub fn draw(&mut self, glt: GLToken, delta_t: f32) {
         let speed = 35.0;
 
-        if self.controls.forward {
-            self.camera.go_forward(delta_t * speed);
-        }
+        let camera = {
+            let mut players = self.world.players.lock().unwrap();
+            let camera = &mut players.local_player.camera;
 
-        if self.controls.backward {
-            self.camera.go_forward(-delta_t * speed);
-        }
+            if self.controls.forward {
+                camera.go_forward(delta_t * speed);
+            }
 
-        if self.controls.left {
-            self.camera.go_left(delta_t * speed);
-        }
+            if self.controls.backward {
+                camera.go_forward(-delta_t * speed);
+            }
 
-        if self.controls.right {
-            self.camera.go_left(-delta_t * speed);
-        }
+            if self.controls.left {
+                camera.go_left(delta_t * speed);
+            }
 
-        if self.controls.up {
-            self.camera.go_up(delta_t * speed);
-        }
+            if self.controls.right {
+                camera.go_left(-delta_t * speed);
+            }
 
-        if self.controls.down {
-            self.camera.go_up(-delta_t * speed);
-        }
+            if self.controls.up {
+                camera.go_up(delta_t * speed);
+            }
 
+            if self.controls.down {
+                camera.go_up(-delta_t * speed);
+            }
+            camera.clone()
+        };
 
-        self.world.draw(glt, &self.program, &self.projection, &self.camera);
+        self.world
+            .draw(glt, &self.program, &self.projection, &camera);
 
         //Update background about the current position
         //For position its ok if it gets lost, for blockupdate not to much TODO
-        _ = self.updates.try_send(Update::Pos(self.camera.clone()));
+        _ = self.updates.try_send(Update::Pos(camera.clone()));
 
         let distance_to_screen_mid = unsafe {
             let mut depth: f32 = 0.0;
@@ -112,9 +125,9 @@ impl Renderer {
         };
 
         if distance_to_screen_mid <= 10.0 {
-            let [x, y, z] = self.camera.position();
+            let [x, y, z] = camera.position();
 
-            let look_pos = self.camera.view_direction() * (distance_to_screen_mid);
+            let look_pos = camera.view_direction() * (distance_to_screen_mid);
 
             let mut abs_look_pos = [
                 look_pos.x as f64 + x,
@@ -135,7 +148,7 @@ impl Renderer {
 
             let mut look_block = abs_look_pos.map(|x| x.floor());
 
-            look_block[direction] += if self.camera.view_direction()[direction] <= 0.0 {
+            look_block[direction] += if camera.view_direction()[direction] <= 0.0 {
                 -1.0
             } else {
                 0.0
@@ -143,7 +156,7 @@ impl Renderer {
 
             println!(
                 "{},{},{},{}",
-                self.camera.view_direction(),
+                camera.view_direction(),
                 look_pos.x as f64 + x,
                 look_pos.y as f64 + y,
                 look_pos.z as f64 + z
@@ -156,20 +169,17 @@ impl Renderer {
             ));
 
             self.cube_outlines
-                .draw(glt, &(self.projection * self.camera.view_matrix() * model));
+                .draw(glt, &(self.projection * camera.view_matrix() * model));
         }
 
         self.overlay.draw(glt);
-
-
-        self.updates.try_send(Update::Pos(self.camera.clone())).unwrap();
     }
 
     pub fn atlas(&self) -> Arc<TextureAtlas> {
         self.atlas.clone()
     }
 
-    pub fn resize(&mut self, glt : GLToken, size: winit::dpi::PhysicalSize<u32>) {
+    pub fn resize(&mut self, glt: GLToken, size: winit::dpi::PhysicalSize<u32>) {
         self.render_size = size;
         unsafe {
             gl::Viewport(0, 0, size.width as i32, size.height as i32);
@@ -180,12 +190,13 @@ impl Renderer {
             NEAR_PLAIN,
             FAR_PLAIN,
         );
-        self.overlay.resize(glt,size);
+        self.overlay.resize(glt, size);
     }
 
     pub fn mouse_input(&mut self, delta: (f64, f64)) {
-        self.camera.change_pitch(delta.1 as f32 / 100.0);
-        self.camera.change_yaw(delta.0 as f32 / 100.0);
+        let camera = &mut self.world.players.lock().unwrap().local_player.camera;
+        camera.change_pitch(delta.1 as f32 / 100.0);
+        camera.change_yaw(delta.0 as f32 / 100.0);
     }
 
     pub fn keyboard_input(&mut self, key: Key, pressed: bool) {
@@ -217,12 +228,13 @@ impl Renderer {
 
     /// This function has to be called after the exit thread has been joined
     /// Otherwise it will panic
-    pub unsafe fn delete(self, glt : GLToken) {
+    pub unsafe fn delete(self, glt: GLToken) {
         self.cube_outlines.delete(glt);
         self.overlay.delete(glt);
-        Arc::<World>::into_inner(self.world).expect("After the background therad joind this should be the only reference to world").delete(glt);
+        Arc::<World>::into_inner(self.world)
+            .expect("After the background therad joind this should be the only reference to world")
+            .delete(glt);
         self.program.delete(glt);
-
     }
 }
 
