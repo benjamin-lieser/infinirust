@@ -1,3 +1,5 @@
+#![allow(async_fn_in_trait)]
+
 /// Everything game related, server and client structs and functions
 pub mod game;
 /// This module contains custom OpenGl Wrapper code to make our lives easier and safer

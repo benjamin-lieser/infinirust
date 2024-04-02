@@ -3,10 +3,12 @@ use std::{io::{Write, Read}, net::TcpStream};
 use crate::net::read_string;
 
 /// Not sendable, use with phantom data
+#[allow(dead_code)]
 pub struct UnSend(*const ());
 unsafe impl Sync for UnSend {}
 
 /// Not syncable, use with phantom data
+#[allow(dead_code)]
 pub struct UnSync(*const ());
 unsafe impl Send for UnSync {}
 

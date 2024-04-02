@@ -8,8 +8,9 @@ pub mod world;
 pub mod stdin;
 
 pub type Client = tokio::sync::mpsc::Sender<Arc<[u8]>>;
-pub type ServerCommand = tokio::sync::mpsc::Sender<Command>;
+pub type ServerCommand = tokio::sync::mpsc::Sender<(UID, Command)>;
 pub type UID = usize;
+pub const NOUSER: UID = std::usize::MAX;
 
 #[derive(Debug)]
 pub enum BlockUpdateMode {
@@ -19,32 +20,36 @@ pub enum BlockUpdateMode {
 
 #[derive(Debug)]
 pub enum Command {
-    ChunkData([i32; 3], UID),
+    ChunkData([i32; 3]),
     Login(String, Client, tokio::sync::oneshot::Sender<Option<UID>>),
-    Logout(UID),
+    Logout,
     BlockUpdate([i32; 3], u8),
+    PlayerPosition([f64; 3], f32, f32),
     Shutdown
 }
 
 /// Supposed to be started in a new tread
 pub fn start_world(
-    mut input: tokio::sync::mpsc::Receiver<Command>,
+    mut input: tokio::sync::mpsc::Receiver<(UID, Command)>,
     world_directory: std::path::PathBuf,
 ) {
     let mut server = Server::new(&world_directory);
 
-    while let Some(command) = input.blocking_recv() {
+    while let Some((uid, command)) = input.blocking_recv() {
         match command {
             Command::Login(name, client, back) => {
                 let uid = server.players.login(name, client);
                 back.send(uid).expect("Could not send uuid back");
             }
-            Command::Logout(uid) => {
+            Command::Logout => {
                 server.players.logout(uid);
             }
-            Command::ChunkData(pos, uid) => {
+            Command::ChunkData(pos) => {
                 // If the buffer is full or client disconnect, this package will not be send
                 _ = server.players.client(uid).try_send(server.world.get_chunk_data(&pos));
+            }
+            Command::PlayerPosition(pos, pitch, yaw) => {
+                
             }
             Command::BlockUpdate(pos, block) => {
                 let package = server.world.process_block_update(&pos, block);

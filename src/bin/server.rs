@@ -8,7 +8,7 @@ use tokio::net::{
 
 use infinirust::misc::{cast_bytes_mut, cast_bytes};
 use infinirust::net::PackageBlockUpdate;
-use infinirust::server::{Client, Command, UID};
+use infinirust::server::{Client, Command, ServerCommand, NOUSER, UID};
 
 fn main() -> std::io::Result<()> {
 
@@ -46,7 +46,7 @@ fn main() -> std::io::Result<()> {
             tokio::signal::ctrl_c().await.unwrap();
             //Send shutdown command to the server. If the server is already gone it exits the process
             eprintln!("Server recieved ctrl+C");
-            server_ctrlc.send(Command::Shutdown).await.unwrap_or_else(|_| std::process::exit(1));
+            server_ctrlc.send((NOUSER, Command::Shutdown)).await.unwrap_or_else(|_| std::process::exit(1));
         });
 
         // accept connections and process them in a new task
@@ -85,7 +85,7 @@ async fn write_packages(
 /// If it returns Err the user will be logged out
 async fn read_play_packages(
     mut stream: OwnedReadHalf,
-    server: tokio::sync::mpsc::Sender<Command>,
+    server: ServerCommand,
     uid: UID,
 ) -> Result<(), anyhow::Error> {
     loop {
@@ -99,7 +99,7 @@ async fn read_play_packages(
                 stream
                     .read_exact(cast_bytes_mut(&mut pos))
                     .await?;
-                let command = Command::ChunkData(pos, uid);
+                let command = (uid, Command::ChunkData(pos));
                 server
                     .send(command)
                     .await
@@ -112,7 +112,7 @@ async fn read_play_packages(
                 stream.read_exact(cast_bytes_mut(&mut package)).await?;
 
                 server
-                    .send(Command::BlockUpdate(package.pos, package.block))
+                    .send((uid, Command::BlockUpdate(package.pos, package.block)))
                     .await
                     .expect("This should never happen. The internal server is not responding");
             }
@@ -126,7 +126,7 @@ async fn read_play_packages(
 /// Read the packages when the server is in `start` state
 async fn read_start_packages(
     mut stream: OwnedReadHalf,
-    server: tokio::sync::mpsc::Sender<Command>,
+    server: ServerCommand,
     client: Client,
 ) {
     let uid = loop {
@@ -139,7 +139,7 @@ async fn read_start_packages(
 
                 if let Some(username) = read_alpha_numeric_string(&mut stream).await {
                     let command = Command::Login(username, client.clone(), tx);
-                    server.send(command).await.unwrap();
+                    server.send((NOUSER, command)).await.unwrap();
 
                     if let Some(uid) = rx.await.unwrap() {
                         //TODO send login success package
@@ -172,7 +172,7 @@ async fn read_start_packages(
         .expect_err("Somehow the read_play_packages function returned with Ok");
     //Log the player out
     eprintln!("Player got logged out because of error: {}",e);
-    server.send(Command::Logout(uid)).await.unwrap();
+    server.send((uid, Command::Logout)).await.unwrap();
 }
 
 async fn read_alpha_numeric_string(stream: &mut OwnedReadHalf) -> Option<String> {
