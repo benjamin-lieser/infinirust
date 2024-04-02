@@ -201,7 +201,8 @@ async fn read_packages(
                 todo!();
             }
             0x000C => {
-                ServerPackagePlayerPosition::new(&mut reader).await;
+                let player_pos = ServerPackagePlayerPosition::new(&mut reader).await;
+                
             }
             _ => {
                 panic!("Client: Invalid Package type {package_type}")

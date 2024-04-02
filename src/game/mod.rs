@@ -7,6 +7,7 @@ mod world;
 mod renderer;
 mod blocks;
 mod background;
+mod player;
 
 use std::net::TcpStream;
 use std::sync::Arc;
