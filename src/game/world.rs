@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Mutex};
+use std::sync::Mutex;
 
 use nalgebra_glm as glm;
 
@@ -13,27 +13,19 @@ const MAX_CHUNKS: usize =
     4 * (VIEW_DISTANCE as usize + 1) * (VIEW_DISTANCE as usize + 1) * Y_RANGE as usize;
 
 pub struct World {
-    pub chunks: Mutex<HashMap<[i32; 3], Chunk>>,
-    /// Can be used to optain an unsued chunk
-    pub unused_chunks_rx: Mutex<tokio::sync::mpsc::Receiver<Chunk>>,
-    /// If a chunk is unused it should be sent here
-    unsued_chunks_tx: tokio::sync::mpsc::Sender<Chunk>,
-    center: [i32; 3],
+    pub chunks: Mutex<Vec<Chunk>>,
+    pub unused_chunks: Mutex<Vec<Chunk>>,
 }
 
 impl World {
     pub fn new(glt: GLToken) -> Self {
-        let (unused_chunks_tx, unused_chunks_rx) = tokio::sync::mpsc::channel(MAX_CHUNKS);
+        let mut unused_chunks = Vec::new();
         for _ in 0..MAX_CHUNKS {
-            unused_chunks_tx
-                .try_send(Chunk::new_empty(glt))
-                .expect("Channel can't be full");
+            unused_chunks.push(Chunk::new_empty(glt));
         }
         Self {
-            chunks: Mutex::new(HashMap::new()),
-            unused_chunks_rx : Mutex::new(unused_chunks_rx),
-            unsued_chunks_tx : unused_chunks_tx,
-            center: [0, 0, 0],
+            chunks: Mutex::new(Vec::new()),
+            unused_chunks : Mutex::new(unused_chunks)
         }
     }
 
@@ -43,16 +35,6 @@ impl World {
             camera_pos[1] as i32 / CHUNK_SIZE as i32,
             camera_pos[2] as i32 / CHUNK_SIZE as i32,
         ];
-        // x
-        if self.center[0] != camera_center[0] {
-            for x in (camera_center[0] - VIEW_DISTANCE)..(self.center[0] - VIEW_DISTANCE) {
-                for y in -Y_RANGE..Y_RANGE {
-                    for z in (self.center[2] - VIEW_DISTANCE)..(self.center[0] - VIEW_DISTANCE) {
-                       
-                    }
-                }
-            }
-        }
         todo!()
     }
 
@@ -83,7 +65,7 @@ impl World {
 
             let chunks = self.chunks.lock().unwrap();
 
-            for chunk in chunks.values() {
+            for chunk in chunks.iter() {
                 let [cx, cy, cz] = chunk.position();
 
                 let cx = *cx as f64 * CHUNK_SIZE as f64;
@@ -104,13 +86,11 @@ impl World {
 
     pub fn delete(self, glt: GLToken) {
         // Delete all the active chunks
-        for (_, chunk) in self.chunks.into_inner().unwrap().drain() {
+        for chunk in self.chunks.into_inner().unwrap() {
             chunk.delete(glt);
         }
         // Delete all the unused chunks
-        let mut unused_chunks = self.unused_chunks_rx.into_inner().unwrap();
-        unused_chunks.close();
-        while let Some(chunk) = unused_chunks.blocking_recv() {
+        for chunk in self.unused_chunks.into_inner().unwrap() {
             chunk.delete(glt);
         }
     }

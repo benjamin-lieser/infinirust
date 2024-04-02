@@ -48,7 +48,7 @@ pub fn chunk_loader(
         let read_join_handle = tokio::spawn(read_packages(reader, loader_tx));
         let write_join_handle = tokio::spawn(write_packages(writer, writer_rx));
 
-        let world_join_handler = tokio::spawn(manage_world(world, atlas, loader_rx, updates));
+        let world_join_handler = tokio::spawn(manage_world(world, atlas, loader_rx, writer_tx, updates));
         // When manage_world returns, the client has exited
         world_join_handler.await.unwrap();
         read_join_handle.abort();
@@ -61,22 +61,26 @@ pub fn chunk_loader(
 async fn manage_world(
     world: Arc<World>,
     atlas: Arc<TextureAtlas>,
-    mut packages: tokio::sync::mpsc::Receiver<Package>,
+    mut in_packages: tokio::sync::mpsc::Receiver<Package>,
+    out_packages: tokio::sync::mpsc::Sender<Box<[u8]>>,
     mut client: tokio::sync::mpsc::Receiver<Update>,
+
 ) {
     loop {
         tokio::select! {
-            package = packages.recv() => {
+            package = in_packages.recv() => {
                 match package {
                     // Chunkdata recieved
                     Some(Package::Chunk(pos, data)) => {
                         // Both locks in this section are sync, but we do not await here
-                        let mut unused_chunks_rx = world.unused_chunks_rx.lock().unwrap();
-                        let mut chunk = unused_chunks_rx.try_recv().expect("No available chunks");
+                        let mut chunk = {
+                            let mut unused_chunks_rx = world.unused_chunks.lock().unwrap();
+                            unused_chunks_rx.pop().expect("No available chunks")
+                        };
                         chunk.load(data, pos);
                         chunk.write_vbo(&atlas);
                         let mut chunks = world.chunks.lock().unwrap();
-                        chunks.insert(pos, chunk);
+                        chunks.push(chunk);
                     }
                     None => {panic!("package reader crashed")}
                 }
