@@ -70,7 +70,7 @@ impl Renderer {
     }
 
     pub fn draw(&mut self, glt: GLToken, delta_t: f32) {
-        let speed = 35.0;
+        let speed = 5.0;
 
         let camera = {
             let mut players = self.world.players.lock().unwrap();
