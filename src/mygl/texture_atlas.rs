@@ -4,6 +4,8 @@ use anyhow::{anyhow, Ok};
 use image::io::Reader;
 use image::RgbaImage;
 
+use super::GLToken;
+
 /// 16x16 pixel texture atlas. It prevents bleeding and supports Mipmapping
 pub struct TextureAtlas {
     texture: gl::types::GLuint,
@@ -13,8 +15,8 @@ pub struct TextureAtlas {
 }
 
 impl TextureAtlas {
-    /// Needs GL context
-    pub fn new() -> Self {
+
+    pub fn new(_: GLToken) -> Self {
         let mut texture: gl::types::GLuint = 0;
         unsafe {
             gl::GenTextures(1, &mut texture);
@@ -93,6 +95,7 @@ impl TextureAtlas {
         }
     }
 
+    /// # Safety
     /// Call bind texture first
     pub unsafe fn finalize(&mut self) {
         gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_BASE_LEVEL, 0);

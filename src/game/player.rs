@@ -30,7 +30,7 @@ impl Players {
     pub fn add_player(&mut self, name: String, uid: UID, camera: FreeCamera) {
         self.players.push(Player {
             name,
-            camera: camera,
+            camera,
             uid,
         });
     }

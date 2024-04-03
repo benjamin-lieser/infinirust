@@ -55,8 +55,8 @@ pub struct Game {
     background_thread: std::thread::JoinHandle<()>,
 }
 
-fn create_atlas(_: GLToken) -> TextureAtlas {
-    let mut atlas = crate::mygl::TextureAtlas::new();
+fn create_atlas(glt: GLToken) -> TextureAtlas {
+    let mut atlas = crate::mygl::TextureAtlas::new(glt);
     atlas.add_texture("grass_side.png").unwrap();
     atlas.add_texture("grass_top.png").unwrap();
     atlas.add_texture("dirt.png").unwrap();

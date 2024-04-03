@@ -94,7 +94,7 @@ async fn read_play_packages(
     loop {
         let mut package_type = 0u16;
         stream
-            .read_exact(&mut cast_bytes_mut(&mut package_type))
+            .read_exact(cast_bytes_mut(&mut package_type))
             .await?;
 
         match package_type {
@@ -135,7 +135,7 @@ async fn read_start_packages(mut stream: OwnedReadHalf, server: ServerCommand, c
     let uid = loop {
         let mut package_type = 0u16;
         stream
-            .read_exact(&mut cast_bytes_mut(&mut package_type))
+            .read_exact(cast_bytes_mut(&mut package_type))
             .await
             .unwrap();
         match package_type {
@@ -191,8 +191,8 @@ async fn read_alpha_numeric_string(stream: &mut OwnedReadHalf) -> Option<String>
     let string = String::from_utf8(string).ok()?;
 
     if string.chars().all(char::is_alphanumeric) {
-        return Some(string);
+        Some(string)
     } else {
-        return None;
+        None
     }
 }

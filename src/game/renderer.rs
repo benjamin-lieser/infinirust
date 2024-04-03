@@ -58,7 +58,7 @@ impl Renderer {
         Self {
             world,
             program,
-            atlas: atlas,
+            atlas,
             projection,
             controls: Controls::default(),
             cube_outlines: CubeOutlines::new(glt),
@@ -230,8 +230,9 @@ impl Renderer {
         self.updates.blocking_send(Update::Exit).unwrap();
     }
 
+    /// # Safety
     /// This function has to be called after the exit thread has been joined
-    /// Otherwise it will panic
+    /// Otherwise some drop glue will panic
     pub unsafe fn delete(self, glt: GLToken) {
         self.cube_outlines.delete(glt);
         self.overlay.delete(glt);

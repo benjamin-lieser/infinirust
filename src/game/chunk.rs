@@ -49,10 +49,10 @@ impl Chunk {
 
         chunk
             .vao
-            .attrib_pointer(glt, 0, &chunk.vertex_pos.vbo(), 3, 0, 0, false);
+            .attrib_pointer(glt, 0, chunk.vertex_pos.vbo(), 3, 0, 0, false);
         chunk
             .vao
-            .attrib_pointer(glt, 1, &chunk.texture_pos.vbo(), 2, 0, 0, false);
+            .attrib_pointer(glt, 1, chunk.texture_pos.vbo(), 2, 0, 0, false);
         chunk.vao.enable_array(glt, 0);
         chunk.vao.enable_array(glt, 1);
 

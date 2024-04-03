@@ -2,7 +2,10 @@ use std::sync::Mutex;
 
 use nalgebra_glm as glm;
 
-use crate::{mygl::{GLToken, Program, TextureAtlas}, game::player::Player};
+use crate::{
+    game::player::Player,
+    mygl::{GLToken, Program, TextureAtlas},
+};
 
 use super::{player::Players, Camera, Chunk, FreeCamera, CHUNK_SIZE, Y_RANGE};
 
@@ -20,7 +23,7 @@ pub struct World {
 }
 
 impl World {
-    pub fn new(glt: GLToken, texture_atlas: &TextureAtlas, local_player : Player) -> Self {
+    pub fn new(glt: GLToken, texture_atlas: &TextureAtlas, local_player: Player) -> Self {
         let mut unused_chunks = Vec::new();
         for _ in 0..MAX_CHUNKS {
             unused_chunks.push(Chunk::new_empty(glt));
@@ -31,7 +34,7 @@ impl World {
         }
         Self {
             chunks: Mutex::new(chunks),
-            unused_chunks : Mutex::new(unused_chunks),
+            unused_chunks: Mutex::new(unused_chunks),
             players: Mutex::new(Players::new(glt, texture_atlas, local_player)),
         }
     }
@@ -63,26 +66,29 @@ impl World {
 
             let mut chunks = self.chunks.lock().unwrap();
 
-            for chunk in chunks.iter_mut() {
-                if let Some(chunk) = chunk {
-                    let [cx, cy, cz] = chunk.position();
+            for chunk in chunks.iter_mut().flatten() {
+                let [cx, cy, cz] = chunk.position();
 
-                    let cx = *cx as f64 * CHUNK_SIZE as f64;
-                    let cy = *cy as f64 * CHUNK_SIZE as f64;
-                    let cz = *cz as f64 * CHUNK_SIZE as f64;
+                let cx = *cx as f64 * CHUNK_SIZE as f64;
+                let cy = *cy as f64 * CHUNK_SIZE as f64;
+                let cz = *cz as f64 * CHUNK_SIZE as f64;
 
-                    let model = glm::translation(&glm::vec3(
-                        (cx - x) as f32,
-                        (cy - y) as f32,
-                        (cz - z) as f32,
-                    ));
-                    let mvp: glm::Mat4 = projection_view * model;
-                    gl::UniformMatrix4fv(mvp_location, 1, 0, mvp.as_ptr());
-                    chunk.draw(glt);
-                }
+                let model = glm::translation(&glm::vec3(
+                    (cx - x) as f32,
+                    (cy - y) as f32,
+                    (cz - z) as f32,
+                ));
+                let mvp: glm::Mat4 = projection_view * model;
+                gl::UniformMatrix4fv(mvp_location, 1, 0, mvp.as_ptr());
+                chunk.draw(glt);
             }
 
-            self.players.lock().unwrap().draw(glt, &projection_view, &camera.position(), mvp_location);
+            self.players.lock().unwrap().draw(
+                glt,
+                &projection_view,
+                &camera.position(),
+                mvp_location,
+            );
         }
     }
 

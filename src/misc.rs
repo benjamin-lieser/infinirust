@@ -23,6 +23,7 @@ pub fn first_none<T>(data: &[Option<T>]) -> Option<usize> {
     None
 }
 
+/// # Safety
 /// Only implement for types with repr(C) and where every bit pattern is valid and no padding in the struct
 pub unsafe trait AsBytes: Sized {}
 

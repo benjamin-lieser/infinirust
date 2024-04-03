@@ -27,6 +27,8 @@ pub struct GLToken {
 }
 
 impl GLToken {
+    /// # Safety
+    /// The GLToken must be created in the same thread as the OpenGL context
     pub unsafe fn new() -> Self {
         Self {
             make_unsend_and_unsync: PhantomData,
