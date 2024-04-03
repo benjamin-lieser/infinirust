@@ -20,7 +20,7 @@ pub fn create_window() -> (EventLoop<()>, Window, Surface::<WindowSurface>, Poss
     let event_loop = EventLoop::new();
 
     //Describes the configuration of the window
-    let window_builder = WindowBuilder::new();
+    let window_builder = WindowBuilder::new().with_title("Infinirust");
 
     let display_builder = DisplayBuilder::new().with_window_builder(Some(window_builder));
 
