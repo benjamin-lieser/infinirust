@@ -47,8 +47,8 @@ pub fn background_thread(
         let tcp = tokio::net::TcpStream::from_std(tcp).unwrap();
         let (reader, writer) = tcp.into_split();
 
-        let (loader_tx, loader_rx) = tokio::sync::mpsc::channel(100);
-        let (writer_tx, writer_rx) = tokio::sync::mpsc::channel(100);
+        let (loader_tx, loader_rx) = tokio::sync::mpsc::channel(10000);
+        let (writer_tx, writer_rx) = tokio::sync::mpsc::channel(10000);
 
         let read_join_handle = tokio::spawn(read_packages(reader, loader_tx));
         let write_join_handle = tokio::spawn(write_packages(writer, writer_rx));
