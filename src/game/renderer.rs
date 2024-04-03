@@ -6,8 +6,7 @@ use nalgebra_glm as glm;
 use crate::mygl::{get_gl_string, GLToken, Program, TextureAtlas};
 
 use super::{
-    background::Update, camera, misc::CubeOutlines, overlay::Overlay, Camera, Controls, FreeCamera,
-    Key, World,
+    background::Update, misc::CubeOutlines, overlay::Overlay, Camera, Controls, Key, World,
 };
 
 const NEAR_PLAIN: f32 = 0.7;
@@ -112,7 +111,7 @@ impl Renderer {
             self.last_pos_update = std::time::Instant::now();
             _ = self.updates.try_send(Update::Pos(camera.clone()));
         }
-        
+
         let distance_to_screen_mid = unsafe {
             let mut depth: f32 = 0.0;
             gl::ReadPixels(

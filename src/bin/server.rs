@@ -6,7 +6,7 @@ use tokio::net::{
     TcpListener,
 };
 
-use infinirust::misc::{cast_bytes, cast_bytes_mut};
+use infinirust::misc::cast_bytes_mut;
 use infinirust::net::{ClientPackagePlayerPosition, Package, PackageBlockUpdate};
 use infinirust::server::{Client, Command, ServerCommand, NOUSER, UID};
 

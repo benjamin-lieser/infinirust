@@ -1,17 +1,16 @@
+mod background;
+mod blocks;
 mod camera;
 mod chunk;
 mod input;
 pub mod misc;
 mod overlay;
-mod world;
-mod renderer;
-mod blocks;
-mod background;
 mod player;
+mod renderer;
+mod world;
 
 use std::net::TcpStream;
 use std::sync::Arc;
-use std::default::Default;
 
 use winit::dpi::PhysicalSize;
 
@@ -20,8 +19,8 @@ pub use chunk::Chunk;
 pub use chunk::CHUNK_SIZE;
 pub use chunk::Y_RANGE;
 pub use input::Controls;
-pub use world::World;
 pub use renderer::Renderer;
+pub use world::World;
 
 use crate::mygl::GLToken;
 use crate::mygl::TextureAtlas;
@@ -56,7 +55,7 @@ pub struct Game {
     background_thread: std::thread::JoinHandle<()>,
 }
 
-fn create_atlas(glt: GLToken) -> TextureAtlas {
+fn create_atlas(_: GLToken) -> TextureAtlas {
     let mut atlas = crate::mygl::TextureAtlas::new();
     atlas.add_texture("grass_side.png").unwrap();
     atlas.add_texture("grass_top.png").unwrap();
@@ -71,13 +70,19 @@ fn create_atlas(glt: GLToken) -> TextureAtlas {
 }
 
 impl Game {
-    pub fn new(glt : GLToken, render_size: PhysicalSize<u32>, tcp: TcpStream, uid : UID, name : String) -> Self {
+    pub fn new(
+        glt: GLToken,
+        render_size: PhysicalSize<u32>,
+        tcp: TcpStream,
+        uid: UID,
+        name: String,
+    ) -> Self {
         let atlas = create_atlas(glt);
 
         let local_player = Player {
             name,
             uid,
-            camera : FreeCamera::new([0.0,0.0,0.0]),
+            camera: FreeCamera::new([0.0, 0.0, 0.0]),
         };
 
         let world = World::new(glt, &atlas, local_player);
@@ -85,22 +90,25 @@ impl Game {
 
         let (update_tx, update_rx) = tokio::sync::mpsc::channel(100);
 
-        let renderer = Renderer::new(glt, world.clone(), Arc::new(atlas),render_size, update_tx);
+        let renderer = Renderer::new(glt, world.clone(), Arc::new(atlas), render_size, update_tx);
         let atlas = renderer.atlas();
 
-
         let chunk_loader_world = world.clone();
-        let background_thread = std::thread::spawn(move || background_thread(tcp, chunk_loader_world, update_rx, atlas, uid));
+        let background_thread = std::thread::spawn(move || {
+            background_thread(tcp, chunk_loader_world, update_rx, atlas, uid)
+        });
 
-
-        Self { renderer , background_thread}
+        Self {
+            renderer,
+            background_thread,
+        }
     }
 
-    pub fn draw(&mut self, glt : GLToken, delta_t: f32) {
+    pub fn draw(&mut self, glt: GLToken, delta_t: f32) {
         self.renderer.draw(glt, delta_t);
     }
 
-    pub fn resize(&mut self, glt : GLToken, size: winit::dpi::PhysicalSize<u32>) {
+    pub fn resize(&mut self, glt: GLToken, size: winit::dpi::PhysicalSize<u32>) {
         self.renderer.resize(glt, size);
     }
 
@@ -112,7 +120,7 @@ impl Game {
         self.renderer.keyboard_input(key, pressed);
     }
 
-    pub fn exit(self, glt : GLToken) {
+    pub fn exit(self, glt: GLToken) {
         // Exit the background thread
         self.renderer.send_exit();
         self.background_thread.join().unwrap();
@@ -120,6 +128,5 @@ impl Game {
         unsafe {
             self.renderer.delete(glt);
         }
-
     }
 }

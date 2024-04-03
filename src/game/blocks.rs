@@ -4,7 +4,6 @@ use std::collections::HashMap;
 
 use serde::Deserialize;
 
-
 pub struct Blocks {
 
 }

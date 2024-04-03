@@ -1,4 +1,5 @@
 #![allow(async_fn_in_trait)]
+#![allow(dead_code)]
 
 /// Everything game related, server and client structs and functions
 pub mod game;
