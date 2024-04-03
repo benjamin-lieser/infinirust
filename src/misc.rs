@@ -3,23 +3,17 @@ use std::{io::{Write, Read}, net::TcpStream};
 use crate::net::read_string;
 
 /// Not sendable, use with phantom data
+#[allow(dead_code)]
 pub struct UnSend(*const ());
 unsafe impl Sync for UnSend {}
 
 /// Not syncable, use with phantom data
+#[allow(dead_code)]
 pub struct UnSync(*const ());
 unsafe impl Send for UnSync {}
 
-pub fn as_bytes(data: &[i32]) -> &[u8] {
-    let ptr = data.as_ptr();
-    unsafe { std::slice::from_raw_parts(ptr.cast(), data.len() * 4) }
-}
-
-pub fn as_bytes_mut(data: &mut [i32]) -> &mut [u8] {
-    let ptr = data.as_mut_ptr();
-    unsafe { std::slice::from_raw_parts_mut(ptr.cast(), data.len() * 4) }
-}
-
+/// Returns the index of the first None in the slice
+/// None if there is no None
 pub fn first_none<T>(data: &[Option<T>]) -> Option<usize> {
     for (i, d) in data.iter().enumerate() {
         if d.is_none() {
@@ -37,6 +31,9 @@ unsafe impl AsBytes for u64 {}
 unsafe impl AsBytes for usize {}
 unsafe impl AsBytes for [i32;3] {}
 
+/// This is save, because all AsBytes types are repr(C) and have no padding
+/// &mut T has to be properly aligned, so we can use the &mut\[u8\] to write to it
+/// There cannot be aliasing because data will be mutably borrowed as long as the retunr value lives
 pub fn cast_bytes_mut<T: AsBytes>(data: &mut T) -> &mut [u8] {
     unsafe {
         ::core::slice::from_raw_parts_mut((data as *mut T) as *mut u8, ::core::mem::size_of::<T>())

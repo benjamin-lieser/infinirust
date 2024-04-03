@@ -165,7 +165,7 @@ impl Chunk {
     }
 }
 
-fn add_face(
+pub fn add_face(
     vertex_data: &mut Vec<u8>,
     texture_data: &mut Vec<f32>,
     atlas: &TextureAtlas,

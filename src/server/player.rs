@@ -31,7 +31,7 @@ pub struct ServerPlayer {
     pub uid: usize,
 }
 
-/// Both fields have to be same length, online is None when not logged in
+/// Both Vec have to be same length, online is None when not logged in
 #[derive(Debug)]
 pub struct Players {
     registered: Vec<Player>,
@@ -51,6 +51,10 @@ impl Players {
             registered: players,
             online,
         }
+    }
+
+    pub fn online(&self) -> impl Iterator<Item = &ServerPlayer> {
+        self.online.iter().flatten()
     }
 
     pub fn login(&mut self, name: String, client: Client) -> Option<UID> {
@@ -107,9 +111,25 @@ impl Players {
         &self.online[uid].as_ref().unwrap().package_writer
     }
 
+    pub fn get_player_mut(&mut self, uid: UID) -> &mut Player {
+        &mut self.online[uid].as_mut().unwrap().player
+    }
+
     /// Sends a package to all logged in players
     pub fn broadcast(&self, package: Arc<[u8]>) {
         for player in self.online.iter().flatten() {
+            // Package gets lost if the write channel is full
+            _ = player.package_writer.try_send(package.clone());
+        }
+    }
+
+    /// Send a package to all players fullfilling predicate
+    pub fn broadcast_filtered(
+        &self,
+        package: Arc<[u8]>,
+        predicate: impl Fn(&ServerPlayer) -> bool,
+    ) {
+        for player in self.online.iter().flatten().filter(|p| predicate(p)) {
             // Package gets lost if the write channel is full
             _ = player.package_writer.try_send(package.clone());
         }

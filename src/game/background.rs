@@ -1,13 +1,16 @@
-use std::{
-    collections::HashMap, net::TcpStream, sync::{Arc, Mutex}
-};
+use std::{collections::HashMap, net::TcpStream, sync::Arc};
 
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::tcp::{OwnedReadHalf, OwnedWriteHalf},
 };
 
-use crate::{game::{world::VIEW_DISTANCE, Camera, Chunk, CHUNK_SIZE, Y_RANGE}, misc::{cast_bytes, cast_bytes_mut, first_none}, mygl::TextureAtlas};
+use crate::{
+    game::{world::VIEW_DISTANCE, Camera, CHUNK_SIZE, Y_RANGE},
+    misc::{cast_bytes, cast_bytes_mut, first_none},
+    mygl::TextureAtlas,
+    net::{ClientPackagePlayerPosition, Package as NetworkPackage, ServerPackagePlayerPosition, ServerPlayerLogin}, server::UID,
+};
 
 use super::{FreeCamera, World};
 
@@ -22,13 +25,16 @@ pub enum Update {
 
 enum Package {
     Chunk([i32; 3], Vec<u8>),
+    PlayerPositionUpdate(ServerPackagePlayerPosition),
+    PlayerLogin(ServerPlayerLogin),
 }
 
-pub fn chunk_loader(
+pub fn background_thread(
     tcp: TcpStream,
     world: Arc<World>,
     updates: tokio::sync::mpsc::Receiver<Update>,
     atlas: Arc<TextureAtlas>,
+    uid: UID,
 ) {
     // Start a single thread tokio runtime in this thread
     let rt = tokio::runtime::Builder::new_current_thread()
@@ -41,13 +47,14 @@ pub fn chunk_loader(
         let tcp = tokio::net::TcpStream::from_std(tcp).unwrap();
         let (reader, writer) = tcp.into_split();
 
-        let (loader_tx, loader_rx) = tokio::sync::mpsc::channel(100);
-        let (writer_tx, writer_rx) = tokio::sync::mpsc::channel(100);
+        let (loader_tx, loader_rx) = tokio::sync::mpsc::channel(10000);
+        let (writer_tx, writer_rx) = tokio::sync::mpsc::channel(10000);
 
         let read_join_handle = tokio::spawn(read_packages(reader, loader_tx));
         let write_join_handle = tokio::spawn(write_packages(writer, writer_rx));
 
-        let world_join_handler = tokio::spawn(manage_world(world, atlas, loader_rx, writer_tx, updates));
+        let world_join_handler =
+            tokio::spawn(manage_world(world, atlas, loader_rx, writer_tx, updates, uid));
         // When manage_world returns, the client has exited
         world_join_handler.await.unwrap();
         read_join_handle.abort();
@@ -63,10 +70,10 @@ async fn manage_world(
     mut in_packages: tokio::sync::mpsc::Receiver<Package>,
     out_packages: tokio::sync::mpsc::Sender<Box<[u8]>>,
     mut client: tokio::sync::mpsc::Receiver<Update>,
-
+    uid: UID
 ) {
-    let mut current_world_center = [0i32; 2]; // x, z
-    let mut active_chunk_ids = HashMap::<[i32;3], usize>::new();
+    let mut current_world_center = [i32::MIN; 2]; // x, z
+    let mut active_chunk_ids = HashMap::<[i32; 3], usize>::new();
 
     loop {
         tokio::select! {
@@ -85,14 +92,25 @@ async fn manage_world(
                             // This lock is time critical for the renderer thread, so be quick about it
                             let mut chunks = world.chunks.lock().unwrap();
                             let slot = first_none(&chunks).expect("No available slot, this should be impossible");
-                            
+
                             if let Some(slot) = active_chunk_ids.insert(pos, slot) {
                                 unused_chunks_rx.push(chunks[slot].take().expect("There should be a chunk in this slot"));
 
                             }
                             chunks[slot] = Some(chunk);
                         }
-
+                    }
+                    Some(Package::PlayerPositionUpdate(package)) => {
+                        // Update player position
+                        world.players.lock().unwrap().update(&package);
+                        if package.uid as UID == uid {
+                            // Force update
+                            current_world_center = [i32::MIN; 2];
+                        }
+                    }
+                    Some(Package::PlayerLogin(package)) => {
+                        // Add player to world
+                        world.players.lock().unwrap().add_player(package.name, package.uid as UID, FreeCamera::new([0.0,0.0,0.0]));
                     }
                     None => {panic!("package reader crashed")}
                 }
@@ -100,6 +118,12 @@ async fn manage_world(
             update = client.recv() => {
                 match update {
                     Some(Update::Pos(camera)) => {
+                        let position_package = ClientPackagePlayerPosition {
+                            pos: camera.position(),
+                            pitch: camera.pitch(),
+                            yaw: camera.yaw(),
+                        };
+                        out_packages.send(position_package.to_box()).await.unwrap();
                         let camera_pos = camera.position();
                         let camera_center = [
                             camera_pos[0] as i32 / CHUNK_SIZE as i32,
@@ -126,7 +150,6 @@ async fn manage_world(
                                     if !active_chunk_ids.contains_key(&pos) {
                                         for y in -Y_RANGE..Y_RANGE {
                                             let pos = [pos[0], y, pos[2]];
-                                            println!("Requesting chunk: {:?}", pos);
                                             out_packages.send(request_chunk_package(pos)).await.unwrap();
                                         }
                                     }
@@ -135,7 +158,7 @@ async fn manage_world(
                             current_world_center = camera_center;
                         }
                     }
-                    Some(Update::Block(pos, block)) => {
+                    Some(Update::Block(_pos, _block)) => {
 
                     }
                     Some(Update::Exit) => {
@@ -189,12 +212,24 @@ async fn read_packages(
                 reader.read_exact(&mut data).await.unwrap();
                 chunk_loader.send(Package::Chunk(pos, data)).await.unwrap();
             }
-            0x0000B => {
+            0x000B => {
                 //Block Update
                 todo!();
             }
+            0x000C => {
+                let player_pos = ServerPackagePlayerPosition::new(&mut reader).await;
+                chunk_loader
+                    .send(Package::PlayerPositionUpdate(player_pos))
+                    .await
+                    .unwrap();
+            }
+            0x0003 => {
+                // Other player logs in
+                let login_package = ServerPlayerLogin::new(&mut reader).await;
+                chunk_loader.send(Package::PlayerLogin(login_package)).await.unwrap();
+            }
             _ => {
-                panic!("Client: Invalid Package type")
+                panic!("Client: Invalid Package type {package_type}")
             }
         }
     }
