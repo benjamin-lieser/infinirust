@@ -26,6 +26,7 @@ pub struct Renderer {
     overlay: Overlay,
     render_size: winit::dpi::PhysicalSize<u32>,
     updates: tokio::sync::mpsc::Sender<Update>,
+    last_pos_update: std::time::Instant,
 }
 
 impl Renderer {
@@ -65,6 +66,7 @@ impl Renderer {
             overlay: Overlay::new(glt, render_size),
             render_size,
             updates,
+            last_pos_update: std::time::Instant::now(),
         }
     }
 
@@ -106,8 +108,11 @@ impl Renderer {
 
         //Update background about the current position
         //For position its ok if it gets lost, for blockupdate not to much TODO
-        _ = self.updates.try_send(Update::Pos(camera.clone()));
-
+        if self.last_pos_update.elapsed().as_secs_f32() > 0.05 {
+            self.last_pos_update = std::time::Instant::now();
+            _ = self.updates.try_send(Update::Pos(camera.clone()));
+        }
+        
         let distance_to_screen_mid = unsafe {
             let mut depth: f32 = 0.0;
             gl::ReadPixels(
