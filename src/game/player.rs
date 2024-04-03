@@ -59,7 +59,7 @@ impl Players {
                 (y - pos[1]) as f32,
                 (z - pos[2]) as f32,
             ));
-            let model = model_trans * player.camera.view_matrix() * model_center;
+            let model = model_trans * player.camera.inverse_view_matrix() * model_center;
             let mvp = projection_view * model;
             gl::UniformMatrix4fv(mvp_location, 1, 0, mvp.as_ptr());
             self.render.draw(glt);
@@ -97,7 +97,7 @@ impl PlayerRender {
         add_face(&mut vertex_data, &mut texture_data, atlas, "end_bricks.png", [0,0,0], super::Direction::PosX);
         add_face(&mut vertex_data, &mut texture_data, atlas, "end_bricks.png", [0,0,0], super::Direction::NegY);
         add_face(&mut vertex_data, &mut texture_data, atlas, "end_bricks.png", [0,0,0], super::Direction::PosY);
-        add_face(&mut vertex_data, &mut texture_data, atlas, "end_bricks.png", [0,0,0], super::Direction::NegZ);
+        add_face(&mut vertex_data, &mut texture_data, atlas, "face.png", [0,0,0], super::Direction::NegZ);
         add_face(&mut vertex_data, &mut texture_data, atlas, "end_bricks.png", [0,0,0], super::Direction::PosZ);
 
         vertex_vbo.copy(glt, &vertex_data);

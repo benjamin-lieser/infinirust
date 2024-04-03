@@ -87,3 +87,11 @@ impl Camera for FreeCamera {
         (yaw * pitch * orig_view_vec).xyz()
     }
 }
+
+impl FreeCamera {
+    pub fn inverse_view_matrix(&self) -> Mat4 {
+        let pitch = glm::rotation(-self.pitch, &glm::vec3(1.0, 0.0, 0.0));
+        let yaw = glm::rotation(-self.yaw, &glm::vec3(0.0, 1.0, 0.0));
+        yaw * pitch
+    }
+}
