@@ -111,6 +111,8 @@ fn main() {
                 let delta_t = current_time.duration_since(now).unwrap();
                 now = current_time;
 
+                println!("{}", delta_t.as_millis());
+
                 game.draw(glt, delta_t.as_secs_f32());
 
                 //game.print_dist();

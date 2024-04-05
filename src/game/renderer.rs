@@ -158,14 +158,6 @@ impl Renderer {
                 0.0
             };
 
-            println!(
-                "{},{},{},{}",
-                camera.view_direction(),
-                look_pos.x as f64 + x,
-                look_pos.y as f64 + y,
-                look_pos.z as f64 + z
-            );
-
             let model = glm::translation(&glm::vec3(
                 (look_block[0] - x) as f32,
                 (look_block[1] - y) as f32,
