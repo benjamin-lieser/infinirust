@@ -81,6 +81,7 @@ impl Camera for FreeCamera {
     }
 
     fn view_direction(&self) -> glm::Vec3 {
+        // TODO optimize this
         let orig_view_vec = glm::vec4(0.0,0.0,-1.0,1.0);
         let pitch = glm::rotation(-self.pitch, &glm::vec3(1.0, 0.0, 0.0));
         let yaw = glm::rotation(-self.yaw, &glm::vec3(0.0, 1.0, 0.0));

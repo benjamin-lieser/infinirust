@@ -111,7 +111,7 @@ impl Renderer {
             self.last_pos_update = std::time::Instant::now();
             _ = self.updates.try_send(Update::Pos(camera.clone()));
         }
-
+        
         let distance_to_screen_mid = unsafe {
             let mut depth: f32 = 0.0;
             gl::ReadPixels(
@@ -167,7 +167,6 @@ impl Renderer {
             self.cube_outlines
                 .draw(glt, &(self.projection * camera.view_matrix() * model));
         }
-
         self.overlay.draw(glt);
     }
 

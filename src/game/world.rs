@@ -73,6 +73,16 @@ impl World {
                 let cy = *cy as f64 * CHUNK_SIZE as f64;
                 let cz = *cz as f64 * CHUNK_SIZE as f64;
 
+                let view_direction = camera.view_direction().cast::<f64>();
+                let cam_position = glm::TVec3::<f64>::from(camera.position());
+                let chunk_position = glm::vec3(cx, cy, cz);
+
+                let cutoff = cam_position - view_direction * CHUNK_SIZE as f64;
+
+                if glm::dot(&(chunk_position - cutoff), &view_direction) < 0.0 {
+                    continue;
+                }
+
                 let model = glm::translation(&glm::vec3(
                     (cx - x) as f32,
                     (cy - y) as f32,
