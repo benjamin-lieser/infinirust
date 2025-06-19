@@ -11,7 +11,6 @@ mod player;
 
 use std::net::TcpStream;
 use std::sync::Arc;
-use std::default::Default;
 
 use winit::dpi::PhysicalSize;
 
@@ -56,7 +55,7 @@ pub struct Game {
     background_thread: std::thread::JoinHandle<()>,
 }
 
-fn create_atlas(glt: GLToken) -> TextureAtlas {
+fn create_atlas(_glt: GLToken) -> TextureAtlas {
     let mut atlas = crate::mygl::TextureAtlas::new();
     atlas.add_texture("grass_side.png").unwrap();
     atlas.add_texture("grass_top.png").unwrap();
