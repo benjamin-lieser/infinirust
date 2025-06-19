@@ -56,7 +56,7 @@ pub struct Game {
 }
 
 fn create_atlas(glt: GLToken) -> TextureAtlas {
-    let mut atlas = crate::mygl::TextureAtlas::new(glt);
+    let mut atlas = crate::mygl::TextureAtlas::new(glt, 16);
     atlas.add_texture("grass_side.png").unwrap();
     atlas.add_texture("grass_top.png").unwrap();
     atlas.add_texture("dirt.png").unwrap();

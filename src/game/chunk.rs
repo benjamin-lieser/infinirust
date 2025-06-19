@@ -174,7 +174,7 @@ pub fn add_face(
     dir: Direction,
 ) {
     let (tex_x, tex_y) = atlas.get_position(texture).unwrap();
-    let (size_x, size_y) = TextureAtlas::get_size();
+    let (size_x, size_y) = atlas.get_size();
     //We do counter clockwiese triangles
 
     //bottom left

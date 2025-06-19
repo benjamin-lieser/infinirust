@@ -6,27 +6,41 @@ use image::RgbaImage;
 
 use super::GLToken;
 
-/// 16x16 pixel texture atlas. It prevents bleeding and supports Mipmapping
+/// *x* pixel texture atlas. It prevents bleeding and supports Mipmapping
 pub struct TextureAtlas {
     texture: gl::types::GLuint,
+    pixel_num: u32,
+    texture_per_row: u32,
     positions: HashMap<String, (f32, f32)>,
     next_free: u32,
     image: RgbaImage,
 }
 
+const MAX_ATLAS_SIZE : u32 = 150;
+
 impl TextureAtlas {
 
-    pub fn new(_: GLToken) -> Self {
+    pub fn new(_: GLToken, pixel_num : u32) -> Self {
         let mut texture: gl::types::GLuint = 0;
         unsafe {
             gl::GenTextures(1, &mut texture);
         }
         assert!(texture != 0);
+
+        // We need the biggest x such that x * pixel_num * 3 - 2 * pixel_num <= MAX_ATLAS_SIZE
+        let x = (MAX_ATLAS_SIZE + 2 * pixel_num) / (pixel_num * 3);
+
+        assert!(x > 0, "pixel_num is too high for MAX_ATLAS_SIZE");
+
+        let actual_size = 3 * pixel_num * x - 2 * pixel_num;
+
         TextureAtlas {
             texture,
+            pixel_num,
+            texture_per_row: x,
             positions: HashMap::new(),
             next_free: 0,
-            image: RgbaImage::new(1024, 1024),
+            image: RgbaImage::new(actual_size, actual_size),
         }
     }
 
@@ -36,33 +50,33 @@ impl TextureAtlas {
             return Ok((*x,*y));
         }
 
-        if self.next_free == 22*22 {
+        if self.next_free == self.texture_per_row * self.texture_per_row {
             return Err(anyhow!("Texture atlas is full"));
         }
         
         let mut img = Reader::open("textures/".to_owned() + path)?.decode()?.to_rgba8();
-        if img.dimensions() != (16, 16) {
-            return Err(anyhow!("Image has to have 16x16 pixels"));
+        if img.dimensions() != (self.pixel_num, self.pixel_num) {
+            return Err(anyhow!("Image has to have pixel_num x pixel_num pixels"));
         }
 
         //Opengl has (0,0) in the bottom left, image at the top left
         image::imageops::flip_vertical_in_place(&mut img);
 
-        let x = (self.next_free % 22) as i32;
-        let y = (self.next_free / 22) as i32;
+        let x = (self.next_free % self.texture_per_row) as i32;
+        let y = (self.next_free / self.texture_per_row) as i32;
 
-        let pixel_x = x * 48;
-        let pixel_y = y * 48;
+        let pixel_x = x * 3 * self.pixel_num as i32;
+        let pixel_y = y * 3 * self.pixel_num as i32;
 
-        //Copy into the image buffer and extend the border to a 48 * 48
-        for xx in -16i32..32 {
-            for yy in -16i32..32 {
-                let img_x = xx.clamp(0, 15) as u32;
-                let img_y = yy.clamp(0, 15) as u32;
+        //Copy into the image buffer and extend the border to a 3 * pixel_num * 3 * pixel_num
+        for xx in -(self.pixel_num as i32)..2 * self.pixel_num as i32 {
+            for yy in -(self.pixel_num as i32)..2 * self.pixel_num as i32 {
+                let img_x = xx.clamp(0, self.pixel_num as i32 - 1) as u32;
+                let img_y = yy.clamp(0, self.pixel_num as i32 - 1) as u32;
 
                 self.image.put_pixel(
-                    (pixel_x + xx).clamp(0, 1023) as u32,
-                    (pixel_y + yy).clamp(0, 1023) as u32,
+                    (pixel_x + xx).clamp(0, self.image.width() as i32 - 1) as u32,
+                    (pixel_y + yy).clamp(0, self.image.width() as i32 - 1) as u32,
                     *img.get_pixel(img_x, img_y),
                 );
             }
@@ -70,8 +84,10 @@ impl TextureAtlas {
 
         self.next_free += 1;
 
-        self.positions.insert(path.into(), (pixel_x as f32 / 1024.0, pixel_y as f32 / 1024.0));
-        Ok((pixel_x as f32 / 1024.0, pixel_y as f32 / 1024.0))
+        let atlas_pixel_size = self.image.width() as f32;
+
+        self.positions.insert(path.into(), (pixel_x as f32 / atlas_pixel_size, pixel_y as f32 / atlas_pixel_size));
+        Ok((pixel_x as f32 / atlas_pixel_size, pixel_y as f32 / atlas_pixel_size))
     }
 
     /// Saves the internal atlas to disk, mostly for debug
@@ -84,8 +100,10 @@ impl TextureAtlas {
         self.positions.get(path).copied()
     }
 
-    pub fn get_size() -> (f32, f32) {
-        (16.0 / 1024.0, 16.0 / 1024.0)
+    /// The size of a texture in texture coordinates
+    pub fn get_size(&self) -> (f32, f32) {
+        let size = self.pixel_num as f32 / self.image.width() as f32;
+        (size, size)
     }
 
     pub fn bind_texture(&mut self, texture_unit: gl::types::GLenum) {
@@ -125,8 +143,8 @@ impl TextureAtlas {
             gl::TEXTURE_2D,
             0,
             gl::RGBA8 as gl::types::GLint,
-            1024,
-            1024,
+            self.image.width() as i32,
+            self.image.height() as i32,
             0,
             gl::RGBA,
             gl::UNSIGNED_BYTE,
