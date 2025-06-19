@@ -89,16 +89,16 @@ impl PlayerRender {
         vao.enable_array(glt, 1);
 
 
-        // Make it a cube of end bricks for now
+        // Make it a cube of obsidian with a furnace face for now
         let mut vertex_data = vec![];
         let mut texture_data = vec![];
 
-        add_face(&mut vertex_data, &mut texture_data, atlas, "end_bricks.png", [0,0,0], super::Direction::NegX);
-        add_face(&mut vertex_data, &mut texture_data, atlas, "end_bricks.png", [0,0,0], super::Direction::PosX);
-        add_face(&mut vertex_data, &mut texture_data, atlas, "end_bricks.png", [0,0,0], super::Direction::NegY);
-        add_face(&mut vertex_data, &mut texture_data, atlas, "end_bricks.png", [0,0,0], super::Direction::PosY);
+        add_face(&mut vertex_data, &mut texture_data, atlas, "head.png", [0,0,0], super::Direction::NegX);
+        add_face(&mut vertex_data, &mut texture_data, atlas, "head.png", [0,0,0], super::Direction::PosX);
+        add_face(&mut vertex_data, &mut texture_data, atlas, "head.png", [0,0,0], super::Direction::NegY);
+        add_face(&mut vertex_data, &mut texture_data, atlas, "head.png", [0,0,0], super::Direction::PosY);
         add_face(&mut vertex_data, &mut texture_data, atlas, "face.png", [0,0,0], super::Direction::NegZ);
-        add_face(&mut vertex_data, &mut texture_data, atlas, "end_bricks.png", [0,0,0], super::Direction::PosZ);
+        add_face(&mut vertex_data, &mut texture_data, atlas, "head.png", [0,0,0], super::Direction::PosZ);
 
         vertex_vbo.copy(glt, &vertex_data);
         texture_vbo.copy(glt, &texture_data);

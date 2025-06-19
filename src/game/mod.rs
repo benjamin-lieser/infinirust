@@ -60,7 +60,7 @@ fn create_atlas(glt: GLToken) -> TextureAtlas {
     atlas.add_texture("grass_side.png").unwrap();
     atlas.add_texture("grass_top.png").unwrap();
     atlas.add_texture("dirt.png").unwrap();
-    atlas.add_texture("end_bricks.png").unwrap();
+    atlas.add_texture("head.png").unwrap();
     atlas.add_texture("face.png").unwrap();
     //atlas.save("temp.png").unwrap();
     atlas.bind_texture(gl::TEXTURE0);
