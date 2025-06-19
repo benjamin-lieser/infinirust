@@ -96,7 +96,6 @@ fn main() {
                 WindowEvent::CloseRequested => {
                     control_flow.set_exit();
                 }
-                #[cfg(target_os = "macos")]
                 WindowEvent::KeyboardInput {
                     device_id: _,
                     input,
@@ -125,10 +124,6 @@ fn main() {
             } => match event {
                 DeviceEvent::MouseMotion { delta } => {
                     game.mouse_input(delta);
-                }
-                #[cfg(not(target_os = "macos"))]
-                DeviceEvent::Key(input) => {
-                    handle_keyboard(input);
                 }
                 _ => (),
             },
