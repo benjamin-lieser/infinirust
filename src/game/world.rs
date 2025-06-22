@@ -7,7 +7,7 @@ use crate::{
     mygl::{GLToken, Program, TextureAtlas},
 };
 
-use super::{player::Players, Camera, Chunk, FreeCamera, CHUNK_SIZE, Y_RANGE};
+use super::{player::Players, Camera, Chunk, FreeCamera, CHUNK_SIZE, Y_RANGE, chunk::block_position_to_chunk_index};
 
 pub const VIEW_DISTANCE: i32 = 8;
 
@@ -37,6 +37,13 @@ impl World {
             unused_chunks: Mutex::new(unused_chunks),
             players: Mutex::new(Players::new(glt, texture_atlas, local_player)),
         }
+    }
+
+    pub fn delete_block(&self, position: [i32; 3]) -> Option<()> {
+        let (chunk_index, block_index) = block_position_to_chunk_index(position);
+        let mut chunks = self.chunks.lock().unwrap();
+        todo!("Delete block at position: {:?}", position);
+
     }
 
     pub fn draw(

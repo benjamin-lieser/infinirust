@@ -1,11 +1,27 @@
 use crate::mygl::{GLToken, TextureAtlas, VBOWithStorage, VAO};
+use super::{LocalBlockIndex, ChunkIndex};
 
 use crate::game::Direction;
 
-pub const CHUNK_SIZE: usize = 16;
+pub const CHUNK_SIZE: u8 = 16;
 
 /// Range y chunks go from -Y_RANGE to Y_RANGE - 1
 pub const Y_RANGE: i32 = 4;
+
+
+pub fn block_position_to_chunk_index(pos: ChunkIndex) -> (ChunkIndex, LocalBlockIndex) {
+    let chunk_pos = [
+        pos[0].div_euclid(CHUNK_SIZE as i32),
+        pos[1].div_euclid(CHUNK_SIZE as i32),
+        pos[2].div_euclid(CHUNK_SIZE as i32),
+    ];
+    let block_pos = [
+        (pos[0].rem_euclid(CHUNK_SIZE as i32)) as u8,
+        (pos[1].rem_euclid(CHUNK_SIZE as i32)) as u8,
+        (pos[2].rem_euclid(CHUNK_SIZE as i32)) as u8,
+    ];
+    (chunk_pos, block_pos)
+}
 
 /// Data of a chunk. The blocks are stored in a 1D array
 pub struct ChunkData {
@@ -17,12 +33,14 @@ impl ChunkData {
         ChunkData { blocks: data }
     }
 
-    pub fn get(&self, pos: [usize; 3]) -> u8 {
-        self.blocks[pos[0] * CHUNK_SIZE * CHUNK_SIZE + pos[1] * CHUNK_SIZE + pos[2]]
+    pub fn get(&self, pos: LocalBlockIndex) -> u8 {
+        let chunk_size_usize: usize = CHUNK_SIZE as usize;
+        self.blocks[pos[0] as usize * chunk_size_usize * chunk_size_usize + pos[1] as usize * chunk_size_usize + pos[2] as usize]
     }
 
-    pub fn set(&mut self, pos: [usize; 3], block: u8) {
-        self.blocks[pos[0] * CHUNK_SIZE * CHUNK_SIZE + pos[1] * CHUNK_SIZE + pos[2]] = block
+    pub fn set(&mut self, pos: LocalBlockIndex, block: u8) {
+        let chunk_size_usize: usize = CHUNK_SIZE as usize;
+        self.blocks[pos[0] as usize * chunk_size_usize * chunk_size_usize + pos[1] as usize * chunk_size_usize + pos[2] as usize] = block;
     }
 }
 

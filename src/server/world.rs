@@ -1,4 +1,4 @@
-use crate::game::CHUNK_SIZE;
+const CHUNK_SIZE: usize = crate::game::CHUNK_SIZE as usize;
 use crate::game::Y_RANGE;
 use crate::misc::cast_bytes;
 

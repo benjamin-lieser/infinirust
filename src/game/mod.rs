@@ -50,6 +50,10 @@ pub enum Key {
     Down,
 }
 
+pub type ChunkIndex = [i32; 3];
+pub type LocalBlockIndex = [u8; 3];
+pub type BlockType = u8;
+
 pub struct Game {
     renderer: Renderer,
     background_thread: std::thread::JoinHandle<()>,
