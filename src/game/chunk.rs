@@ -1,4 +1,4 @@
-use crate::mygl::{GLToken, TextureAtlas, VBOWithStorage, VAO};
+use crate::{game::BlockType, mygl::{GLToken, TextureAtlas, VBOWithStorage, VAO}};
 use super::{LocalBlockIndex, ChunkIndex};
 
 use crate::game::Direction;
@@ -163,8 +163,8 @@ impl Chunk {
         self.texture_pos.exchange_cpu_buffer(texture_pos);
     }
 
-    pub fn remove_block(&mut self, pos: LocalBlockIndex, atlas: &TextureAtlas) {
-        self.blocks.set(pos, 0);
+    pub fn update_block(&mut self, pos: LocalBlockIndex, block: BlockType, atlas: &TextureAtlas) {
+        self.blocks.set(pos, block);
         self.write_vbo(atlas);
     }
 

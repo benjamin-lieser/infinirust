@@ -168,12 +168,11 @@ async fn manage_world(
                         }
                     }
                     Some(Update::Block(pos, block)) => {
-                        assert!(block == 0, "For now only deletions are supported");
                         let (chunk_index, block_index) = block_position_to_chunk_index(pos);
                         if let Some(slot) = active_chunk_ids.get(&chunk_index) {
                             let mut chunks = world.chunks.lock().unwrap();
                             if let Some(chunk) = &mut chunks[*slot] {
-                                chunk.remove_block(block_index, &atlas);
+                                chunk.update_block(block_index, block, &atlas);
                             }
                         }
                     }
