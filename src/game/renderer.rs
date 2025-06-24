@@ -111,7 +111,7 @@ impl Renderer {
             self.last_pos_update = std::time::Instant::now();
             _ = self.updates.try_send(Update::Pos(camera.clone()));
         }
-        
+
         let distance_to_screen_mid = unsafe {
             let mut depth: f32 = 0.0;
             gl::ReadPixels(
@@ -158,6 +158,15 @@ impl Renderer {
                 0.0
             };
 
+            let highlighted_block = look_block.map(|x| x as i32);
+
+            // Remove block update if left click
+            if self.controls.left_click {
+                self.updates
+                    .try_send(Update::Block(highlighted_block, 0))
+                    .unwrap();
+            }
+
             let model = glm::translation(&glm::vec3(
                 (look_block[0] - x) as f32,
                 (look_block[1] - y) as f32,
@@ -188,12 +197,14 @@ impl Renderer {
         self.overlay.resize(glt, size);
     }
 
+    /// Only mouse movement, clicking is handled in `keyboard_input`
     pub fn mouse_input(&mut self, delta: (f64, f64)) {
         let camera = &mut self.world.players.lock().unwrap().local_player.camera;
         camera.change_pitch(delta.1 as f32 / 100.0);
         camera.change_yaw(delta.0 as f32 / 100.0);
     }
 
+    /// also manages clicking
     pub fn keyboard_input(&mut self, key: Key, pressed: bool) {
         match key {
             Key::Backward => {
@@ -213,6 +224,12 @@ impl Renderer {
             }
             Key::Up => {
                 self.controls.up = pressed;
+            }
+            Key::LeftClick => {
+                self.controls.left_click = pressed;
+            }
+            Key::RightClick => {
+                self.controls.right_click = pressed;
             }
         }
     }

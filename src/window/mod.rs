@@ -2,27 +2,25 @@ use std::{num::NonZeroU32, ffi::CString};
 
 use glutin::{
     config::ConfigTemplateBuilder,
-    context::PossiblyCurrentContext,
-    context::{ContextApi, ContextAttributesBuilder, GlProfile, Version},
+    context::{ContextApi, ContextAttributesBuilder, GlProfile, PossiblyCurrentContext, Version},
     display::GetGlDisplay,
-    prelude::{GlConfig, GlDisplay, NotCurrentGlContextSurfaceAccessor},
-    surface::{GlSurface, SwapInterval, WindowSurface, Surface},
+    prelude::{GlConfig, GlDisplay, NotCurrentGlContext},
+    surface::{GlSurface, Surface, SwapInterval, WindowSurface},
 };
 use glutin_winit::{DisplayBuilder, GlWindow};
-use raw_window_handle::HasRawWindowHandle;
+use raw_window_handle::HasWindowHandle;
 use winit::{
     event_loop::EventLoop,
-    window::{Window, WindowBuilder},
+    window::{Window},
 };
 
 pub fn create_window() -> (EventLoop<()>, Window, Surface::<WindowSurface>, PossiblyCurrentContext) {
     //Main object of our application from winit
-    let event_loop = EventLoop::new();
+    let event_loop = EventLoop::new().unwrap();
 
-    //Describes the configuration of the window
-    let window_builder = WindowBuilder::new().with_title("Infinirust");
+    let window_attributes = winit::window::Window::default_attributes().with_title("Infinirust");
 
-    let display_builder = DisplayBuilder::new().with_window_builder(Some(window_builder));
+    let display_builder = DisplayBuilder::new().with_window_attributes(Some(window_attributes));
 
     let (window, gl_config) = display_builder
         .build(&event_loop, ConfigTemplateBuilder::new(), |configs| {
@@ -41,7 +39,7 @@ pub fn create_window() -> (EventLoop<()>, Window, Surface::<WindowSurface>, Poss
     let window = window.expect("Could not create window");
 
     //Only required for windows, which needs a handle to a window for opengl context creation
-    let raw_window_handle = window.raw_window_handle();
+    let raw_window_handle = window.window_handle().unwrap().as_raw();
 
     let gl_display = gl_config.display();
 
@@ -56,7 +54,7 @@ pub fn create_window() -> (EventLoop<()>, Window, Surface::<WindowSurface>, Poss
             .unwrap()
     };
 
-    let attrs = window.build_surface_attributes(<_>::default());
+    let attrs = window.build_surface_attributes(<_>::default()).unwrap();
 
     let gl_surface = unsafe {
         gl_config

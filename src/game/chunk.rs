@@ -163,6 +163,11 @@ impl Chunk {
         self.texture_pos.exchange_cpu_buffer(texture_pos);
     }
 
+    pub fn remove_block(&mut self, pos: LocalBlockIndex, atlas: &TextureAtlas) {
+        self.blocks.set(pos, 0);
+        self.write_vbo(atlas);
+    }
+
     pub fn draw(&mut self, glt: GLToken) {
         self.vertex_pos.copy(glt);
         self.texture_pos.copy(glt);

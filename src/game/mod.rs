@@ -48,6 +48,8 @@ pub enum Key {
     Right,
     Up,
     Down,
+    LeftClick,
+    RightClick,
 }
 
 pub type ChunkIndex = [i32; 3];

@@ -6,14 +6,22 @@ use tokio::{
 };
 
 use crate::{
-    game::{world::VIEW_DISTANCE, Camera, CHUNK_SIZE, Y_RANGE},
+    game::{
+        chunk::block_position_to_chunk_index, world::VIEW_DISTANCE, Camera, CHUNK_SIZE, Y_RANGE,
+    },
     misc::{cast_bytes, cast_bytes_mut, first_none},
     mygl::TextureAtlas,
-    net::{ClientPackagePlayerPosition, Package as NetworkPackage, ServerPackagePlayerPosition, ServerPlayerLogin}, server::UID,
+    net::{
+        ClientPackagePlayerPosition, Package as NetworkPackage, ServerPackagePlayerPosition,
+        ServerPlayerLogin,
+    },
+    server::UID,
 };
 
 use super::{FreeCamera, World};
 
+/// Updates which are send from the main loop to the background thread
+#[derive(Debug)]
 pub enum Update {
     /// The camera position has changed
     Pos(FreeCamera),
@@ -53,8 +61,9 @@ pub fn background_thread(
         let read_join_handle = tokio::spawn(read_packages(reader, loader_tx));
         let write_join_handle = tokio::spawn(write_packages(writer, writer_rx));
 
-        let world_join_handler =
-            tokio::spawn(manage_world(world, atlas, loader_rx, writer_tx, updates, uid));
+        let world_join_handler = tokio::spawn(manage_world(
+            world, atlas, loader_rx, writer_tx, updates, uid,
+        ));
         // When manage_world returns, the client has exited
         world_join_handler.await.unwrap();
         read_join_handle.abort();
@@ -70,7 +79,7 @@ async fn manage_world(
     mut in_packages: tokio::sync::mpsc::Receiver<Package>,
     out_packages: tokio::sync::mpsc::Sender<Box<[u8]>>,
     mut client: tokio::sync::mpsc::Receiver<Update>,
-    uid: UID
+    uid: UID,
 ) {
     let mut current_world_center = [i32::MIN; 2]; // x, z
     let mut active_chunk_ids = HashMap::<[i32; 3], usize>::new();
@@ -158,8 +167,15 @@ async fn manage_world(
                             current_world_center = camera_center;
                         }
                     }
-                    Some(Update::Block(_pos, _block)) => {
-
+                    Some(Update::Block(pos, block)) => {
+                        assert!(block == 0, "For now only deletions are supported");
+                        let (chunk_index, block_index) = block_position_to_chunk_index(pos);
+                        if let Some(slot) = active_chunk_ids.get(&chunk_index) {
+                            let mut chunks = world.chunks.lock().unwrap();
+                            if let Some(chunk) = &mut chunks[*slot] {
+                                chunk.remove_block(block_index, &atlas);
+                            }
+                        }
                     }
                     Some(Update::Exit) => {
                         return;
@@ -226,7 +242,10 @@ async fn read_packages(
             0x0003 => {
                 // Other player logs in
                 let login_package = ServerPlayerLogin::new(&mut reader).await;
-                chunk_loader.send(Package::PlayerLogin(login_package)).await.unwrap();
+                chunk_loader
+                    .send(Package::PlayerLogin(login_package))
+                    .await
+                    .unwrap();
             }
             _ => {
                 panic!("Client: Invalid Package type {package_type}")

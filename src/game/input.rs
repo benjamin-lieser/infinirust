@@ -6,4 +6,6 @@ pub struct Controls {
     pub right: bool,
     pub up: bool,
     pub down: bool,
+    pub left_click: bool,
+    pub right_click: bool,
 }
