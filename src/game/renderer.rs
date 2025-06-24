@@ -9,7 +9,7 @@ use super::{
     background::Update, misc::CubeOutlines, overlay::Overlay, Camera, Controls, Key, World,
 };
 
-const NEAR_PLAIN: f32 = 0.7;
+const NEAR_PLAIN: f32 = 0.2;
 const FAR_PLAIN: f32 = 300.0;
 
 /// This struct holds all GL relevant things
