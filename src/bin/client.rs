@@ -1,4 +1,4 @@
-use std::{io::Write, mem::ManuallyDrop, num::NonZeroU32};
+use std::{io::Write, num::NonZeroU32};
 
 use glutin::surface::{GlSurface, Surface, WindowSurface};
 use infinirust::{
@@ -8,7 +8,7 @@ use infinirust::{
 };
 use winit::{
     application::ApplicationHandler,
-    event::{ElementState, WindowEvent},
+    event::{ElementState, MouseButton, WindowEvent},
     event_loop::ControlFlow,
     keyboard::KeyCode,
 };
@@ -103,7 +103,21 @@ impl ApplicationHandler for App {
                 device_id: _,
                 state,
                 button,
-            } => {}
+            } => {
+                let pressed = match state {
+                    ElementState::Pressed => true,
+                    ElementState::Released => false,
+                };
+                match button {
+                    MouseButton::Left => {
+                        self.game.keyboard_input(Key::LeftClick, pressed);
+                    }
+                    MouseButton::Right => {
+                        self.game.keyboard_input(Key::RightClick, pressed);
+                    }
+                    _ => {}
+                }
+            }
             WindowEvent::RedrawRequested => {}
             _ => {}
         }
@@ -125,8 +139,8 @@ impl ApplicationHandler for App {
 
     fn device_event(
         &mut self,
-        event_loop: &winit::event_loop::ActiveEventLoop,
-        device_id: winit::event::DeviceId,
+        _event_loop: &winit::event_loop::ActiveEventLoop,
+        _device_id: winit::event::DeviceId,
         event: winit::event::DeviceEvent,
     ) {
         match event {
