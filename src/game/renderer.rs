@@ -26,6 +26,7 @@ pub struct Renderer {
     render_size: winit::dpi::PhysicalSize<u32>,
     updates: tokio::sync::mpsc::Sender<Update>,
     last_pos_update: std::time::Instant,
+    last_block_remove_place: std::time::Instant,
 }
 
 impl Renderer {
@@ -66,6 +67,7 @@ impl Renderer {
             render_size,
             updates,
             last_pos_update: std::time::Instant::now(),
+            last_block_remove_place: std::time::Instant::now(),
         }
     }
 
@@ -161,10 +163,11 @@ impl Renderer {
             let highlighted_block = look_block.map(|x| x as i32);
 
             // Remove block update if left click
-            if self.controls.left_click {
+            if self.controls.left_click && self.last_block_remove_place.elapsed().as_secs_f32() > 0.05{
                 self.updates
                     .try_send(Update::Block(highlighted_block, 0))
                     .unwrap();
+                self.last_block_remove_place = std::time::Instant::now();
             }
 
             let model = glm::translation(&glm::vec3(
