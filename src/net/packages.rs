@@ -1,18 +1,18 @@
 use std::sync::Arc;
 
 use tokio::{io::AsyncReadExt, net::tcp::OwnedReadHalf};
+use zerocopy::{FromBytes, Immutable, IntoBytes};
 
 use crate::{
-    misc::{cast_bytes, cast_bytes_mut, AsBytes},
     server::{Command, ServerCommand, UID},
 };
 
-pub trait Package: Default + AsBytes {
+pub trait Package: Default + IntoBytes + FromBytes + Immutable {
     fn id() -> u16;
     async fn new(stream: &mut OwnedReadHalf) -> Self {
         let mut package = Self::default();
         stream
-            .read_exact(cast_bytes_mut(&mut package))
+            .read_exact(package.as_mut_bytes())
             .await
             .unwrap();
         package
@@ -28,13 +28,13 @@ pub trait Package: Default + AsBytes {
     fn to_arc(&self) -> Arc<[u8]> {
         let mut bytes = vec![0u8; std::mem::size_of::<Self>() + 2];
         bytes[0..2].copy_from_slice(&Self::id().to_le_bytes());
-        bytes[2..].copy_from_slice(cast_bytes(self));
+        bytes[2..].copy_from_slice(self.as_bytes());
         bytes.into()
     }
     fn to_box(&self) -> Box<[u8]> {
         let mut bytes = vec![0u8; std::mem::size_of::<Self>() + 2];
         bytes[0..2].copy_from_slice(&Self::id().to_le_bytes());
-        bytes[2..].copy_from_slice(cast_bytes(self));
+        bytes[2..].copy_from_slice(self.as_bytes());
         bytes.into()
     }
 }
@@ -61,45 +61,29 @@ impl Package for ServerPackagePlayerPosition {
 }
 
 #[repr(C)]
-#[derive(Debug, Default)]
+#[derive(Debug, Default, IntoBytes, FromBytes, Immutable)]
 pub struct PackageBlockUpdate {
     pub pos: [i32; 3],
     pub block: u8,
     pub reserved: [u8; 3],
 }
-unsafe impl AsBytes for PackageBlockUpdate {}
-const _: () = assert!(
-    std::mem::size_of::<PackageBlockUpdate>() % std::mem::align_of::<PackageBlockUpdate>() == 0
-);
 
 #[repr(C)]
-#[derive(Debug, Default)]
+#[derive(Debug, Default, IntoBytes, FromBytes, Immutable)]
 pub struct ClientPackagePlayerPosition {
     pub pos: [f64; 3],
     pub pitch: f32,
     pub yaw: f32,
 }
-unsafe impl AsBytes for ClientPackagePlayerPosition {}
-const _: () = assert!(
-    std::mem::size_of::<ClientPackagePlayerPosition>()
-        % std::mem::align_of::<ClientPackagePlayerPosition>()
-        == 0
-);
 
 #[repr(C)]
-#[derive(Debug, Default)]
+#[derive(Debug, Default, IntoBytes, FromBytes, Immutable)]
 pub struct ServerPackagePlayerPosition {
     pub uid: u64,
     pub pos: [f64; 3],
     pub pitch: f32,
     pub yaw: f32,
 }
-unsafe impl AsBytes for ServerPackagePlayerPosition {}
-const _: () = assert!(
-    std::mem::size_of::<ServerPackagePlayerPosition>()
-        % std::mem::align_of::<ServerPackagePlayerPosition>()
-        == 0
-);
 
 pub struct ServerPlayerLogin {
     pub uid: u64,
@@ -113,7 +97,7 @@ impl ServerPlayerLogin {
         bytes[0..2].copy_from_slice(&3u16.to_le_bytes());
         bytes[2..4].copy_from_slice(&(self.name.len() as u16).to_le_bytes());
         bytes[4..4+self.name.len()].copy_from_slice(self.name.as_bytes());
-        bytes[4+self.name.len()..].copy_from_slice(cast_bytes(&self.uid));
+        bytes[4+self.name.len()..].copy_from_slice(self.uid.as_bytes());
         bytes.into()
     }
     pub async fn new(stream : &mut OwnedReadHalf) -> Self {

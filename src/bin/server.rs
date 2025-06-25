@@ -1,4 +1,5 @@
 use anyhow::anyhow;
+use zerocopy::IntoBytes;
 use std::sync::Arc;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{
@@ -6,7 +7,6 @@ use tokio::net::{
     TcpListener,
 };
 
-use infinirust::misc::cast_bytes_mut;
 use infinirust::net::{ClientPackagePlayerPosition, Package, PackageBlockUpdate};
 use infinirust::server::{Client, Command, ServerCommand, NOUSER, UID};
 
@@ -94,14 +94,14 @@ async fn read_play_packages(
     loop {
         let mut package_type = 0u16;
         stream
-            .read_exact(cast_bytes_mut(&mut package_type))
+            .read_exact(package_type.as_mut_bytes())
             .await?;
 
         match package_type {
             // Request chunk data
             0x000A => {
                 let mut pos = [0i32; 3];
-                stream.read_exact(cast_bytes_mut(&mut pos)).await?;
+                stream.read_exact(pos.as_mut_bytes()).await?;
                 let command = (uid, Command::ChunkData(pos));
                 server
                     .send(command)
@@ -112,7 +112,7 @@ async fn read_play_packages(
             0x000B => {
                 // Send block update
                 let mut package = PackageBlockUpdate::default();
-                stream.read_exact(cast_bytes_mut(&mut package)).await?;
+                stream.read_exact(package.as_mut_bytes()).await?;
 
                 server
                     .send((uid, Command::BlockUpdate(package.pos, package.block)))
@@ -135,7 +135,7 @@ async fn read_start_packages(mut stream: OwnedReadHalf, server: ServerCommand, c
     let uid = loop {
         let mut package_type = 0u16;
         stream
-            .read_exact(cast_bytes_mut(&mut package_type))
+            .read_exact(package_type.as_mut_bytes())
             .await
             .unwrap();
         match package_type {

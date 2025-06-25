@@ -1,11 +1,11 @@
 const CHUNK_SIZE: usize = crate::game::CHUNK_SIZE as usize;
 use crate::game::Y_RANGE;
-use crate::misc::cast_bytes;
 
 use std::{collections::HashMap, sync::Arc};
 
 use noise::NoiseFn;
 use noise::Perlin;
+use zerocopy::IntoBytes;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct Settings {
@@ -156,7 +156,7 @@ impl ServerWorld {
 fn create_chunk_package(chunk: &ChunkData, pos: &[i32; 3]) -> Arc<[u8]> {
     let mut package = [0u8; 2 + 12 + 4096];
     package[0] = 0x0A;
-    package[2..14].copy_from_slice(cast_bytes(pos));
+    package[2..14].copy_from_slice(pos.as_bytes());
     package[14..].copy_from_slice(&chunk.blocks);
     Arc::from(package)
     //Todo: Check if this is efficient
@@ -165,7 +165,7 @@ fn create_chunk_package(chunk: &ChunkData, pos: &[i32; 3]) -> Arc<[u8]> {
 fn create_block_update_package(pos: &[i32; 3], block: u8) -> Arc<[u8]> {
     let mut package = [0u8; 2 + 12 + 4];
     package[0] = 0x0B;
-    package[2..14].copy_from_slice(cast_bytes(pos));
+    package[2..14].copy_from_slice(pos.as_bytes());
     package[14] = block;
     Arc::from(package)
     //Todo: Check if this is efficient

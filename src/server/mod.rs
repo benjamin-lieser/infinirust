@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
-use crate::misc::cast_bytes;
+use zerocopy::IntoBytes;
+
 use crate::net::{ServerPackagePlayerPosition, ServerPlayerLogin};
 
 use self::player::Players;
@@ -48,7 +49,7 @@ pub fn start_world(
                     //send login success package
                     let mut package =
                         vec![0x02u8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
-                    package[2..].copy_from_slice(cast_bytes(&(uid as u64)));
+                    package[2..].copy_from_slice((uid as u64).as_bytes());
                     server.players.client(uid).try_send(Arc::from(package)).unwrap();
                     //Send position package to the new player
                     let player = server.players.get_player_mut(uid);

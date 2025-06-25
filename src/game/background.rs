@@ -4,12 +4,13 @@ use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::tcp::{OwnedReadHalf, OwnedWriteHalf},
 };
+use zerocopy::IntoBytes;
 
 use crate::{
     game::{
         chunk::block_position_to_chunk_index, world::VIEW_DISTANCE, Camera, CHUNK_SIZE, Y_RANGE,
     },
-    misc::{cast_bytes, cast_bytes_mut, first_none},
+    misc::first_none,
     mygl::TextureAtlas,
     net::{
         ClientPackagePlayerPosition, Package as NetworkPackage, ServerPackagePlayerPosition,
@@ -203,8 +204,8 @@ async fn write_packages(
 
 fn request_chunk_package(pos: [i32; 3]) -> Box<[u8]> {
     let mut package = vec![0u8; 14];
-    package[0..2].copy_from_slice(cast_bytes(&0x000Au16));
-    package[2..].copy_from_slice(cast_bytes(&pos));
+    package[0..2].copy_from_slice(0x000Au16.as_bytes());
+    package[2..].copy_from_slice(pos.as_bytes());
     package.into_boxed_slice()
 }
 
@@ -215,7 +216,7 @@ async fn read_packages(
     let mut package_type = 0u16;
     loop {
         reader
-            .read_exact(cast_bytes_mut(&mut package_type))
+            .read_exact(package_type.as_mut_bytes())
             .await
             .unwrap();
 
@@ -223,7 +224,7 @@ async fn read_packages(
             0x000A => {
                 //Chunk Data
                 let mut pos = [0i32; 3];
-                reader.read_exact(cast_bytes_mut(&mut pos)).await.unwrap();
+                reader.read_exact(pos.as_mut_bytes()).await.unwrap();
                 let mut data = vec![0u8; 4096];
                 reader.read_exact(&mut data).await.unwrap();
                 chunk_loader.send(Package::Chunk(pos, data)).await.unwrap();
