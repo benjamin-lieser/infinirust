@@ -1,5 +1,7 @@
 use std::{io::{Write, Read}, net::TcpStream};
 
+use zerocopy::IntoBytes;
+
 use crate::net::read_string;
 
 /// Not sendable, use with phantom data
@@ -21,30 +23,6 @@ pub fn first_none<T>(data: &[Option<T>]) -> Option<usize> {
         }
     }
     None
-}
-
-/// # Safety
-/// Only implement for types with repr(C) and where every bit pattern is valid and no padding in the struct
-pub unsafe trait AsBytes: Sized {}
-
-unsafe impl AsBytes for u16 {}
-unsafe impl AsBytes for u64 {}
-unsafe impl AsBytes for usize {}
-unsafe impl AsBytes for [i32;3] {}
-
-/// This is save, because all AsBytes types are repr(C) and have no padding
-/// &mut T has to be properly aligned, so we can use the &mut\[u8\] to write to it
-/// There cannot be aliasing because data will be mutably borrowed as long as the retunr value lives
-pub fn cast_bytes_mut<T: AsBytes>(data: &mut T) -> &mut [u8] {
-    unsafe {
-        ::core::slice::from_raw_parts_mut((data as *mut T) as *mut u8, ::core::mem::size_of::<T>())
-    }
-}
-
-pub fn cast_bytes<T: AsBytes>(data: &T) -> &[u8] {
-    unsafe {
-        ::core::slice::from_raw_parts((data as *const T) as *const u8, ::core::mem::size_of::<T>())
-    }
 }
 
 pub fn start_server(world_directory: &str) -> (std::process::Child, String) {
@@ -92,13 +70,13 @@ pub fn login(bind: &str, username: &str) -> (TcpStream, u64) {
     //login package
     let len = username.len();
     assert!(len <= u16::MAX as usize);
-    stream.write_all(cast_bytes(&0x0001u16)).unwrap();
-    stream.write_all(cast_bytes(&(len as u16))).unwrap();
+    stream.write_all(0x0001u16.as_bytes()).unwrap();
+    stream.write_all((len as u16).as_bytes()).unwrap();
     stream.write_all(username.as_bytes()).unwrap();
 
     
     let mut answer = 0u16;
-    stream.read_exact(cast_bytes_mut(&mut answer)).unwrap();
+    stream.read_exact(answer.as_mut_bytes()).unwrap();
 
     let uid = match answer {
         0x00001 => { //Login Failed
@@ -106,7 +84,7 @@ pub fn login(bind: &str, username: &str) -> (TcpStream, u64) {
         }
         0x00002 => { //Login success
             let mut uid = 0u64;
-            stream.read_exact(cast_bytes_mut(&mut uid)).unwrap();
+            stream.read_exact(uid.as_mut_bytes()).unwrap();
             uid
         }
         _ => {
