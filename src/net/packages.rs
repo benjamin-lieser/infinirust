@@ -60,6 +60,15 @@ impl Package for ServerPackagePlayerPosition {
     }
 }
 
+impl Package for PackageBlockUpdate {
+    fn id() -> u16 {
+        0x000B
+    }
+    async fn handle(&self, _command: &ServerCommand, uid: UID) {
+        todo!("Handle block update for uid: {uid}");
+    }
+}
+
 #[repr(C)]
 #[derive(Debug, Default, IntoBytes, FromBytes, Immutable)]
 pub struct PackageBlockUpdate {

@@ -13,8 +13,7 @@ use crate::{
     misc::first_none,
     mygl::TextureAtlas,
     net::{
-        ClientPackagePlayerPosition, Package as NetworkPackage, ServerPackagePlayerPosition,
-        ServerPlayerLogin,
+        ClientPackagePlayerPosition, Package as NetworkPackage, PackageBlockUpdate, ServerPackagePlayerPosition, ServerPlayerLogin
     },
     server::UID,
 };
@@ -36,6 +35,7 @@ enum Package {
     Chunk([i32; 3], Vec<u8>),
     PlayerPositionUpdate(ServerPackagePlayerPosition),
     PlayerLogin(ServerPlayerLogin),
+    BlockUpdate(PackageBlockUpdate),
 }
 
 pub fn background_thread(
@@ -121,6 +121,16 @@ async fn manage_world(
                     Some(Package::PlayerLogin(package)) => {
                         // Add player to world
                         world.players.lock().unwrap().add_player(package.name, package.uid as UID, FreeCamera::new([0.0,0.0,0.0]));
+                    }
+                    Some(Package::BlockUpdate(package)) => {
+                        // Update block in chunk
+                        let (chunk_index, block_index) = block_position_to_chunk_index(package.pos);
+                        if let Some(slot) = active_chunk_ids.get(&chunk_index) {
+                            let mut chunks = world.chunks.lock().unwrap();
+                            if let Some(chunk) = &mut chunks[*slot] {
+                                chunk.update_block(block_index, package.block, &atlas);
+                            }
+                        }
                     }
                     None => {panic!("package reader crashed")}
                 }
@@ -229,8 +239,11 @@ async fn read_packages(
                 chunk_loader.send(Package::Chunk(pos, data)).await.unwrap();
             }
             0x000B => {
-                //Block Update
-                todo!();
+                let package = PackageBlockUpdate::new(&mut reader).await;
+                chunk_loader
+                    .send(Package::BlockUpdate(package))
+                    .await
+                    .unwrap(); 
             }
             0x000C => {
                 let player_pos = ServerPackagePlayerPosition::new(&mut reader).await;
