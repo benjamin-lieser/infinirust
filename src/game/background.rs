@@ -191,7 +191,6 @@ async fn manage_world(
                             block,
                             reserved: [0u8; 3],
                         };
-                        println!("Client: Send block update {pos:?} {block}");
                         let mut net_package = vec![0u8; 2 + std::mem::size_of::<PackageBlockUpdate>()];
                         net_package[0..2].copy_from_slice(0x000Bu16.as_bytes());
                         net_package[2..].copy_from_slice(package.as_bytes());
