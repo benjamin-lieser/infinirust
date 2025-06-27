@@ -147,7 +147,6 @@ impl ApplicationHandler for App {
     ) {
         match event {
             winit::event::DeviceEvent::MouseMotion { delta } => {
-                println!("Mouse moved: {:?}", delta);
                 self.game.mouse_input((delta.0, delta.1));
             }
 
