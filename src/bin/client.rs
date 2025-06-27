@@ -128,8 +128,6 @@ impl ApplicationHandler for App {
         let delta_t = current_time.duration_since(self.time).unwrap();
         self.time = current_time;
 
-        println!("{}", delta_t.as_millis());
-
         self.game.draw(self.glt, delta_t.as_secs_f32());
 
         //game.print_dist();

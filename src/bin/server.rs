@@ -110,7 +110,6 @@ async fn read_play_packages(
             }
             // Send block update
             0x000B => {
-                // Send block update
                 let mut package = PackageBlockUpdate::default();
                 stream.read_exact(package.as_mut_bytes()).await?;
 

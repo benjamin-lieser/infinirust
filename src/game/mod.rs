@@ -1,7 +1,7 @@
 mod background;
 mod blocks;
 mod camera;
-mod chunk;
+pub mod chunk;
 mod input;
 pub mod misc;
 mod overlay;

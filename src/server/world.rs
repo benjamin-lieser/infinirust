@@ -1,6 +1,8 @@
 const CHUNK_SIZE: usize = crate::game::CHUNK_SIZE as usize;
-use crate::game::Y_RANGE;
+use crate::game::{LocalBlockIndex, Y_RANGE};
 
+use std::fs::File;
+use std::io::{Read, Write};
 use std::{collections::HashMap, sync::Arc};
 
 use noise::NoiseFn;
@@ -46,16 +48,19 @@ impl ChunkData {
         chunk
     }
 
-    pub fn get(&self, pos: [usize; 3]) -> u8 {
-        self.blocks[pos[0] * CHUNK_SIZE * CHUNK_SIZE + pos[1] * CHUNK_SIZE + pos[2]]
-    }
 
+    pub fn get(&self, pos: LocalBlockIndex) -> u8 {
+        let chunk_size_usize: usize = CHUNK_SIZE as usize;
+        self.blocks[pos[0] as usize * chunk_size_usize * chunk_size_usize + pos[1] as usize * chunk_size_usize + pos[2] as usize]
+    }
+    
     pub fn set(&mut self, pos: [usize; 3], block: u8) {
         self.blocks[pos[0] * CHUNK_SIZE * CHUNK_SIZE + pos[1] * CHUNK_SIZE + pos[2]] = block
     }
 
-    pub fn block_mut(&mut self, pos: [usize; 3]) -> &mut u8 {
-        &mut self.blocks[pos[0] * CHUNK_SIZE * CHUNK_SIZE + pos[1] * CHUNK_SIZE + pos[2]]
+    pub fn block_mut(&mut self, pos: LocalBlockIndex) -> &mut u8 {
+        let chunk_size_usize: usize = CHUNK_SIZE as usize;
+        &mut self.blocks[pos[0] as usize * chunk_size_usize * chunk_size_usize + pos[1] as usize * chunk_size_usize + pos[2] as usize]
     }
 }
 
@@ -69,46 +74,50 @@ pub struct ChunkMeta {
 pub struct ServerWorld {
     generator: Perlin,
     loaded_chunks: HashMap<[i32; 3], ChunkData>,
-    chunk_meta: HashMap<[i32; 3], ChunkMeta>,
 }
 
 impl ServerWorld {
-    pub fn new(seed: u32) -> Self {
-        ServerWorld {
-            generator: Perlin::new(seed),
-            loaded_chunks: HashMap::new(),
-            chunk_meta: HashMap::new(),
-        }
-    }
-
     pub fn from_files(world_directory: &std::path::Path) -> Self {
         let settings_file = std::fs::read_to_string(world_directory.join("settings.json"))
             .expect("Could not open settings.json");
         let settings: Settings =
             serde_json::from_str(&settings_file).expect("Could not parse settings.json");
 
-        let chunks_file =
-            std::fs::read_to_string(world_directory.join("chunks.json")).unwrap_or("[]".into()); //If this file does not exist we assume it to be empty
+        // Load chunk data from file
+        let loaded_chunks = if let Ok(mut chunk_data) = File::open(world_directory.join("chunks.dat")) {
+            let mut loaded_chunks = HashMap::new();
+            let mut pos = [0i32; 3];
+            while let Ok(_) = chunk_data.read_exact(&mut pos.as_mut_bytes()) {
+                let mut chunk = ChunkData::empty();
+                chunk_data.read_exact(&mut chunk.blocks).expect("Could not read chunk data");
+                loaded_chunks.insert(pos, chunk);    
+            }
+            loaded_chunks
+        } else {
+            HashMap::new()
+        };
 
-        let chunk_meta_data: Vec<ChunkMeta> =
-            serde_json::from_str(&chunks_file).expect("Could not parse chunks.json");
-        let mut chunk_meta = HashMap::new();
-
-        for meta in chunk_meta_data {
-            chunk_meta.insert(meta.pos, meta);
-        }
 
         ServerWorld {
             generator: Perlin::new(settings.seed),
-            loaded_chunks: HashMap::new(),
-            chunk_meta,
+            loaded_chunks,
         }
+    }
+
+    pub fn sync_to_disk(&self, world_directory: &std::path::Path) -> std::io::Result<()> {
+        // Save chunk data
+        let mut chunk_file = File::create(world_directory.join("chunks.dat"))?;
+        for (pos, chunk) in &self.loaded_chunks {
+            chunk_file.write_all(&pos.as_bytes())?;
+            chunk_file.write_all(&chunk.blocks)?;
+        }
+
+        Ok(())
     }
 
     /// Gets a reference to a block or None if this position is not loaded
     pub fn get_block_mut(&mut self, pos: &[i32; 3]) -> Option<&mut u8> {
-        let chunk_pos = pos.map(|x| x / CHUNK_SIZE as i32);
-        let in_chunk_pos = pos.map(|x| x as usize % CHUNK_SIZE);
+        let (chunk_pos, in_chunk_pos) = crate::game::chunk::block_position_to_chunk_index(*pos);
         if let Some(chunk) = self.loaded_chunks.get_mut(&chunk_pos) {
             Some(chunk.block_mut(in_chunk_pos))
         } else {
@@ -120,7 +129,6 @@ impl ServerWorld {
         if let Some(chunk) = self.loaded_chunks.get(pos) {
             create_chunk_package(chunk, pos)
         } else {
-            //TODO: Make sure the pos are reasonable (Maybe check that the player is actually near it, to prevent DDOS)
             let new_chunk = ChunkData::generate(&self.generator, pos);
             let package = create_chunk_package(&new_chunk, pos);
             self.loaded_chunks.insert(*pos, new_chunk);
