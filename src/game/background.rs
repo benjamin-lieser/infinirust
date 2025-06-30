@@ -13,7 +13,8 @@ use crate::{
     misc::first_none,
     mygl::TextureAtlas,
     net::{
-        ClientPackagePlayerPosition, Package as NetworkPackage, PackageBlockUpdate, ServerPackagePlayerPosition, ServerPlayerLogin
+        ClientPackagePlayerPosition, Package as NetworkPackage, PackageBlockUpdate,
+        ServerPackagePlayerPosition, ServerPlayerLogin,
     },
     server::UID,
 };
@@ -132,7 +133,7 @@ async fn manage_world(
                             }
                         }
                     }
-                    None => {panic!("package reader crashed")}
+                    None => {eprintln!("Client: Package reader stoped (probably lost connection to server), exiting"); return;},
                 }
             }
             update = client.recv() => {
@@ -212,9 +213,12 @@ async fn write_packages(
 ) {
     loop {
         if let Some(package) = input.recv().await {
-            stream.write_all(&package).await.unwrap();
+            stream.write_all(&package).await.unwrap_or_else(|e| {
+                eprintln!("Client: Writer returns because of error: {e}");
+                return;
+            });
         } else {
-            eprintln!("Client: Writer returns");
+            eprintln!("Client: Writer returns because there is no more input");
             return;
         }
     }
@@ -230,13 +234,12 @@ fn request_chunk_package(pos: [i32; 3]) -> Box<[u8]> {
 async fn read_packages(
     mut reader: OwnedReadHalf,
     chunk_loader: tokio::sync::mpsc::Sender<Package>,
-) {
+) -> Result<(), anyhow::Error> {
     let mut package_type = 0u16;
     loop {
         reader
             .read_exact(package_type.as_mut_bytes())
-            .await
-            .unwrap();
+            .await?;
 
         match package_type {
             0x000A => {
@@ -252,7 +255,7 @@ async fn read_packages(
                 chunk_loader
                     .send(Package::BlockUpdate(package))
                     .await
-                    .unwrap(); 
+                    .unwrap();
             }
             0x000C => {
                 let player_pos = ServerPackagePlayerPosition::new(&mut reader).await;

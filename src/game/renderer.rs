@@ -163,10 +163,10 @@ impl Renderer {
             let highlighted_block = look_block.map(|x| x as i32);
 
             // Remove block update if left click
-            if self.controls.left_click && self.last_block_remove_place.elapsed().as_secs_f32() > 0.05{
-                self.updates
-                    .try_send(Update::Block(highlighted_block, 0))
-                    .unwrap();
+            if self.controls.left_click
+                && self.last_block_remove_place.elapsed().as_secs_f32() > 0.05
+            {
+                let _ = self.updates.try_send(Update::Block(highlighted_block, 0));
                 self.last_block_remove_place = std::time::Instant::now();
             }
 
@@ -238,7 +238,9 @@ impl Renderer {
     }
     /// Sends a exit signal to the background
     pub fn send_exit(&self) {
-        self.updates.blocking_send(Update::Exit).unwrap();
+        self.updates
+            .blocking_send(Update::Exit)
+            .unwrap_or_else(|e| println!("Client: background thread already crashed: {}", e));
     }
 
     /// # Safety

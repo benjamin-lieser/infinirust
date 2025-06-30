@@ -197,9 +197,13 @@ fn main() {
 
     //close interval server if it was started
     if let Some(ref mut server_process) = &mut server_process {
-        let mut stdin = server_process.stdin.take().unwrap();
-        stdin.write_all(b"exit\n").unwrap();
-        stdin.flush().unwrap();
-        server_process.wait().unwrap();
+        if server_process.try_wait().is_ok() {
+            println!("Client: Server process already exited");
+        } else {
+            let mut stdin = server_process.stdin.take().unwrap();
+            stdin.write_all(b"exit\n").unwrap();
+            stdin.flush().unwrap();
+            server_process.wait().unwrap();
+        }
     }
 }
