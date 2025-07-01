@@ -16,7 +16,7 @@ pub struct TextureAtlas {
     image: RgbaImage,
 }
 
-const MAX_ATLAS_SIZE : u32 = 150;
+const MAX_ATLAS_SIZE : u32 = 1024;
 
 impl TextureAtlas {
 
