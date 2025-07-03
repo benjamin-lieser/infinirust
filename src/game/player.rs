@@ -1,7 +1,11 @@
 use gl::types::GLint;
 use nalgebra_glm as glm;
 
-use crate::{mygl::{GLToken, TextureAtlas, VAO, VBO}, net::ServerPackagePlayerPosition, server::UID};
+use crate::{
+    mygl::{GLToken, TextureAtlas, VAO, VBO},
+    net::ServerPackagePlayerPosition,
+    server::UID,
+};
 
 use super::{chunk::add_face, Camera, FreeCamera};
 
@@ -9,6 +13,19 @@ pub struct Player {
     pub name: String,
     pub camera: FreeCamera,
     pub uid: UID,
+}
+
+impl Player {
+    pub fn bounding_box_pos(&self) -> [f64; 3] {
+        let [x, y, z] = self.camera.position();
+
+        [x - 0.4, y - 1.7, z - 0.4]
+    }
+
+    pub fn bounding_box_size(&self) -> [f64; 3] {
+        // x y z
+        [0.8, 1.8, 0.8]
+    }
 }
 
 pub struct Players {
@@ -19,7 +36,7 @@ pub struct Players {
 }
 
 impl Players {
-    pub fn new(glt: GLToken, atlas: &TextureAtlas, local_player : Player) -> Self {
+    pub fn new(glt: GLToken, atlas: &TextureAtlas, local_player: Player) -> Self {
         Self {
             players: vec![],
             local_player,
@@ -28,25 +45,31 @@ impl Players {
     }
 
     pub fn add_player(&mut self, name: String, uid: UID, camera: FreeCamera) {
-        self.players.push(Player {
-            name,
-            camera,
-            uid,
-        });
+        self.players.push(Player { name, camera, uid });
     }
 
     pub fn update(&mut self, package: &ServerPackagePlayerPosition) {
         for player in self.players.iter_mut() {
             if player.uid == package.uid as usize {
-                player.camera.update(package.pos, package.pitch, package.yaw);
+                player
+                    .camera
+                    .update(package.pos, package.pitch, package.yaw);
             }
         }
         if self.local_player.uid == package.uid as usize {
-            self.local_player.camera.update(package.pos, package.pitch, package.yaw);
+            self.local_player
+                .camera
+                .update(package.pos, package.pitch, package.yaw);
         }
     }
 
-    pub unsafe fn draw(&self, glt: GLToken, projection_view: &nalgebra_glm::Mat4, pos : &[f64;3], mvp_location: GLint) {
+    pub unsafe fn draw(
+        &self,
+        glt: GLToken,
+        projection_view: &nalgebra_glm::Mat4,
+        pos: &[f64; 3],
+        mvp_location: GLint,
+    ) {
         for player in self.players.iter() {
             let [x, y, z] = player.camera.position();
 
@@ -65,7 +88,6 @@ impl Players {
             self.render.draw(glt);
         }
     }
-
     pub fn delete(self, glt: GLToken) {
         self.render.delete(glt);
     }
@@ -78,7 +100,7 @@ pub struct PlayerRender {
 }
 
 impl PlayerRender {
-    pub fn new(glt: GLToken, atlas : &TextureAtlas) -> Self {
+    pub fn new(glt: GLToken, atlas: &TextureAtlas) -> Self {
         let mut vao = VAO::new(glt);
         let mut vertex_vbo = VBO::new(glt);
         let mut texture_vbo = VBO::new(glt);
@@ -88,17 +110,58 @@ impl PlayerRender {
         vao.enable_array(glt, 0);
         vao.enable_array(glt, 1);
 
-
         // Make it a cube of obsidian with a furnace face for now
         let mut vertex_data = vec![];
         let mut texture_data = vec![];
 
-        add_face(&mut vertex_data, &mut texture_data, atlas, "head.png", [0,0,0], super::Direction::NegX);
-        add_face(&mut vertex_data, &mut texture_data, atlas, "head.png", [0,0,0], super::Direction::PosX);
-        add_face(&mut vertex_data, &mut texture_data, atlas, "head.png", [0,0,0], super::Direction::NegY);
-        add_face(&mut vertex_data, &mut texture_data, atlas, "head.png", [0,0,0], super::Direction::PosY);
-        add_face(&mut vertex_data, &mut texture_data, atlas, "face.png", [0,0,0], super::Direction::NegZ);
-        add_face(&mut vertex_data, &mut texture_data, atlas, "head.png", [0,0,0], super::Direction::PosZ);
+        add_face(
+            &mut vertex_data,
+            &mut texture_data,
+            atlas,
+            "head.png",
+            [0, 0, 0],
+            super::Direction::NegX,
+        );
+        add_face(
+            &mut vertex_data,
+            &mut texture_data,
+            atlas,
+            "head.png",
+            [0, 0, 0],
+            super::Direction::PosX,
+        );
+        add_face(
+            &mut vertex_data,
+            &mut texture_data,
+            atlas,
+            "head.png",
+            [0, 0, 0],
+            super::Direction::NegY,
+        );
+        add_face(
+            &mut vertex_data,
+            &mut texture_data,
+            atlas,
+            "head.png",
+            [0, 0, 0],
+            super::Direction::PosY,
+        );
+        add_face(
+            &mut vertex_data,
+            &mut texture_data,
+            atlas,
+            "face.png",
+            [0, 0, 0],
+            super::Direction::NegZ,
+        );
+        add_face(
+            &mut vertex_data,
+            &mut texture_data,
+            atlas,
+            "head.png",
+            [0, 0, 0],
+            super::Direction::PosZ,
+        );
 
         vertex_vbo.copy(glt, &vertex_data);
         texture_vbo.copy(glt, &texture_data);

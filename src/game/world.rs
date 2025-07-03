@@ -39,6 +39,51 @@ impl World {
         }
     }
 
+    pub fn game_update(&self, delta_t: f32, controls: &super::Controls) {
+        let speed = 5.0;
+
+        let mut players = self.players.lock().unwrap();
+
+        // Collision detection
+        let bounding_box_pos = players.local_player.bounding_box_pos();
+        let bounding_box_size = players.local_player.bounding_box_size();
+
+        let [x, y, z] = bounding_box_pos;
+        let [bx, by, bz] = bounding_box_size;
+
+        
+
+
+        let camera = &mut players.local_player.camera;
+
+        if controls.forward {
+            camera.go_forward(delta_t * speed);
+        }
+
+        if controls.backward {
+            camera.go_forward(-delta_t * speed);
+        }
+
+        if controls.left {
+            camera.go_left(delta_t * speed);
+        }
+
+        if controls.right {
+            camera.go_left(-delta_t * speed);
+        }
+
+        if controls.up {
+            camera.go_up(delta_t * speed);
+        }
+
+        if controls.down {
+            camera.go_up(-delta_t * speed);
+        }
+
+        
+
+    }
+
     pub fn draw(
         &self,
         glt: GLToken,

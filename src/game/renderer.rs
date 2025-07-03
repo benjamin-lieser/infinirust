@@ -3,7 +3,7 @@ use std::sync::Arc;
 use glm::Mat4;
 use nalgebra_glm as glm;
 
-use crate::mygl::{get_gl_string, GLToken, Program, TextureAtlas};
+use crate::{mygl::{get_gl_string, GLToken, Program, TextureAtlas}};
 
 use super::{
     background::Update, misc::CubeOutlines, overlay::Overlay, Camera, Controls, Key, World,
@@ -72,37 +72,10 @@ impl Renderer {
     }
 
     pub fn draw(&mut self, glt: GLToken, delta_t: f32) {
-        let speed = 5.0;
 
-        let camera = {
-            let mut players = self.world.players.lock().unwrap();
-            let camera = &mut players.local_player.camera;
+        self.world.game_update(delta_t, &self.controls);
 
-            if self.controls.forward {
-                camera.go_forward(delta_t * speed);
-            }
-
-            if self.controls.backward {
-                camera.go_forward(-delta_t * speed);
-            }
-
-            if self.controls.left {
-                camera.go_left(delta_t * speed);
-            }
-
-            if self.controls.right {
-                camera.go_left(-delta_t * speed);
-            }
-
-            if self.controls.up {
-                camera.go_up(delta_t * speed);
-            }
-
-            if self.controls.down {
-                camera.go_up(-delta_t * speed);
-            }
-            camera.clone()
-        };
+        let camera = self.world.players.lock().unwrap().local_player.camera.clone();
 
         self.world
             .draw(glt, &self.program, &self.projection, &camera);
@@ -164,7 +137,7 @@ impl Renderer {
 
             // Remove block update if left click
             if self.controls.left_click
-                && self.last_block_remove_place.elapsed().as_secs_f32() > 0.05
+                && self.last_block_remove_place.elapsed().as_secs_f32() > 0.1
             {
                 let _ = self.updates.try_send(Update::Block(highlighted_block, 0));
                 self.last_block_remove_place = std::time::Instant::now();
