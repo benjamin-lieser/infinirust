@@ -78,15 +78,15 @@ impl World {
             player.velocity[1] -= delta_t * acceleration;
         }
 
-        player.position = player.position + player.velocity.cast::<f64>() * delta_t as f64;
-
-        // Collision detection and movement
-        let bounding_box_pos = player.bounding_box_pos();
         let bounding_box_size = player.bounding_box_size();
 
         let chunks = self.chunks.lock().unwrap();
 
         for move_direction in 0..3 {
+            // Movement update in this direction
+            player.position[move_direction] = player.position[move_direction]
+                + player.velocity[move_direction] as f64 * delta_t as f64;
+
             if player.velocity[move_direction] == 0.0 {
                 continue; // No movement in this direction
             }
@@ -99,15 +99,9 @@ impl World {
                 0.0
             };
 
-            let camera_offset = if move_direction == 1 {
-                1.5 // Height of the camera
-            } else {
-                0.25
-            };
-
             for i in 0..2 {
                 for j in 0..2 {
-                    let mut point = bounding_box_pos;
+                    let mut point = player.position;
                     point[move_direction] += offset;
                     point[(move_direction + 1) % 3] +=
                         i as f64 * bounding_box_size[(move_direction + 1) % 3];
@@ -124,7 +118,7 @@ impl World {
                 // Collision detected, move the camera to the edge of the bounding box
                 dbg!(points_to_check);
                 if player.velocity[move_direction] > 0.0 {
-                    player.position[move_direction] = (bounding_box_pos[move_direction]
+                    player.position[move_direction] = (player.position[move_direction]
                         + bounding_box_size[move_direction])
                         .floor()
                         - bounding_box_size[move_direction]
@@ -132,7 +126,7 @@ impl World {
                     player.velocity[move_direction] = 0.0; // Stop the movement in this direction
                 } else if player.velocity[move_direction] < 0.0 {
                     player.position[move_direction] =
-                        bounding_box_pos[move_direction].ceil() + 1e-5;
+                        player.position[move_direction].ceil() + 1e-5;
                     player.velocity[move_direction] = 0.0; // Stop the movement in this direction
                 }
             }
@@ -144,7 +138,7 @@ impl World {
         glt: GLToken,
         program: &Program,
         projection: &nalgebra_glm::Mat4,
-        camera: & impl Camera,
+        camera: &impl Camera,
     ) {
         unsafe {
             program.bind(glt);

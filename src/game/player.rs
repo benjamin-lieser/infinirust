@@ -44,29 +44,9 @@ impl Camera for Player {
 }
 
 impl Player {
-    pub fn bounding_box_pos(&self) -> DVec3 {
-        self.position
-    }
-
     pub fn bounding_box_size(&self) -> DVec3 {
         // x y z
         DVec3::new(0.5, 1.75, 0.5)
-    }
-
-    pub fn bounding_box_corners(&self) -> [DVec3; 8] {
-        let pos = self.bounding_box_pos();
-        let size = self.bounding_box_size();
-
-        [
-            pos,
-            pos + DVec3::new(size.x, 0.0, 0.0),
-            pos + DVec3::new(0.0, size.y, 0.0),
-            pos + DVec3::new(size.x, size.y, 0.0),
-            pos + DVec3::new(0.0, 0.0, size.z),
-            pos + DVec3::new(size.x, 0.0, size.z),
-            pos + DVec3::new(0.0, size.y, size.z),
-            pos + DVec3::new(size.x, size.y, size.z),
-        ]
     }
 
     pub fn update_pos_pitch_yaw(&mut self, pos: [f64; 3], pitch: f32, yaw: f32) {
