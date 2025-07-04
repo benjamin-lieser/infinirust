@@ -3,7 +3,7 @@ use std::sync::Arc;
 use glm::Mat4;
 use nalgebra_glm as glm;
 
-use crate::{mygl::{get_gl_string, GLToken, Program, TextureAtlas}};
+use crate::mygl::{get_gl_string, GLToken, Program, TextureAtlas};
 
 use super::{
     background::Update, misc::CubeOutlines, overlay::Overlay, Camera, Controls, Key, World,
@@ -72,10 +72,16 @@ impl Renderer {
     }
 
     pub fn draw(&mut self, glt: GLToken, delta_t: f32) {
-
         self.world.game_update(delta_t, &self.controls);
 
-        let camera = self.world.players.lock().unwrap().local_player.camera.clone();
+        let camera = self
+            .world
+            .players
+            .lock()
+            .unwrap()
+            .local_player
+            .camera
+            .clone();
 
         self.world
             .draw(glt, &self.program, &self.projection, &camera);

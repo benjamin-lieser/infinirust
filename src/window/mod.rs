@@ -1,4 +1,4 @@
-use std::{num::NonZeroU32, ffi::CString};
+use std::{ffi::CString, num::NonZeroU32};
 
 use glutin::{
     config::ConfigTemplateBuilder,
@@ -9,12 +9,14 @@ use glutin::{
 };
 use glutin_winit::{DisplayBuilder, GlWindow};
 use raw_window_handle::HasWindowHandle;
-use winit::{
-    event_loop::EventLoop,
-    window::{Window},
-};
+use winit::{event_loop::EventLoop, window::Window};
 
-pub fn create_window() -> (EventLoop<()>, Window, Surface::<WindowSurface>, PossiblyCurrentContext) {
+pub fn create_window() -> (
+    EventLoop<()>,
+    Window,
+    Surface<WindowSurface>,
+    PossiblyCurrentContext,
+) {
     //Main object of our application from winit
     let event_loop = EventLoop::new().unwrap();
 

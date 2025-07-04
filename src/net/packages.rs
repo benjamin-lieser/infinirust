@@ -3,18 +3,13 @@ use std::sync::Arc;
 use tokio::{io::AsyncReadExt, net::tcp::OwnedReadHalf};
 use zerocopy::{FromBytes, Immutable, IntoBytes};
 
-use crate::{
-    server::{Command, ServerCommand, UID},
-};
+use crate::server::{Command, ServerCommand, UID};
 
 pub trait Package: Default + IntoBytes + FromBytes + Immutable {
     fn id() -> u16;
     async fn new(stream: &mut OwnedReadHalf) -> Self {
         let mut package = Self::default();
-        stream
-            .read_exact(package.as_mut_bytes())
-            .await
-            .unwrap();
+        stream.read_exact(package.as_mut_bytes()).await.unwrap();
         package
     }
 
@@ -105,11 +100,11 @@ impl ServerPlayerLogin {
         let mut bytes = vec![0u8; 2 + 8 + 2 + self.name.len()];
         bytes[0..2].copy_from_slice(&3u16.to_le_bytes());
         bytes[2..4].copy_from_slice(&(self.name.len() as u16).to_le_bytes());
-        bytes[4..4+self.name.len()].copy_from_slice(self.name.as_bytes());
-        bytes[4+self.name.len()..].copy_from_slice(self.uid.as_bytes());
+        bytes[4..4 + self.name.len()].copy_from_slice(self.name.as_bytes());
+        bytes[4 + self.name.len()..].copy_from_slice(self.uid.as_bytes());
         bytes.into()
     }
-    pub async fn new(stream : &mut OwnedReadHalf) -> Self {
+    pub async fn new(stream: &mut OwnedReadHalf) -> Self {
         let mut name_len = [0u8; 2];
         stream.read_exact(&mut name_len).await.unwrap();
         let name_len = u16::from_le_bytes(name_len) as usize;
@@ -119,9 +114,6 @@ impl ServerPlayerLogin {
         let mut uid = [0u8; 8];
         stream.read_exact(&mut uid).await.unwrap();
         let uid = u64::from_le_bytes(uid);
-        Self {
-            uid,
-            name,
-        }
+        Self { uid, name }
     }
 }

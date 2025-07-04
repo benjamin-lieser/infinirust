@@ -13,7 +13,7 @@ pub struct Player {
     pub name: String,
     pub camera: FreeCamera, // Also contains the position and rotation
     pub uid: UID,
-    pub velocity: Vec3, // Velocity in x, y, z
+    pub velocity: Vec3,  // Velocity in x, y, z
     pub on_ground: bool, // Whether the player is on the ground
 }
 
@@ -47,7 +47,13 @@ impl Players {
     }
 
     pub fn add_player(&mut self, name: String, uid: UID, camera: FreeCamera) {
-        self.players.push(Player { name, camera, uid, velocity: Vec3::zeros(), on_ground: false });
+        self.players.push(Player {
+            name,
+            camera,
+            uid,
+            velocity: Vec3::zeros(),
+            on_ground: false,
+        });
     }
 
     pub fn update(&mut self, package: &ServerPackagePlayerPosition) {

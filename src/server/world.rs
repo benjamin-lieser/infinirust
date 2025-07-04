@@ -48,19 +48,22 @@ impl ChunkData {
         chunk
     }
 
-
     pub fn get(&self, pos: LocalBlockIndex) -> u8 {
         let chunk_size_usize: usize = CHUNK_SIZE as usize;
-        self.blocks[pos[0] as usize * chunk_size_usize * chunk_size_usize + pos[1] as usize * chunk_size_usize + pos[2] as usize]
+        self.blocks[pos[0] as usize * chunk_size_usize * chunk_size_usize
+            + pos[1] as usize * chunk_size_usize
+            + pos[2] as usize]
     }
-    
+
     pub fn set(&mut self, pos: [usize; 3], block: u8) {
         self.blocks[pos[0] * CHUNK_SIZE * CHUNK_SIZE + pos[1] * CHUNK_SIZE + pos[2]] = block
     }
 
     pub fn block_mut(&mut self, pos: LocalBlockIndex) -> &mut u8 {
         let chunk_size_usize: usize = CHUNK_SIZE as usize;
-        &mut self.blocks[pos[0] as usize * chunk_size_usize * chunk_size_usize + pos[1] as usize * chunk_size_usize + pos[2] as usize]
+        &mut self.blocks[pos[0] as usize * chunk_size_usize * chunk_size_usize
+            + pos[1] as usize * chunk_size_usize
+            + pos[2] as usize]
     }
 }
 
@@ -84,19 +87,21 @@ impl ServerWorld {
             serde_json::from_str(&settings_file).expect("Could not parse settings.json");
 
         // Load chunk data from file
-        let loaded_chunks = if let Ok(mut chunk_data) = File::open(world_directory.join("chunks.dat")) {
-            let mut loaded_chunks = HashMap::new();
-            let mut pos = [0i32; 3];
-            while let Ok(_) = chunk_data.read_exact(&mut pos.as_mut_bytes()) {
-                let mut chunk = ChunkData::empty();
-                chunk_data.read_exact(&mut chunk.blocks).expect("Could not read chunk data");
-                loaded_chunks.insert(pos, chunk);    
-            }
-            loaded_chunks
-        } else {
-            HashMap::new()
-        };
-
+        let loaded_chunks =
+            if let Ok(mut chunk_data) = File::open(world_directory.join("chunks.dat")) {
+                let mut loaded_chunks = HashMap::new();
+                let mut pos = [0i32; 3];
+                while let Ok(_) = chunk_data.read_exact(&mut pos.as_mut_bytes()) {
+                    let mut chunk = ChunkData::empty();
+                    chunk_data
+                        .read_exact(&mut chunk.blocks)
+                        .expect("Could not read chunk data");
+                    loaded_chunks.insert(pos, chunk);
+                }
+                loaded_chunks
+            } else {
+                HashMap::new()
+            };
 
         ServerWorld {
             generator: Perlin::new(settings.seed),

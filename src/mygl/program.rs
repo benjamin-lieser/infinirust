@@ -86,11 +86,7 @@ fn create_and_compile_shader(
 }
 
 /// Panics if there are shader compiling or linking errors
-fn create_program(
-    glt: GLToken,
-    vertex_source: &CStr,
-    fragment_source: &CStr,
-) -> gl::types::GLuint {
+fn create_program(glt: GLToken, vertex_source: &CStr, fragment_source: &CStr) -> gl::types::GLuint {
     unsafe {
         let program = gl::CreateProgram();
         let vertex_shader = create_and_compile_shader(glt, gl::VERTEX_SHADER, vertex_source);

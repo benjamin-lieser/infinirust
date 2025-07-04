@@ -16,11 +16,10 @@ pub struct TextureAtlas {
     image: RgbaImage,
 }
 
-const MAX_ATLAS_SIZE : u32 = 1024;
+const MAX_ATLAS_SIZE: u32 = 1024;
 
 impl TextureAtlas {
-
-    pub fn new(_: GLToken, pixel_num : u32) -> Self {
+    pub fn new(_: GLToken, pixel_num: u32) -> Self {
         let mut texture: gl::types::GLuint = 0;
         unsafe {
             gl::GenTextures(1, &mut texture);
@@ -46,15 +45,17 @@ impl TextureAtlas {
 
     pub fn add_texture(&mut self, path: &str) -> anyhow::Result<(f32, f32)> {
         //Already loaded
-        if let Some((x,y)) = self.positions.get(path) {
-            return Ok((*x,*y));
+        if let Some((x, y)) = self.positions.get(path) {
+            return Ok((*x, *y));
         }
 
         if self.next_free == self.texture_per_row * self.texture_per_row {
             return Err(anyhow!("Texture atlas is full"));
         }
-        
-        let mut img = Reader::open("textures/".to_owned() + path)?.decode()?.to_rgba8();
+
+        let mut img = Reader::open("textures/".to_owned() + path)?
+            .decode()?
+            .to_rgba8();
         if img.dimensions() != (self.pixel_num, self.pixel_num) {
             return Err(anyhow!("Image has to have pixel_num x pixel_num pixels"));
         }
@@ -86,8 +87,17 @@ impl TextureAtlas {
 
         let atlas_pixel_size = self.image.width() as f32;
 
-        self.positions.insert(path.into(), (pixel_x as f32 / atlas_pixel_size, pixel_y as f32 / atlas_pixel_size));
-        Ok((pixel_x as f32 / atlas_pixel_size, pixel_y as f32 / atlas_pixel_size))
+        self.positions.insert(
+            path.into(),
+            (
+                pixel_x as f32 / atlas_pixel_size,
+                pixel_y as f32 / atlas_pixel_size,
+            ),
+        );
+        Ok((
+            pixel_x as f32 / atlas_pixel_size,
+            pixel_y as f32 / atlas_pixel_size,
+        ))
     }
 
     /// Saves the internal atlas to disk, mostly for debug

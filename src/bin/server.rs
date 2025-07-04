@@ -1,11 +1,11 @@
 use anyhow::anyhow;
-use zerocopy::IntoBytes;
 use std::sync::Arc;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{
     tcp::{OwnedReadHalf, OwnedWriteHalf},
     TcpListener,
 };
+use zerocopy::IntoBytes;
 
 use infinirust::net::{ClientPackagePlayerPosition, Package, PackageBlockUpdate};
 use infinirust::server::{Client, Command, ServerCommand, NOUSER, UID};
@@ -93,9 +93,7 @@ async fn read_play_packages(
 ) -> Result<(), anyhow::Error> {
     loop {
         let mut package_type = 0u16;
-        stream
-            .read_exact(package_type.as_mut_bytes())
-            .await?;
+        stream.read_exact(package_type.as_mut_bytes()).await?;
 
         match package_type {
             // Request chunk data
@@ -147,7 +145,6 @@ async fn read_start_packages(mut stream: OwnedReadHalf, server: ServerCommand, c
                     server.send((NOUSER, command)).await.unwrap();
 
                     if let Some(uid) = rx.await.unwrap() {
-
                         break uid; //Move on to play state
                     }
                 }
@@ -166,12 +163,12 @@ async fn read_start_packages(mut stream: OwnedReadHalf, server: ServerCommand, c
             }
         }
     };
-    
+
     //Go to play state
     let e = read_play_packages(stream, server.clone(), uid)
         .await
         .expect_err("Somehow the read_play_packages function returned with Ok");
-    
+
     //Log the player out
     eprintln!("Player got logged out because of error: {}", e);
     server.send((uid, Command::Logout)).await.unwrap();

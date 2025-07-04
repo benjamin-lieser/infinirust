@@ -91,9 +91,7 @@ impl VAO {
         unsafe {
             gl::GenVertexArrays(1, &mut id);
         }
-        VAO {
-            id,
-        }
+        VAO { id }
     }
 
     pub fn bind(&self, _: GLToken) {

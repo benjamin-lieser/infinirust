@@ -50,7 +50,11 @@ pub fn start_world(
                     let mut package =
                         vec![0x02u8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
                     package[2..].copy_from_slice((uid as u64).as_bytes());
-                    server.players.client(uid).try_send(Arc::from(package)).unwrap();
+                    server
+                        .players
+                        .client(uid)
+                        .try_send(Arc::from(package))
+                        .unwrap();
                     //Send position package to the new player
                     let player = server.players.get_player_mut(uid);
                     let package = ServerPackagePlayerPosition {
@@ -59,7 +63,11 @@ pub fn start_world(
                         pitch: player.pitch,
                         yaw: player.yaw,
                     };
-                    server.players.client(uid).try_send(package.to_arc()).unwrap();
+                    server
+                        .players
+                        .client(uid)
+                        .try_send(package.to_arc())
+                        .unwrap();
 
                     //Send login package of all online players
                     for player in server.players.online() {
@@ -68,7 +76,11 @@ pub fn start_world(
                                 uid: player.uid as u64,
                                 name: player.player.name.clone(),
                             };
-                            server.players.client(uid).try_send(package.to_arc()).unwrap();
+                            server
+                                .players
+                                .client(uid)
+                                .try_send(package.to_arc())
+                                .unwrap();
                         }
                     }
 
@@ -77,7 +89,9 @@ pub fn start_world(
                         uid: uid as u64,
                         name: server.players.get_player_mut(uid).name.clone(),
                     };
-                    server.players.broadcast_filtered(package.to_arc(), |p| p.uid != uid);
+                    server
+                        .players
+                        .broadcast_filtered(package.to_arc(), |p| p.uid != uid);
                 }
             }
             Command::Logout => {

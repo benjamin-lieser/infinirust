@@ -4,7 +4,6 @@ use crate::server::NOUSER;
 
 use super::ServerCommand;
 
-
 /// Supposed to be started in its own thread handling sdtin in a blocking way
 pub fn handle_stdin(server: ServerCommand, bind: String) {
     let stdin = std::io::stdin();
@@ -17,7 +16,9 @@ pub fn handle_stdin(server: ServerCommand, bind: String) {
         match command.as_str() {
             "exit" => {
                 //If the server is already down exit the process
-                server.blocking_send((NOUSER, super::Command::Shutdown)).unwrap_or_else(|_| std::process::exit(1));
+                server
+                    .blocking_send((NOUSER, super::Command::Shutdown))
+                    .unwrap_or_else(|_| std::process::exit(1));
             }
             "bind" => {
                 //Writes the address to connect to on stdout
@@ -31,5 +32,7 @@ pub fn handle_stdin(server: ServerCommand, bind: String) {
     }
     //Reached EOF, if the server is already down exit the process
     eprintln!("Server stdin EOF");
-    server.blocking_send((NOUSER, super::Command::Shutdown)).unwrap_or_else(|_| std::process::exit(1));
+    server
+        .blocking_send((NOUSER, super::Command::Shutdown))
+        .unwrap_or_else(|_| std::process::exit(1));
 }

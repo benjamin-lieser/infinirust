@@ -4,12 +4,10 @@ use std::collections::HashMap;
 
 use serde::Deserialize;
 
-pub struct Blocks {
-
-}
+pub struct Blocks {}
 #[derive(Debug, Deserialize)]
 pub struct BlockConfig {
     pub name: String,
     ///Keys are 'default' 'pos_x' 'neg_x' ... 'neg_z', values are the texture files
-    pub faces: HashMap<String, String>
+    pub faces: HashMap<String, String>,
 }

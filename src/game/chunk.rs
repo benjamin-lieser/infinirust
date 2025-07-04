@@ -1,5 +1,8 @@
-use crate::{game::BlockType, mygl::{GLToken, TextureAtlas, VBOWithStorage, VAO}};
-use super::{LocalBlockIndex, ChunkIndex};
+use super::{ChunkIndex, LocalBlockIndex};
+use crate::{
+    game::BlockType,
+    mygl::{GLToken, TextureAtlas, VBOWithStorage, VAO},
+};
 
 use crate::game::Direction;
 
@@ -7,7 +10,6 @@ pub const CHUNK_SIZE: u8 = 16;
 
 /// Range y chunks go from -Y_RANGE to Y_RANGE - 1
 pub const Y_RANGE: i32 = 4;
-
 
 pub fn block_position_to_chunk_index(pos: ChunkIndex) -> (ChunkIndex, LocalBlockIndex) {
     let chunk_pos = [
@@ -35,12 +37,16 @@ impl ChunkData {
 
     pub fn get(&self, pos: LocalBlockIndex) -> u8 {
         let chunk_size_usize: usize = CHUNK_SIZE as usize;
-        self.blocks[pos[0] as usize * chunk_size_usize * chunk_size_usize + pos[1] as usize * chunk_size_usize + pos[2] as usize]
+        self.blocks[pos[0] as usize * chunk_size_usize * chunk_size_usize
+            + pos[1] as usize * chunk_size_usize
+            + pos[2] as usize]
     }
 
     pub fn set(&mut self, pos: LocalBlockIndex, block: u8) {
         let chunk_size_usize: usize = CHUNK_SIZE as usize;
-        self.blocks[pos[0] as usize * chunk_size_usize * chunk_size_usize + pos[1] as usize * chunk_size_usize + pos[2] as usize] = block;
+        self.blocks[pos[0] as usize * chunk_size_usize * chunk_size_usize
+            + pos[1] as usize * chunk_size_usize
+            + pos[2] as usize] = block;
     }
 }
 
@@ -78,7 +84,7 @@ impl Chunk {
     }
 
     pub fn new_empty(glt: GLToken) -> Self {
-        Self::new(glt, [0;3], vec![])
+        Self::new(glt, [0; 3], vec![])
     }
 
     pub fn load(&mut self, data: Vec<u8>, position: [i32; 3]) {

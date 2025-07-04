@@ -1,4 +1,7 @@
-use std::{io::{Write, Read}, net::TcpStream};
+use std::{
+    io::{Read, Write},
+    net::TcpStream,
+};
 
 use zerocopy::IntoBytes;
 
@@ -40,17 +43,18 @@ pub fn start_server(world_directory: &str) -> (std::process::Child, String) {
         .stdout(std::process::Stdio::piped())
         .spawn()
         .unwrap();
-    
+
     let mut stdin = child.stdin.take().unwrap();
     let mut stdout = child.stdout.take().unwrap();
-    
+
     stdin.write_all(b"bind\n").unwrap();
     stdin.flush().unwrap();
     let mut bind = "".to_owned();
     let mut c = [0u8];
     loop {
         stdout.read_exact(&mut c).unwrap();
-        if c[0] == 10 { //Is newline
+        if c[0] == 10 {
+            //Is newline
             break;
         } else {
             bind.push(c[0] as char);
@@ -62,7 +66,6 @@ pub fn start_server(world_directory: &str) -> (std::process::Child, String) {
     println!("Bind from stdout:{}", bind);
 
     (child, bind)
-
 }
 
 pub fn login(bind: &str, username: &str) -> (TcpStream, u64) {
@@ -74,15 +77,16 @@ pub fn login(bind: &str, username: &str) -> (TcpStream, u64) {
     stream.write_all((len as u16).as_bytes()).unwrap();
     stream.write_all(username.as_bytes()).unwrap();
 
-    
     let mut answer = 0u16;
     stream.read_exact(answer.as_mut_bytes()).unwrap();
 
     let uid = match answer {
-        0x00001 => { //Login Failed
+        0x00001 => {
+            //Login Failed
             panic!("Login failed:{}", read_string(&mut stream));
         }
-        0x00002 => { //Login success
+        0x00002 => {
+            //Login success
             let mut uid = 0u64;
             stream.read_exact(uid.as_mut_bytes()).unwrap();
             uid
