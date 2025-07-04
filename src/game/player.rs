@@ -1,5 +1,6 @@
 use gl::types::GLint;
 use nalgebra_glm::{self as glm, DVec3, Vec3};
+use zerocopy::transmute;
 
 use crate::{
     mygl::{GLToken, TextureAtlas, VAO, VBO},
@@ -7,26 +8,71 @@ use crate::{
     server::UID,
 };
 
-use super::{chunk::add_face, Camera, FreeCamera};
+use super::{chunk::add_face, Camera};
 
 pub struct Player {
     pub name: String,
-    pub camera: FreeCamera, // Also contains the position and rotation
+    pub position: DVec3, // Position in x, y, z
+    pub pitch: f32,      // Pitch in radians
+    pub yaw: f32,        // Yaw in radians
     pub uid: UID,
     pub velocity: Vec3,  // Velocity in x, y, z
     pub on_ground: bool, // Whether the player is on the ground
 }
 
+impl Camera for Player {
+    fn camera_position(&self) -> [f64; 3] {
+        transmute!((self.position + DVec3::new(0.25, 1.75, 0.25)).data.0)
+    }
+
+    fn pitch(&self) -> f32 {
+        self.pitch
+    }
+
+    fn yaw(&self) -> f32 {
+        self.yaw
+    }
+
+    fn change_pitch(&mut self, diff: f32) {
+        self.pitch =
+            (self.pitch + diff).clamp(-std::f32::consts::FRAC_PI_2, std::f32::consts::FRAC_PI_2);
+    }
+
+    fn change_yaw(&mut self, diff: f32) {
+        self.yaw = (self.yaw + diff) % std::f32::consts::TAU;
+    }
+}
+
 impl Player {
     pub fn bounding_box_pos(&self) -> DVec3 {
-        let [x, y, z] = self.camera.position();
-
-        DVec3::new(x - 0.4, y - 1.7, z - 0.4)
+        self.position
     }
 
     pub fn bounding_box_size(&self) -> DVec3 {
         // x y z
-        DVec3::new(0.8, 1.8, 0.8)
+        DVec3::new(0.5, 1.75, 0.5)
+    }
+
+    pub fn bounding_box_corners(&self) -> [DVec3; 8] {
+        let pos = self.bounding_box_pos();
+        let size = self.bounding_box_size();
+
+        [
+            pos,
+            pos + DVec3::new(size.x, 0.0, 0.0),
+            pos + DVec3::new(0.0, size.y, 0.0),
+            pos + DVec3::new(size.x, size.y, 0.0),
+            pos + DVec3::new(0.0, 0.0, size.z),
+            pos + DVec3::new(size.x, 0.0, size.z),
+            pos + DVec3::new(0.0, size.y, size.z),
+            pos + DVec3::new(size.x, size.y, size.z),
+        ]
+    }
+
+    pub fn update_pos_pitch_yaw(&mut self, pos: [f64; 3], pitch: f32, yaw: f32) {
+        self.position = DVec3::new(pos[0], pos[1], pos[2]);
+        self.pitch = pitch;
+        self.yaw = yaw;
     }
 }
 
@@ -46,10 +92,12 @@ impl Players {
         }
     }
 
-    pub fn add_player(&mut self, name: String, uid: UID, camera: FreeCamera) {
+    pub fn add_player(&mut self, name: String, uid: UID) {
         self.players.push(Player {
             name,
-            camera,
+            position: DVec3::new(0.0, 0.0, 0.0),
+            pitch: 0.0,
+            yaw: 0.0,
             uid,
             velocity: Vec3::zeros(),
             on_ground: false,
@@ -59,15 +107,12 @@ impl Players {
     pub fn update(&mut self, package: &ServerPackagePlayerPosition) {
         for player in self.players.iter_mut() {
             if player.uid == package.uid as usize {
-                player
-                    .camera
-                    .update(package.pos, package.pitch, package.yaw);
+                player.update_pos_pitch_yaw(package.pos, package.pitch, package.yaw);
             }
         }
         if self.local_player.uid == package.uid as usize {
             self.local_player
-                .camera
-                .update(package.pos, package.pitch, package.yaw);
+                .update_pos_pitch_yaw(package.pos, package.pitch, package.yaw);
         }
     }
 
@@ -79,7 +124,7 @@ impl Players {
         mvp_location: GLint,
     ) {
         for player in self.players.iter() {
-            let [x, y, z] = player.camera.position();
+            let [x, y, z] = player.camera_position();
 
             //TODO this is still a bit off
 
@@ -90,7 +135,7 @@ impl Players {
                 (y - pos[1]) as f32,
                 (z - pos[2]) as f32,
             ));
-            let model = model_trans * player.camera.inverse_view_matrix() * model_center;
+            let model = model_trans * player.inverse_view_matrix() * model_center;
             let mvp = projection_view * model;
             gl::UniformMatrix4fv(mvp_location, 1, 0, mvp.as_ptr());
             self.render.draw(glt);

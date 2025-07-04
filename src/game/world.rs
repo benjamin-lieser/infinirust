@@ -1,13 +1,14 @@
-use std::{collections::HashMap, sync::Mutex};
+use std::{collections::HashMap, sync::Mutex, vec};
 
-use nalgebra_glm as glm;
+use nalgebra_glm::{self as glm, DVec3};
+use zerocopy::transmute;
 
 use crate::{
-    game::player::Player,
+    game::{chunk::block_position_to_chunk_index, player::Player},
     mygl::{GLToken, Program, TextureAtlas},
 };
 
-use super::{player::Players, Camera, Chunk, FreeCamera, CHUNK_SIZE, Y_RANGE};
+use super::{player::Players, Camera, Chunk, CHUNK_SIZE, Y_RANGE};
 
 pub const VIEW_DISTANCE: i32 = 8;
 
@@ -35,8 +36,21 @@ impl World {
         }
     }
 
+    pub fn is_block(pos: [i32; 3], chunks: &HashMap<[i32; 3], Chunk>) -> bool {
+        let (chunk_index, block_index) = block_position_to_chunk_index(pos);
+        if let Some(chunk) = chunks.get(&chunk_index) {
+            return chunk.blocks.get(block_index) != 0;
+        }
+        false
+    }
+
+    pub fn is_block_at(pos: DVec3, chunks: &HashMap<[i32; 3], Chunk>) -> bool {
+        let pos = pos.map(|x| x.floor() as i32);
+        Self::is_block(transmute!(pos.data.0), chunks)
+    }
+
     pub fn game_update(&self, delta_t: f32, controls: &super::Controls) {
-        let acceleration = 150.0;
+        let acceleration = 90.0;
 
         let mut players = self.players.lock().unwrap();
 
@@ -46,16 +60,16 @@ impl World {
         player.velocity -= player.velocity * delta_t * 10.0;
 
         if controls.forward {
-            player.velocity += player.camera.forward_dir() * delta_t * acceleration;
+            player.velocity += player.forward_dir() * delta_t * acceleration;
         }
         if controls.backward {
-            player.velocity -= player.camera.forward_dir() * delta_t * acceleration;
+            player.velocity -= player.forward_dir() * delta_t * acceleration;
         }
         if controls.left {
-            player.velocity += player.camera.left_dir() * delta_t * acceleration;
+            player.velocity += player.left_dir() * delta_t * acceleration;
         }
         if controls.right {
-            player.velocity -= player.camera.left_dir() * delta_t * acceleration;
+            player.velocity -= player.left_dir() * delta_t * acceleration;
         }
         if controls.up {
             player.velocity[1] += delta_t * acceleration;
@@ -64,17 +78,65 @@ impl World {
             player.velocity[1] -= delta_t * acceleration;
         }
 
-        // Collision detection
+        player.position = player.position + player.velocity.cast::<f64>() * delta_t as f64;
+
+        // Collision detection and movement
         let bounding_box_pos = player.bounding_box_pos();
         let bounding_box_size = player.bounding_box_size();
 
-        let camera = &mut player.camera;
+        let chunks = self.chunks.lock().unwrap();
 
-        camera.pos = [
-            camera.position()[0] + (player.velocity[0] * delta_t) as f64,
-            camera.position()[1] + (player.velocity[1] * delta_t) as f64,
-            camera.position()[2] + (player.velocity[2] * delta_t) as f64,
-        ];
+        for move_direction in 0..3 {
+            if player.velocity[move_direction] == 0.0 {
+                continue; // No movement in this direction
+            }
+
+            let mut points_to_check = vec![];
+
+            let offset = if player.velocity[move_direction] > 0.0 {
+                bounding_box_size[move_direction]
+            } else {
+                0.0
+            };
+
+            let camera_offset = if move_direction == 1 {
+                1.5 // Height of the camera
+            } else {
+                0.25
+            };
+
+            for i in 0..2 {
+                for j in 0..2 {
+                    let mut point = bounding_box_pos;
+                    point[move_direction] += offset;
+                    point[(move_direction + 1) % 3] +=
+                        i as f64 * bounding_box_size[(move_direction + 1) % 3];
+                    point[(move_direction + 2) % 3] +=
+                        j as f64 * bounding_box_size[(move_direction + 2) % 3];
+                    points_to_check.push(point);
+                }
+            }
+
+            if points_to_check
+                .iter()
+                .any(|pos| World::is_block_at(*pos, &chunks))
+            {
+                // Collision detected, move the camera to the edge of the bounding box
+                dbg!(points_to_check);
+                if player.velocity[move_direction] > 0.0 {
+                    player.position[move_direction] = (bounding_box_pos[move_direction]
+                        + bounding_box_size[move_direction])
+                        .floor()
+                        - bounding_box_size[move_direction]
+                        - 1e-5;
+                    player.velocity[move_direction] = 0.0; // Stop the movement in this direction
+                } else if player.velocity[move_direction] < 0.0 {
+                    player.position[move_direction] =
+                        bounding_box_pos[move_direction].ceil() + 1e-5;
+                    player.velocity[move_direction] = 0.0; // Stop the movement in this direction
+                }
+            }
+        }
     }
 
     pub fn draw(
@@ -82,14 +144,14 @@ impl World {
         glt: GLToken,
         program: &Program,
         projection: &nalgebra_glm::Mat4,
-        camera: &FreeCamera,
+        camera: & impl Camera,
     ) {
         unsafe {
             program.bind(glt);
             gl::Enable(gl::DEPTH_TEST);
             gl::Enable(gl::CULL_FACE);
 
-            let [x, y, z] = camera.position();
+            let [x, y, z] = camera.camera_position();
 
             let mvp_location = gl::GetUniformLocation(program.program, "mvp\0".as_ptr().cast());
             let texture_location =
@@ -112,7 +174,7 @@ impl World {
                 let cz = *cz as f64 * CHUNK_SIZE as f64;
 
                 let view_direction = camera.view_direction().cast::<f64>();
-                let cam_position = glm::TVec3::<f64>::from(camera.position());
+                let cam_position = glm::TVec3::<f64>::from(camera.camera_position());
                 let chunk_position = glm::vec3(cx, cy, cz);
 
                 let cutoff = cam_position - view_direction * CHUNK_SIZE as f64;
@@ -134,7 +196,7 @@ impl World {
             self.players.lock().unwrap().draw(
                 glt,
                 &projection_view,
-                &camera.position(),
+                &camera.camera_position(),
                 mvp_location,
             );
         }

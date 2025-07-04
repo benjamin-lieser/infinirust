@@ -12,6 +12,7 @@ mod world;
 use std::net::TcpStream;
 use std::sync::Arc;
 
+use nalgebra_glm::DVec3;
 use nalgebra_glm::Vec3;
 use winit::dpi::PhysicalSize;
 
@@ -90,7 +91,9 @@ impl Game {
         let local_player = Player {
             name,
             uid,
-            camera: FreeCamera::new([0.0, 0.0, 0.0]),
+            position: DVec3::new(0.0, 0.0, 0.0),
+            pitch: 0.0,
+            yaw: 0.0,
             velocity: Vec3::zeros(),
             on_ground: false,
         };

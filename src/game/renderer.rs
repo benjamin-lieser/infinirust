@@ -80,18 +80,10 @@ impl Renderer {
             .lock()
             .unwrap()
             .local_player
-            .camera
-            .clone();
+            .clone_into_free_camera();
 
         self.world
             .draw(glt, &self.program, &self.projection, &camera);
-
-        //Update background about the current position
-        //For position its ok if it gets lost, for blockupdate not to much TODO
-        if self.last_pos_update.elapsed().as_secs_f32() > 0.05 {
-            self.last_pos_update = std::time::Instant::now();
-            _ = self.updates.try_send(Update::Pos(camera.clone()));
-        }
 
         let distance_to_screen_mid = unsafe {
             let mut depth: f32 = 0.0;
@@ -110,7 +102,7 @@ impl Renderer {
         };
 
         if distance_to_screen_mid <= 10.0 {
-            let [x, y, z] = camera.position();
+            let [x, y, z] = camera.camera_position();
 
             let look_pos = camera.view_direction() * (distance_to_screen_mid);
 
@@ -158,6 +150,12 @@ impl Renderer {
             self.cube_outlines
                 .draw(glt, &(self.projection * camera.view_matrix() * model));
         }
+        //Update background about the current position
+        //For position its ok if it gets lost, for blockupdate not to much TODO
+        if self.last_pos_update.elapsed().as_secs_f32() > 0.05 {
+            self.last_pos_update = std::time::Instant::now();
+            _ = self.updates.try_send(Update::Pos(camera));
+        }
         self.overlay.draw(glt);
     }
 
@@ -181,7 +179,7 @@ impl Renderer {
 
     /// Only mouse movement, clicking is handled in `keyboard_input`
     pub fn mouse_input(&mut self, delta: (f64, f64)) {
-        let camera = &mut self.world.players.lock().unwrap().local_player.camera;
+        let camera = &mut self.world.players.lock().unwrap().local_player;
         camera.change_pitch(delta.1 as f32 / 300.0);
         camera.change_yaw(delta.0 as f32 / 300.0);
     }

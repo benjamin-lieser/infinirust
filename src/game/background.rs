@@ -100,7 +100,10 @@ async fn manage_world(
                         {
                             // This lock is time critical for the renderer thread, so be quick about it
                             let mut chunks = world.chunks.lock().unwrap();
-                            chunks.insert(pos, chunk);
+                            if let Some(old_chunk) = chunks.insert(pos, chunk) {
+                                // If there was an old chunk, return it to the unused chunks
+                                unused_chunks_rx.push(old_chunk);
+                            }
                         }
                     }
                     Some(Package::PlayerPositionUpdate(package)) => {
@@ -113,7 +116,7 @@ async fn manage_world(
                     }
                     Some(Package::PlayerLogin(package)) => {
                         // Add player to world
-                        world.players.lock().unwrap().add_player(package.name, package.uid as UID, FreeCamera::new([0.0,0.0,0.0]));
+                        world.players.lock().unwrap().add_player(package.name, package.uid as UID);
                     }
                     Some(Package::BlockUpdate(package)) => {
                         // Update block in chunk
@@ -131,15 +134,15 @@ async fn manage_world(
                 match update {
                     Some(Update::Pos(camera)) => {
                         let position_package = ClientPackagePlayerPosition {
-                            pos: camera.position(),
+                            pos: camera.camera_position(),
                             pitch: camera.pitch(),
                             yaw: camera.yaw(),
                         };
                         out_packages.send(position_package.to_box()).await.unwrap();
-                        let camera_pos = camera.position();
+                        let camera_pos = camera.camera_position();
                         let camera_center = [
-                            camera_pos[0] as i32 / CHUNK_SIZE as i32,
-                            camera_pos[2] as i32 / CHUNK_SIZE as i32,
+                            (camera_pos[0] as i32).div_euclid(CHUNK_SIZE as i32),
+                            (camera_pos[2] as i32).div_euclid(CHUNK_SIZE as i32),
                         ];
                         if camera_center != current_world_center {
                             // Remove chunks that are too far away
