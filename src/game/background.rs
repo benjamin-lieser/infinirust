@@ -1,8 +1,4 @@
-use std::{
-    collections::{HashMap, HashSet},
-    net::TcpStream,
-    sync::Arc,
-};
+use std::{collections::HashSet, net::TcpStream, sync::Arc};
 
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
@@ -14,7 +10,6 @@ use crate::{
     game::{
         chunk::block_position_to_chunk_index, world::VIEW_DISTANCE, Camera, CHUNK_SIZE, Y_RANGE,
     },
-    misc::first_none,
     mygl::TextureAtlas,
     net::{
         ClientPackagePlayerPosition, Package as NetworkPackage, PackageBlockUpdate,
