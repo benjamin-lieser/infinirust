@@ -1,4 +1,8 @@
-use std::{collections::HashMap, net::TcpStream, sync::Arc};
+use std::{
+    collections::{HashMap, HashSet},
+    net::TcpStream,
+    sync::Arc,
+};
 
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
@@ -84,7 +88,6 @@ async fn manage_world(
     uid: UID,
 ) {
     let mut current_world_center = [i32::MIN; 2]; // x, z
-    let mut active_chunk_ids = HashMap::<[i32; 3], usize>::new();
 
     loop {
         tokio::select! {
@@ -102,13 +105,7 @@ async fn manage_world(
                         {
                             // This lock is time critical for the renderer thread, so be quick about it
                             let mut chunks = world.chunks.lock().unwrap();
-                            let slot = first_none(&chunks).expect("No available slot, this should be impossible");
-
-                            if let Some(slot) = active_chunk_ids.insert(pos, slot) {
-                                unused_chunks_rx.push(chunks[slot].take().expect("There should be a chunk in this slot"));
-
-                            }
-                            chunks[slot] = Some(chunk);
+                            chunks.insert(pos, chunk);
                         }
                     }
                     Some(Package::PlayerPositionUpdate(package)) => {
@@ -126,12 +123,11 @@ async fn manage_world(
                     Some(Package::BlockUpdate(package)) => {
                         // Update block in chunk
                         let (chunk_index, block_index) = block_position_to_chunk_index(package.pos);
-                        if let Some(slot) = active_chunk_ids.get(&chunk_index) {
-                            let mut chunks = world.chunks.lock().unwrap();
-                            if let Some(chunk) = &mut chunks[*slot] {
+                        let mut chunks = world.chunks.lock().unwrap();
+                            if let Some(chunk) = chunks.get_mut(&chunk_index) {
                                 chunk.update_block(block_index, package.block, &atlas);
                             }
-                        }
+
                     }
                     None => {eprintln!("Client: Package reader stoped (probably lost connection to server), exiting"); return;},
                 }
@@ -152,23 +148,23 @@ async fn manage_world(
                         ];
                         if camera_center != current_world_center {
                             // Remove chunks that are too far away
-                            {
+                            let loaded_chunks = {
                                 let mut unused_chunks = world.unused_chunks.lock().unwrap();
                                 let mut chunks = world.chunks.lock().unwrap();
-                                active_chunk_ids.retain(|pos, slot| {
-                                    if (pos[0] - camera_center[0]).abs() > VIEW_DISTANCE || (pos[2] - camera_center[1]).abs() > VIEW_DISTANCE {
-                                        unused_chunks.push(chunks[*slot].take().expect("There should be a chunk in this slot"));
-                                        false
-                                    } else {
-                                        true
-                                    }
+
+                                let to_far_chunks = chunks.extract_if(|pos, _| {
+                                    (pos[0] - camera_center[0]).abs() > VIEW_DISTANCE || (pos[2] - camera_center[1]).abs() > VIEW_DISTANCE
                                 });
-                            }
+
+                                unused_chunks.extend(to_far_chunks.into_iter().map(|(_, chunk)| chunk));
+
+                                chunks.keys().cloned().collect::<HashSet<_>>()
+                            };
                             // Load new chunks
                             for x in -VIEW_DISTANCE..=VIEW_DISTANCE {
                                 for z in -VIEW_DISTANCE..=VIEW_DISTANCE {
                                     let pos = [camera_center[0] + x, 0, camera_center[1] + z];
-                                    if !active_chunk_ids.contains_key(&pos) {
+                                    if !loaded_chunks.contains(&pos) {
                                         for y in -Y_RANGE..Y_RANGE {
                                             let pos = [pos[0], y, pos[2]];
                                             out_packages.send(request_chunk_package(pos)).await.unwrap();
@@ -181,9 +177,9 @@ async fn manage_world(
                     }
                     Some(Update::Block(pos, block)) => {
                         let (chunk_index, block_index) = block_position_to_chunk_index(pos);
-                        if let Some(slot) = active_chunk_ids.get(&chunk_index) {
+                            {
                             let mut chunks = world.chunks.lock().unwrap();
-                            if let Some(chunk) = &mut chunks[*slot] {
+                            if let Some(chunk) = chunks.get_mut(&chunk_index) {
                                 chunk.update_block(block_index, block, &atlas);
                             }
                         }
@@ -237,9 +233,7 @@ async fn read_packages(
 ) -> Result<(), anyhow::Error> {
     let mut package_type = 0u16;
     loop {
-        reader
-            .read_exact(package_type.as_mut_bytes())
-            .await?;
+        reader.read_exact(package_type.as_mut_bytes()).await?;
 
         match package_type {
             0x000A => {

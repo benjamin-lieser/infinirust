@@ -1,10 +1,9 @@
-use std::sync::Mutex;
+use std::{collections::HashMap, sync::Mutex};
 
 use nalgebra_glm as glm;
-use serde::de;
 
 use crate::{
-    game::player::{self, Player},
+    game::player::Player,
     mygl::{GLToken, Program, TextureAtlas},
 };
 
@@ -18,7 +17,7 @@ const MAX_CHUNKS: usize =
 
 pub struct World {
     /// The indicies have to be stable, therefore we have the Option, the manage_world function can efficintly index into the chunks
-    pub chunks: Mutex<Vec<Option<Chunk>>>,
+    pub chunks: Mutex<HashMap<[i32; 3], Chunk>>,
     pub unused_chunks: Mutex<Vec<Chunk>>,
     pub players: Mutex<Players>,
 }
@@ -29,12 +28,9 @@ impl World {
         for _ in 0..MAX_CHUNKS {
             unused_chunks.push(Chunk::new_empty(glt));
         }
-        let mut chunks = Vec::new();
-        for _ in 0..MAX_CHUNKS {
-            chunks.push(None);
-        }
+
         Self {
-            chunks: Mutex::new(chunks),
+            chunks: Mutex::new(HashMap::with_capacity(MAX_CHUNKS)),
             unused_chunks: Mutex::new(unused_chunks),
             players: Mutex::new(Players::new(glt, texture_atlas, local_player)),
         }
@@ -73,8 +69,6 @@ impl World {
         let bounding_box_pos = player.bounding_box_pos();
         let bounding_box_size = player.bounding_box_size();
 
-        
-        
         let camera = &mut player.camera;
 
         camera.pos = [
@@ -111,7 +105,7 @@ impl World {
 
             let mut chunks = self.chunks.lock().unwrap();
 
-            for chunk in chunks.iter_mut().flatten() {
+            for chunk in chunks.values_mut() {
                 let [cx, cy, cz] = chunk.position();
 
                 let cx = *cx as f64 * CHUNK_SIZE as f64;
@@ -149,10 +143,8 @@ impl World {
 
     pub fn delete(self, glt: GLToken) {
         // Delete all the active chunks
-        for chunk in self.chunks.into_inner().unwrap() {
-            if let Some(chunk) = chunk {
-                chunk.delete(glt);
-            }
+        for chunk in self.chunks.into_inner().unwrap().into_values() {
+            chunk.delete(glt);
         }
         // Delete all the unused chunks
         for chunk in self.unused_chunks.into_inner().unwrap() {
