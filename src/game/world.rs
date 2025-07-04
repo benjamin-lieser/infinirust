@@ -41,14 +41,14 @@ impl World {
     }
 
     pub fn game_update(&self, delta_t: f32, controls: &super::Controls) {
-        let acceleration = 80.0;
+        let acceleration = 150.0;
 
         let mut players = self.players.lock().unwrap();
         
         let player = &mut players.local_player;
 
         // Friction
-        player.velocity *= 0.02_f32.powf(delta_t);
+        player.velocity -= player.velocity * delta_t * 10.0;
 
         if controls.forward {
             player.velocity += player.camera.forward_dir() * delta_t * acceleration;
