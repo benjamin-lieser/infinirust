@@ -50,14 +50,29 @@ impl World {
     }
 
     pub fn game_update(&self, delta_t: f32, controls: &super::Controls) {
+
+
         let acceleration = 90.0;
 
         let mut players = self.players.lock().unwrap();
+        // Make sure the chunks are loaded around the player
+
+        let player_pos = players.local_player.position.map(|x| x.floor() as i32);
+        let player_chunk_index = [
+            player_pos[0].div_euclid(CHUNK_SIZE as i32),
+            0,
+            player_pos[2].div_euclid(CHUNK_SIZE as i32),
+        ];
+        if !self.chunks.lock().unwrap().contains_key(&player_chunk_index) {
+            return; // No chunk loaded for the player
+        }
 
         let player = &mut players.local_player;
 
         // Friction
         player.velocity -= player.velocity * delta_t * 10.0;
+        // Gravity
+        player.velocity[1] -= delta_t * 70.0;
 
         if controls.forward {
             player.velocity += player.forward_dir() * delta_t * acceleration;
@@ -71,12 +86,17 @@ impl World {
         if controls.right {
             player.velocity -= player.left_dir() * delta_t * acceleration;
         }
-        if controls.up {
-            player.velocity[1] += delta_t * acceleration;
+        if controls.up && player.on_ground {
+            player.velocity[1] += delta_t * 2.0 * acceleration;
+            player.jump_duration += delta_t;
+            if player.jump_duration > 0.15 {
+                player.on_ground = false; // jump is finished
+                player.jump_duration = 0.0; // Reset jump duration
+            }
         }
-        if controls.down {
-            player.velocity[1] -= delta_t * acceleration;
-        }
+        //if controls.down {
+        //    player.velocity[1] -= delta_t * acceleration;
+        //}
 
         let bounding_box_size = player.bounding_box_size();
 
@@ -128,6 +148,9 @@ impl World {
                     player.position[move_direction] =
                         player.position[move_direction].ceil() + 1e-5;
                     player.velocity[move_direction] = 0.0; // Stop the movement in this direction
+                    if move_direction == 1 {
+                        player.on_ground = true; // If we hit the ground, we are on the ground
+                    }
                 }
             }
         }
@@ -171,7 +194,7 @@ impl World {
                 let cam_position = glm::TVec3::<f64>::from(camera.camera_position());
                 let chunk_position = glm::vec3(cx, cy, cz);
 
-                let cutoff = cam_position - view_direction * CHUNK_SIZE as f64;
+                let cutoff = cam_position - view_direction * 2.0 * CHUNK_SIZE as f64;
 
                 if glm::dot(&(chunk_position - cutoff), &view_direction) < 0.0 {
                     continue;

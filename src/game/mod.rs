@@ -96,6 +96,7 @@ impl Game {
             yaw: 0.0,
             velocity: Vec3::zeros(),
             on_ground: false,
+            jump_duration: 0.0,
         };
 
         let world = World::new(glt, &atlas, local_player);

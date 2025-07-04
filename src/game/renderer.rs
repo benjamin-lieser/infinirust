@@ -74,7 +74,7 @@ impl Renderer {
     pub fn draw(&mut self, glt: GLToken, delta_t: f32) {
         self.world.game_update(delta_t, &self.controls);
 
-        let camera = self
+        let mut camera = self
             .world
             .players
             .lock()
@@ -150,6 +150,12 @@ impl Renderer {
             self.cube_outlines
                 .draw(glt, &(self.projection * camera.view_matrix() * model));
         }
+
+
+        // Make sure we send the actual position of the player (lowest part of bounding box)
+        camera.pos[0] -= 0.25;
+        camera.pos[1] -= 1.5;
+        camera.pos[2] -= 0.25;
         //Update background about the current position
         //For position its ok if it gets lost, for blockupdate not to much TODO
         if self.last_pos_update.elapsed().as_secs_f32() > 0.05 {

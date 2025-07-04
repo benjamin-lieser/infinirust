@@ -18,11 +18,12 @@ pub struct Player {
     pub uid: UID,
     pub velocity: Vec3,  // Velocity in x, y, z
     pub on_ground: bool, // Whether the player is on the ground
+    pub jump_duration: f32, // How long the player has been jumping
 }
 
 impl Camera for Player {
     fn camera_position(&self) -> [f64; 3] {
-        transmute!((self.position + DVec3::new(0.25, 1.75, 0.25)).data.0)
+        transmute!((self.position + DVec3::new(0.25, 1.5, 0.25)).data.0)
     }
 
     fn pitch(&self) -> f32 {
@@ -81,6 +82,7 @@ impl Players {
             uid,
             velocity: Vec3::zeros(),
             on_ground: false,
+            jump_duration: 0.0
         });
     }
 
