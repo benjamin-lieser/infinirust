@@ -16,7 +16,6 @@ const MAX_CHUNKS: usize =
     4 * (VIEW_DISTANCE as usize + 1) * (VIEW_DISTANCE as usize + 1) * 2 * Y_RANGE as usize;
 
 pub struct World {
-    /// The indicies have to be stable, therefore we have the Option, the manage_world function can efficintly index into the chunks
     pub chunks: Mutex<HashMap<[i32; 3], Chunk>>,
     pub unused_chunks: Mutex<Vec<Chunk>>,
     pub players: Mutex<Players>,
