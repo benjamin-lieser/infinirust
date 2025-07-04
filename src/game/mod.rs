@@ -92,6 +92,7 @@ impl Game {
             uid,
             camera: FreeCamera::new([0.0, 0.0, 0.0]),
             velocity: Vec3::zeros(),
+            on_ground: false,
         };
 
         let world = World::new(glt, &atlas, local_player);

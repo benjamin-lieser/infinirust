@@ -1,5 +1,5 @@
 use gl::types::GLint;
-use nalgebra_glm::{self as glm, Vec3};
+use nalgebra_glm::{self as glm, DVec3, Vec3};
 
 use crate::{
     mygl::{GLToken, TextureAtlas, VAO, VBO},
@@ -14,18 +14,19 @@ pub struct Player {
     pub camera: FreeCamera, // Also contains the position and rotation
     pub uid: UID,
     pub velocity: Vec3, // Velocity in x, y, z
+    pub on_ground: bool, // Whether the player is on the ground
 }
 
 impl Player {
-    pub fn bounding_box_pos(&self) -> [f64; 3] {
+    pub fn bounding_box_pos(&self) -> DVec3 {
         let [x, y, z] = self.camera.position();
 
-        [x - 0.4, y - 1.7, z - 0.4]
+        DVec3::new(x - 0.4, y - 1.7, z - 0.4)
     }
 
-    pub fn bounding_box_size(&self) -> [f64; 3] {
+    pub fn bounding_box_size(&self) -> DVec3 {
         // x y z
-        [0.8, 1.8, 0.8]
+        DVec3::new(0.8, 1.8, 0.8)
     }
 }
 
@@ -46,7 +47,7 @@ impl Players {
     }
 
     pub fn add_player(&mut self, name: String, uid: UID, camera: FreeCamera) {
-        self.players.push(Player { name, camera, uid, velocity: Vec3::zeros() });
+        self.players.push(Player { name, camera, uid, velocity: Vec3::zeros(), on_ground: false });
     }
 
     pub fn update(&mut self, package: &ServerPackagePlayerPosition) {

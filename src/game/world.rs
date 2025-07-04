@@ -44,7 +44,7 @@ impl World {
         let acceleration = 150.0;
 
         let mut players = self.players.lock().unwrap();
-        
+
         let player = &mut players.local_player;
 
         // Friction
@@ -62,14 +62,19 @@ impl World {
         if controls.right {
             player.velocity -= player.camera.left_dir() * delta_t * acceleration;
         }
+        if controls.up {
+            player.velocity[1] += delta_t * acceleration;
+        }
+        if controls.down {
+            player.velocity[1] -= delta_t * acceleration;
+        }
 
         // Collision detection
         let bounding_box_pos = player.bounding_box_pos();
         let bounding_box_size = player.bounding_box_size();
 
-        let [x, y, z] = bounding_box_pos;
-        let [bx, by, bz] = bounding_box_size;
-
+        
+        
         let camera = &mut player.camera;
 
         camera.pos = [
@@ -77,7 +82,6 @@ impl World {
             camera.position()[1] + (player.velocity[1] * delta_t) as f64,
             camera.position()[2] + (player.velocity[2] * delta_t) as f64,
         ];
-
     }
 
     pub fn draw(
