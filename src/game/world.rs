@@ -3,7 +3,7 @@ use std::sync::Mutex;
 use nalgebra_glm as glm;
 
 use crate::{
-    game::player::Player,
+    game::player::{self, Player},
     mygl::{GLToken, Program, TextureAtlas},
 };
 
@@ -43,44 +43,36 @@ impl World {
         let speed = 5.0;
 
         let mut players = self.players.lock().unwrap();
+        
+        let player = &mut players.local_player;
+
+        if controls.forward {
+            player.velocity += player.camera.forward_dir() * delta_t * speed;
+        }
+        if controls.backward {
+            player.velocity -= player.camera.forward_dir() * delta_t * speed;
+        }
+        if controls.left {
+            player.velocity += player.camera.left_dir() * delta_t * speed;
+        }
+        if controls.right {
+            player.velocity -= player.camera.left_dir() * delta_t * speed;
+        }
 
         // Collision detection
-        let bounding_box_pos = players.local_player.bounding_box_pos();
-        let bounding_box_size = players.local_player.bounding_box_size();
+        let bounding_box_pos = player.bounding_box_pos();
+        let bounding_box_size = player.bounding_box_size();
 
         let [x, y, z] = bounding_box_pos;
         let [bx, by, bz] = bounding_box_size;
 
-        
+        let camera = &mut player.camera;
 
-
-        let camera = &mut players.local_player.camera;
-
-        if controls.forward {
-            camera.go_forward(delta_t * speed);
-        }
-
-        if controls.backward {
-            camera.go_forward(-delta_t * speed);
-        }
-
-        if controls.left {
-            camera.go_left(delta_t * speed);
-        }
-
-        if controls.right {
-            camera.go_left(-delta_t * speed);
-        }
-
-        if controls.up {
-            camera.go_up(delta_t * speed);
-        }
-
-        if controls.down {
-            camera.go_up(-delta_t * speed);
-        }
-
-        
+        camera.pos = [
+            camera.position()[0] + (player.velocity[0] * delta_t) as f64,
+            camera.position()[1] + (player.velocity[1] * delta_t) as f64,
+            camera.position()[2] + (player.velocity[2] * delta_t) as f64,
+        ];
 
     }
 

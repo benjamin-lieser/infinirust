@@ -12,6 +12,7 @@ mod world;
 use std::net::TcpStream;
 use std::sync::Arc;
 
+use nalgebra_glm::Vec3;
 use winit::dpi::PhysicalSize;
 
 pub use camera::{Camera, FreeCamera};
@@ -90,6 +91,7 @@ impl Game {
             name,
             uid,
             camera: FreeCamera::new([0.0, 0.0, 0.0]),
+            velocity: Vec3::zeros(),
         };
 
         let world = World::new(glt, &atlas, local_player);

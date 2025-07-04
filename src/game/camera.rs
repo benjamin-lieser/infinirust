@@ -11,6 +11,16 @@ pub trait Camera {
     fn change_pitch(&mut self, diff: f32);
     fn change_yaw(&mut self, diff: f32);
 
+    fn forward_dir(&self) -> glm::Vec3 {
+        let yaw = self.yaw();
+        glm::vec3(yaw.sin(), 0.0, -yaw.cos())
+    }
+
+    fn left_dir(&self) -> glm::Vec3 {
+        let yaw = self.yaw();
+        glm::vec3(-yaw.cos(), 0.0, -yaw.sin())
+    }
+
     /// z direction
     fn go_forward(&mut self, diff: f32);
     /// x direction
@@ -20,9 +30,9 @@ pub trait Camera {
 }
 #[derive(Debug, Clone)]
 pub struct FreeCamera {
-    pos: [f64; 3],
-    pitch: f32,
-    yaw: f32,
+    pub pos: [f64; 3],
+    pub pitch: f32,
+    pub yaw: f32,
 }
 
 impl FreeCamera {

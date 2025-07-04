@@ -1,5 +1,5 @@
 use gl::types::GLint;
-use nalgebra_glm as glm;
+use nalgebra_glm::{self as glm, Vec3};
 
 use crate::{
     mygl::{GLToken, TextureAtlas, VAO, VBO},
@@ -11,8 +11,9 @@ use super::{chunk::add_face, Camera, FreeCamera};
 
 pub struct Player {
     pub name: String,
-    pub camera: FreeCamera,
+    pub camera: FreeCamera, // Also contains the position and rotation
     pub uid: UID,
+    pub velocity: Vec3, // Velocity in x, y, z
 }
 
 impl Player {
@@ -45,7 +46,7 @@ impl Players {
     }
 
     pub fn add_player(&mut self, name: String, uid: UID, camera: FreeCamera) {
-        self.players.push(Player { name, camera, uid });
+        self.players.push(Player { name, camera, uid, velocity: Vec3::zeros() });
     }
 
     pub fn update(&mut self, package: &ServerPackagePlayerPosition) {
