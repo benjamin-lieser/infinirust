@@ -1,6 +1,7 @@
 use std::sync::Mutex;
 
 use nalgebra_glm as glm;
+use serde::de;
 
 use crate::{
     game::player::{self, Player},
@@ -40,23 +41,26 @@ impl World {
     }
 
     pub fn game_update(&self, delta_t: f32, controls: &super::Controls) {
-        let speed = 5.0;
+        let acceleration = 80.0;
 
         let mut players = self.players.lock().unwrap();
         
         let player = &mut players.local_player;
 
+        // Friction
+        player.velocity *= 0.02_f32.powf(delta_t);
+
         if controls.forward {
-            player.velocity += player.camera.forward_dir() * delta_t * speed;
+            player.velocity += player.camera.forward_dir() * delta_t * acceleration;
         }
         if controls.backward {
-            player.velocity -= player.camera.forward_dir() * delta_t * speed;
+            player.velocity -= player.camera.forward_dir() * delta_t * acceleration;
         }
         if controls.left {
-            player.velocity += player.camera.left_dir() * delta_t * speed;
+            player.velocity += player.camera.left_dir() * delta_t * acceleration;
         }
         if controls.right {
-            player.velocity -= player.camera.left_dir() * delta_t * speed;
+            player.velocity -= player.camera.left_dir() * delta_t * acceleration;
         }
 
         // Collision detection
