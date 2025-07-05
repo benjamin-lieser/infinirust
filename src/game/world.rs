@@ -69,10 +69,11 @@ impl World {
 
         let player = &mut players.local_player;
 
-        // Friction
-        player.velocity -= player.velocity * delta_t * 10.0;
+        // Friction in x and z directions
+        player.velocity[0] -= player.velocity[0] * delta_t * 10.0;
+        player.velocity[2] -= player.velocity[2] * delta_t * 10.0;
         // Gravity
-        player.velocity[1] -= delta_t * 70.0;
+        player.velocity[1] -= delta_t * 50.0;
 
         if controls.forward {
             player.velocity += player.forward_dir() * delta_t * acceleration;
@@ -87,7 +88,7 @@ impl World {
             player.velocity -= player.left_dir() * delta_t * acceleration;
         }
         if controls.up && player.on_ground {
-            player.velocity[1] += delta_t * 2.0 * acceleration;
+            player.velocity[1] += delta_t * 100.0;
             player.jump_duration += delta_t;
             if player.jump_duration > 0.15 {
                 player.on_ground = false; // jump is finished
@@ -136,7 +137,6 @@ impl World {
                 .any(|pos| World::is_block_at(*pos, &chunks))
             {
                 // Collision detected, move the camera to the edge of the bounding box
-                dbg!(points_to_check);
                 if player.velocity[move_direction] > 0.0 {
                     player.position[move_direction] = (player.position[move_direction]
                         + bounding_box_size[move_direction])
