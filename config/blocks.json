@@ -3,7 +3,7 @@
         "id" : 1,
         "name": "grass",
         "texture": "grass_side.png",
-        "top_texture": "grass_top.png",
+        "top_texture": "leaves_transparent.png",
         "bottom_texture": "dirt.png"
     },
     {

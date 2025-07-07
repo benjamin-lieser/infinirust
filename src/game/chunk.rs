@@ -185,6 +185,8 @@ impl Chunk {
         self.texture_pos.copy(glt);
         self.vao.bind(glt);
         unsafe {
+            gl::Enable(gl::BLEND);
+            gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
             gl::DrawArrays(gl::TRIANGLES, 0, self.texture_pos.len() as i32 / 2);
         }
     }
