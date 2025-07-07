@@ -22,12 +22,12 @@ impl BlockTextures {
             gl::TexParameteri(
                 gl::TEXTURE_2D_ARRAY,
                 gl::TEXTURE_MIN_FILTER,
-                gl::NEAREST as i32,
+                gl::LINEAR as i32,
             );
             gl::TexParameteri(
                 gl::TEXTURE_2D_ARRAY,
                 gl::TEXTURE_MAG_FILTER,
-                gl::NEAREST as i32,
+                gl::LINEAR as i32,
             );
             gl::TexParameteri(
                 gl::TEXTURE_2D_ARRAY,
