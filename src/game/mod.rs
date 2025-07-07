@@ -10,6 +10,7 @@ mod renderer;
 mod world;
 
 use std::net::TcpStream;
+use std::path::Path;
 use std::sync::Arc;
 
 use nalgebra_glm::DVec3;
@@ -24,8 +25,9 @@ pub use input::Controls;
 pub use renderer::Renderer;
 pub use world::World;
 
+use crate::game::blocks::BlocksConfig;
+use crate::mygl::BlockTextures;
 use crate::mygl::GLToken;
-use crate::mygl::TextureAtlas;
 use crate::server::UID;
 
 use self::background::background_thread;
@@ -63,19 +65,11 @@ pub struct Game {
     background_thread: std::thread::JoinHandle<()>,
 }
 
-fn create_atlas(glt: GLToken) -> TextureAtlas {
-    let mut atlas = crate::mygl::TextureAtlas::new(glt, 128);
-    atlas.add_texture("grass_side.png").unwrap();
-    atlas.add_texture("grass_top.png").unwrap();
-    atlas.add_texture("dirt.png").unwrap();
-    atlas.add_texture("head.png").unwrap();
-    atlas.add_texture("face.png").unwrap();
-    //atlas.save("temp.png").unwrap();
-    atlas.bind_texture(gl::TEXTURE0);
-    unsafe {
-        atlas.finalize();
-    }
-    atlas
+fn create_block_texture(glt: GLToken) -> (BlocksConfig, BlockTextures) {
+    let (blocks_config, texture_files) = BlocksConfig::new(Path::new("config/blocks.json"));
+    let block_textures = BlockTextures::new(glt, 128, &texture_files);
+
+    (blocks_config, block_textures)
 }
 
 impl Game {
@@ -86,7 +80,7 @@ impl Game {
         uid: UID,
         name: String,
     ) -> Self {
-        let atlas = create_atlas(glt);
+        let (blocks_config, block_textures) = create_block_texture(glt);
 
         let local_player = Player {
             name,
@@ -99,17 +93,16 @@ impl Game {
             jump_duration: 0.0,
         };
 
-        let world = World::new(glt, &atlas, local_player);
+        let world = World::new(glt, local_player);
         let world = Arc::new(world);
 
         let (update_tx, update_rx) = tokio::sync::mpsc::channel(100);
 
-        let renderer = Renderer::new(glt, world.clone(), Arc::new(atlas), render_size, update_tx);
-        let atlas = renderer.atlas();
+        let renderer = Renderer::new(glt, world.clone(), block_textures, render_size, update_tx);
 
         let chunk_loader_world = world.clone();
         let background_thread = std::thread::spawn(move || {
-            background_thread(tcp, chunk_loader_world, update_rx, atlas, uid)
+            background_thread(tcp, chunk_loader_world, update_rx, Arc::new(blocks_config), uid)
         });
 
         Self {

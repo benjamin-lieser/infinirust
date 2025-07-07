@@ -5,7 +5,7 @@ use zerocopy::transmute;
 
 use crate::{
     game::{chunk::block_position_to_chunk_index, player::Player},
-    mygl::{GLToken, Program, TextureAtlas},
+    mygl::{GLToken, Program},
 };
 
 use super::{player::Players, Camera, Chunk, CHUNK_SIZE, Y_RANGE};
@@ -23,7 +23,7 @@ pub struct World {
 }
 
 impl World {
-    pub fn new(glt: GLToken, texture_atlas: &TextureAtlas, local_player: Player) -> Self {
+    pub fn new(glt: GLToken, local_player: Player) -> Self {
         let mut unused_chunks = Vec::new();
         for _ in 0..MAX_CHUNKS {
             unused_chunks.push(Chunk::new_empty(glt));
@@ -32,7 +32,7 @@ impl World {
         Self {
             chunks: Mutex::new(HashMap::with_capacity(MAX_CHUNKS)),
             unused_chunks: Mutex::new(unused_chunks),
-            players: Mutex::new(Players::new(glt, texture_atlas, local_player)),
+            players: Mutex::new(Players::new(glt, local_player)),
         }
     }
 
@@ -50,8 +50,6 @@ impl World {
     }
 
     pub fn game_update(&self, delta_t: f32, controls: &super::Controls) {
-
-
         let acceleration = 90.0;
 
         let mut players = self.players.lock().unwrap();
@@ -63,7 +61,12 @@ impl World {
             0,
             player_pos[2].div_euclid(CHUNK_SIZE as i32),
         ];
-        if !self.chunks.lock().unwrap().contains_key(&player_chunk_index) {
+        if !self
+            .chunks
+            .lock()
+            .unwrap()
+            .contains_key(&player_chunk_index)
+        {
             return; // No chunk loaded for the player
         }
 
@@ -145,8 +148,7 @@ impl World {
                         - 1e-5;
                     player.velocity[move_direction] = 0.0; // Stop the movement in this direction
                 } else if player.velocity[move_direction] < 0.0 {
-                    player.position[move_direction] =
-                        player.position[move_direction].ceil() + 1e-5;
+                    player.position[move_direction] = player.position[move_direction].ceil() + 1e-5;
                     player.velocity[move_direction] = 0.0; // Stop the movement in this direction
                     if move_direction == 1 {
                         player.on_ground = true; // If we hit the ground, we are on the ground

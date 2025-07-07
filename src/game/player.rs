@@ -3,12 +3,12 @@ use nalgebra_glm::{self as glm, DVec3, Vec3};
 use zerocopy::transmute;
 
 use crate::{
-    mygl::{GLToken, TextureAtlas, VAO, VBO},
+    mygl::{GLToken, VAO, VBO},
     net::ServerPackagePlayerPosition,
     server::UID,
 };
 
-use super::{chunk::add_face, Camera};
+use super::Camera;
 
 pub struct Player {
     pub name: String,
@@ -16,8 +16,8 @@ pub struct Player {
     pub pitch: f32,      // Pitch in radians
     pub yaw: f32,        // Yaw in radians
     pub uid: UID,
-    pub velocity: Vec3,  // Velocity in x, y, z
-    pub on_ground: bool, // Whether the player is on the ground
+    pub velocity: Vec3,     // Velocity in x, y, z
+    pub on_ground: bool,    // Whether the player is on the ground
     pub jump_duration: f32, // How long the player has been jumping
 }
 
@@ -65,11 +65,11 @@ pub struct Players {
 }
 
 impl Players {
-    pub fn new(glt: GLToken, atlas: &TextureAtlas, local_player: Player) -> Self {
+    pub fn new(glt: GLToken, local_player: Player) -> Self {
         Self {
             players: vec![],
             local_player,
-            render: PlayerRender::new(glt, atlas),
+            render: PlayerRender::new(glt),
         }
     }
 
@@ -82,7 +82,7 @@ impl Players {
             uid,
             velocity: Vec3::zeros(),
             on_ground: false,
-            jump_duration: 0.0
+            jump_duration: 0.0,
         });
     }
 
@@ -135,7 +135,7 @@ pub struct PlayerRender {
 }
 
 impl PlayerRender {
-    pub fn new(glt: GLToken, atlas: &TextureAtlas) -> Self {
+    pub fn new(glt: GLToken) -> Self {
         let mut vao = VAO::new(glt);
         let mut vertex_vbo = VBO::new(glt);
         let mut texture_vbo = VBO::new(glt);
@@ -146,10 +146,10 @@ impl PlayerRender {
         vao.enable_array(glt, 1);
 
         // Make it a cube of obsidian with a furnace face for now
-        let mut vertex_data = vec![];
-        let mut texture_data = vec![];
+        //let mut vertex_data = vec![];
+        //let mut texture_data = vec![];
 
-        add_face(
+        /*add_face(
             &mut vertex_data,
             &mut texture_data,
             atlas,
@@ -196,10 +196,10 @@ impl PlayerRender {
             "head.png",
             [0, 0, 0],
             super::Direction::PosZ,
-        );
+        );*/
 
-        vertex_vbo.copy(glt, &vertex_data);
-        texture_vbo.copy(glt, &texture_data);
+        //vertex_vbo.copy(glt, &vertex_data);
+        //texture_vbo.copy(glt, &texture_data);
 
         Self {
             vao,
@@ -210,9 +210,8 @@ impl PlayerRender {
 
     pub fn draw(&self, glt: GLToken) {
         self.vao.bind(glt);
-        unsafe {
-            gl::DrawArrays(gl::TRIANGLES, 0, 36);
-        }
+        // TODO different redering
+        //gl::DrawArrays(gl::TRIANGLES, 0, 36);
     }
 
     pub fn delete(self, glt: GLToken) {

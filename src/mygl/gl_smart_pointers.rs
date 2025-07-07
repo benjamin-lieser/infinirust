@@ -18,6 +18,18 @@ impl GLType for f32 {
     }
 }
 
+impl GLType for u32 {
+    fn to_gl_type() -> GLenum {
+        gl::UNSIGNED_INT
+    }
+}
+
+impl GLType for u16 {
+    fn to_gl_type() -> GLenum {
+        gl::UNSIGNED_SHORT
+    }
+}
+
 impl GLType for u8 {
     fn to_gl_type() -> GLenum {
         gl::UNSIGNED_BYTE

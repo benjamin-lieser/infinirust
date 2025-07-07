@@ -1,7 +1,7 @@
 use super::{ChunkIndex, LocalBlockIndex};
 use crate::{
-    game::BlockType,
-    mygl::{GLToken, TextureAtlas, VBOWithStorage, VAO},
+    game::{blocks::BlocksConfig, BlockType},
+    mygl::{GLToken, VBOWithStorage, VAO},
 };
 
 use crate::game::Direction;
@@ -76,7 +76,7 @@ impl Chunk {
             .attrib_pointer(glt, 0, chunk.vertex_pos.vbo(), 3, 0, 0, false);
         chunk
             .vao
-            .attrib_pointer(glt, 1, chunk.texture_pos.vbo(), 2, 0, 0, false);
+            .attrib_pointer(glt, 1, chunk.texture_pos.vbo(), 3, 0, 0, false);
         chunk.vao.enable_array(glt, 0);
         chunk.vao.enable_array(glt, 1);
 
@@ -92,7 +92,7 @@ impl Chunk {
         self.position = position;
     }
 
-    pub fn write_vbo(&mut self, atlas: &TextureAtlas) {
+    pub fn write_vbo(&mut self, block_config: &BlocksConfig) {
         let mut vertex_pos = vec![];
         let mut texture_pos = vec![];
 
@@ -100,12 +100,13 @@ impl Chunk {
             for y in 0..CHUNK_SIZE {
                 for z in 0..CHUNK_SIZE {
                     if self.blocks.get([x, y, z]) > 0 {
+                        let block_type = self.blocks.get([x, y, z]);
                         if z == CHUNK_SIZE - 1 || self.blocks.get([x, y, z + 1]) == 0 {
                             add_face(
                                 &mut vertex_pos,
                                 &mut texture_pos,
-                                atlas,
-                                "grass_side.png",
+                                block_config,
+                                block_type,
                                 [x as u8, y as u8, z as u8],
                                 Direction::PosZ,
                             );
@@ -114,8 +115,8 @@ impl Chunk {
                             add_face(
                                 &mut vertex_pos,
                                 &mut texture_pos,
-                                atlas,
-                                "grass_side.png",
+                                block_config,
+                                block_type,
                                 [x as u8, y as u8, z as u8],
                                 Direction::NegZ,
                             );
@@ -124,8 +125,8 @@ impl Chunk {
                             add_face(
                                 &mut vertex_pos,
                                 &mut texture_pos,
-                                atlas,
-                                "grass_side.png",
+                                block_config,
+                                block_type,
                                 [x as u8, y as u8, z as u8],
                                 Direction::NegX,
                             );
@@ -134,8 +135,8 @@ impl Chunk {
                             add_face(
                                 &mut vertex_pos,
                                 &mut texture_pos,
-                                atlas,
-                                "grass_side.png",
+                                block_config,
+                                block_type,
                                 [x as u8, y as u8, z as u8],
                                 Direction::PosX,
                             );
@@ -144,8 +145,8 @@ impl Chunk {
                             add_face(
                                 &mut vertex_pos,
                                 &mut texture_pos,
-                                atlas,
-                                "grass_top.png",
+                                block_config,
+                                block_type,
                                 [x as u8, y as u8, z as u8],
                                 Direction::PosY,
                             );
@@ -154,8 +155,8 @@ impl Chunk {
                             add_face(
                                 &mut vertex_pos,
                                 &mut texture_pos,
-                                atlas,
-                                "dirt.png",
+                                block_config,
+                                block_type,
                                 [x as u8, y as u8, z as u8],
                                 Direction::NegY,
                             );
@@ -169,9 +170,14 @@ impl Chunk {
         self.texture_pos.exchange_cpu_buffer(texture_pos);
     }
 
-    pub fn update_block(&mut self, pos: LocalBlockIndex, block: BlockType, atlas: &TextureAtlas) {
+    pub fn update_block(
+        &mut self,
+        pos: LocalBlockIndex,
+        block: BlockType,
+        block_config: &BlocksConfig,
+    ) {
         self.blocks.set(pos, block);
-        self.write_vbo(atlas);
+        self.write_vbo(block_config);
     }
 
     pub fn draw(&mut self, glt: GLToken) {
@@ -197,56 +203,69 @@ impl Chunk {
 pub fn add_face(
     vertex_data: &mut Vec<u8>,
     texture_data: &mut Vec<f32>,
-    atlas: &TextureAtlas,
-    texture: &str,
+    block_config: &BlocksConfig,
+    block_type: u8,
     pos: [u8; 3],
     dir: Direction,
 ) {
-    let (tex_x, tex_y) = atlas.get_position(texture).unwrap();
-    let (size_x, size_y) = atlas.get_size();
+    let texture = block_config.get_texture(block_type, dir) as f32;
+
+    let (tex_x, tex_y) = (0.0, 0.0);
+    let (size_x, size_y) = (1.0, 1.0);
+
     //We do counter clockwiese triangles
 
     //bottom left
     texture_data.push(tex_x);
     texture_data.push(tex_y);
+    texture_data.push(texture);
     match dir {
         Direction::NegX | Direction::PosY | Direction::PosZ => {
             //top right
             texture_data.push(tex_x + size_x);
             texture_data.push(tex_y + size_y);
+            texture_data.push(texture);
             //top left
             texture_data.push(tex_x);
             texture_data.push(tex_y + size_y);
+            texture_data.push(texture);
         }
         Direction::PosX | Direction::NegY | Direction::NegZ => {
             //top left
             texture_data.push(tex_x);
             texture_data.push(tex_y + size_y);
+            texture_data.push(texture);
             //top right
             texture_data.push(tex_x + size_x);
             texture_data.push(tex_y + size_y);
+            texture_data.push(texture);
         }
     }
 
     //bottom left
     texture_data.push(tex_x);
     texture_data.push(tex_y);
+    texture_data.push(texture);
     match dir {
         Direction::NegX | Direction::PosY | Direction::PosZ => {
             //bottom right
             texture_data.push(tex_x + size_x);
             texture_data.push(tex_y);
+            texture_data.push(texture);
             //top right
             texture_data.push(tex_x + size_x);
             texture_data.push(tex_y + size_y);
+            texture_data.push(texture);
         }
         Direction::PosX | Direction::NegY | Direction::NegZ => {
             //top right
             texture_data.push(tex_x + size_x);
             texture_data.push(tex_y + size_y);
+            texture_data.push(texture);
             //bottom right
             texture_data.push(tex_x + size_x);
             texture_data.push(tex_y);
+            texture_data.push(texture);
         }
     }
 

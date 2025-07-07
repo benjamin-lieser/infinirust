@@ -3,7 +3,7 @@ use std::sync::Arc;
 use glm::Mat4;
 use nalgebra_glm as glm;
 
-use crate::mygl::{get_gl_string, GLToken, Program, TextureAtlas};
+use crate::mygl::{get_gl_string, BlockTextures, GLToken, Program};
 
 use super::{
     background::Update, misc::CubeOutlines, overlay::Overlay, Camera, Controls, Key, World,
@@ -18,7 +18,7 @@ const FAR_PLAIN: f32 = 300.0;
 pub struct Renderer {
     world: Arc<World>,
     program: Program,
-    atlas: Arc<TextureAtlas>,
+    block_textures: BlockTextures,
     projection: Mat4,
     controls: Controls,
     cube_outlines: CubeOutlines,
@@ -33,7 +33,7 @@ impl Renderer {
     pub fn new(
         glt: GLToken,
         world: Arc<World>,
-        atlas: Arc<TextureAtlas>,
+        block_textures: BlockTextures,
         render_size: winit::dpi::PhysicalSize<u32>,
         updates: tokio::sync::mpsc::Sender<Update>,
     ) -> Self {
@@ -59,7 +59,7 @@ impl Renderer {
         Self {
             world,
             program,
-            atlas,
+            block_textures,
             projection,
             controls: Controls::default(),
             cube_outlines: CubeOutlines::new(glt),
@@ -165,10 +165,6 @@ impl Renderer {
         self.overlay.draw(glt);
     }
 
-    pub fn atlas(&self) -> Arc<TextureAtlas> {
-        self.atlas.clone()
-    }
-
     pub fn resize(&mut self, glt: GLToken, size: winit::dpi::PhysicalSize<u32>) {
         self.render_size = size;
         unsafe {
@@ -244,11 +240,11 @@ const VERTEX_SHADER_SOURCE: &[u8] = b"
 precision highp float;
 
 layout(location=0) in vec3 position;
-layout(location=1) in vec2 tex;
+layout(location=1) in vec3 tex;
 
 uniform mat4 mvp;
 
-out vec2 texCord;
+out vec3 texCord;
 
 void main() {
     gl_Position = mvp * vec4(position, 1.0);
@@ -260,11 +256,11 @@ const FRAGMENT_SHADER_SOURCE: &[u8] = b"
 #version 410 core
 precision highp float;
 
-uniform sampler2D tex_atlas;
+uniform sampler2DArray tex_atlas;
 
 layout(location=0) out vec4 fragColor;
 
-in vec2 texCord;
+in vec3 texCord;
 
 void main() {
     fragColor = texture(tex_atlas, texCord);

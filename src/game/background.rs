@@ -8,9 +8,9 @@ use zerocopy::IntoBytes;
 
 use crate::{
     game::{
-        chunk::block_position_to_chunk_index, world::VIEW_DISTANCE, Camera, CHUNK_SIZE, Y_RANGE,
+        blocks::BlocksConfig, chunk::block_position_to_chunk_index, world::VIEW_DISTANCE, Camera,
+        CHUNK_SIZE, Y_RANGE,
     },
-    mygl::TextureAtlas,
     net::{
         ClientPackagePlayerPosition, Package as NetworkPackage, PackageBlockUpdate,
         ServerPackagePlayerPosition, ServerPlayerLogin,
@@ -42,7 +42,7 @@ pub fn background_thread(
     tcp: TcpStream,
     world: Arc<World>,
     updates: tokio::sync::mpsc::Receiver<Update>,
-    atlas: Arc<TextureAtlas>,
+    blocks_config: Arc<BlocksConfig>,
     uid: UID,
 ) {
     // Start a single thread tokio runtime in this thread
@@ -63,7 +63,12 @@ pub fn background_thread(
         let write_join_handle = tokio::spawn(write_packages(writer, writer_rx));
 
         let world_join_handler = tokio::spawn(manage_world(
-            world, atlas, loader_rx, writer_tx, updates, uid,
+            world,
+            blocks_config,
+            loader_rx,
+            writer_tx,
+            updates,
+            uid,
         ));
         // When manage_world returns, the client has exited
         world_join_handler.await.unwrap();
@@ -76,7 +81,7 @@ pub fn background_thread(
 
 async fn manage_world(
     world: Arc<World>,
-    atlas: Arc<TextureAtlas>,
+    blocks_config: Arc<BlocksConfig>,
     mut in_packages: tokio::sync::mpsc::Receiver<Package>,
     out_packages: tokio::sync::mpsc::Sender<Box<[u8]>>,
     mut client: tokio::sync::mpsc::Receiver<Update>,
@@ -96,7 +101,7 @@ async fn manage_world(
                             unused_chunks_rx.pop().expect("No available chunks")
                         };
                         chunk.load(data, pos);
-                        chunk.write_vbo(&atlas);
+                        chunk.write_vbo(&blocks_config);
                         {
                             // This lock is time critical for the renderer thread, so be quick about it
                             let mut chunks = world.chunks.lock().unwrap();
@@ -123,7 +128,7 @@ async fn manage_world(
                         let (chunk_index, block_index) = block_position_to_chunk_index(package.pos);
                         let mut chunks = world.chunks.lock().unwrap();
                             if let Some(chunk) = chunks.get_mut(&chunk_index) {
-                                chunk.update_block(block_index, package.block, &atlas);
+                                chunk.update_block(block_index, package.block, &blocks_config);
                             }
 
                     }
@@ -178,7 +183,7 @@ async fn manage_world(
                             {
                             let mut chunks = world.chunks.lock().unwrap();
                             if let Some(chunk) = chunks.get_mut(&chunk_index) {
-                                chunk.update_block(block_index, block, &atlas);
+                                chunk.update_block(block_index, block, &blocks_config);
                             }
                         }
                         let package = PackageBlockUpdate{
