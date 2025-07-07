@@ -41,6 +41,14 @@ impl ChunkData {
                     if y <= height {
                         chunk.set([xx, yy, zz], 1);
                     }
+                    if y <= height - 1.0 {
+                        // Add some dirt below the grass
+                        chunk.set([xx, yy, zz], 2);
+                    }
+                    if y <= height - 5.0 {
+                        // Add some stone below the dirt
+                        chunk.set([xx, yy, zz], 3);
+                    }
                 }
             }
         }
