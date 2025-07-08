@@ -168,7 +168,7 @@ impl World {
         unsafe {
             program.bind(glt);
             gl::Enable(gl::DEPTH_TEST);
-            gl::Enable(gl::CULL_FACE);
+            gl::Disable(gl::CULL_FACE);
 
             let [x, y, z] = camera.camera_position();
 

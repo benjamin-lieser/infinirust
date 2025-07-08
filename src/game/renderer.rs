@@ -264,5 +264,8 @@ in vec3 texCord;
 
 void main() {
     fragColor = texture(tex_atlas, texCord);
+    if(fragColor.a < 0.1) {
+        discard;
+    }
 }
 \0";
