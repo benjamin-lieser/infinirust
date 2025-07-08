@@ -39,7 +39,7 @@ impl ChunkData {
                 for yy in 0..CHUNK_SIZE {
                     let y = (y * CHUNK_SIZE as i32 + yy as i32) as f64 + 0.5;
                     if y <= height {
-                        chunk.set([xx, yy, zz], 4);
+                        chunk.set([xx, yy, zz], 1);
                     }
                     if y <= height - 1.0 {
                         // Add some dirt below the grass

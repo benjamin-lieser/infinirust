@@ -23,8 +23,15 @@
     {
         "id" : 4,
         "name" : "leaves",
-        "texture": "leaves_transparent.png",
-        "top_texture": "leaves_transparent.png",
-        "bottom_texture": "leaves_transparent.png"
+        "texture": "leaves.png",
+        "top_texture": "leaves.png",
+        "bottom_texture": "leaves.png"
+    },
+    {
+        "id" : 5,
+        "name": "log",
+        "texture": "log_side.png",
+        "top_texture": "log_top.png",
+        "bottom_texture": "log_top.png"
     }
 ]
