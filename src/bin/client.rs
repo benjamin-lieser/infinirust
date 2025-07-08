@@ -196,7 +196,7 @@ fn main() {
     app.game.exit(app.glt);
 
     //close interval server if it was started
-    if let Some(ref mut server_process) = &mut server_process {
+    if let Some(server_process) = &mut server_process {
         if server_process.try_wait().is_ok() {
             println!("Client: Server process already exited");
         } else {

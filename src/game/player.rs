@@ -98,7 +98,7 @@ impl Players {
         }
     }
 
-    pub unsafe fn draw(
+    pub fn draw(
         &self,
         glt: GLToken,
         projection_view: &nalgebra_glm::Mat4,
@@ -119,7 +119,9 @@ impl Players {
             ));
             let model = model_trans * player.inverse_view_matrix() * model_center;
             let mvp = projection_view * model;
-            gl::UniformMatrix4fv(mvp_location, 1, 0, mvp.as_ptr());
+            unsafe {
+                gl::UniformMatrix4fv(mvp_location, 1, 0, mvp.as_ptr());
+            }
             self.render.draw(glt);
         }
     }
