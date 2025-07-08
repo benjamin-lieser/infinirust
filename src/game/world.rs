@@ -91,9 +91,9 @@ impl World {
             player.velocity -= player.left_dir() * delta_t * acceleration;
         }
         if controls.up && player.on_ground {
-            player.velocity[1] += delta_t * 100.0;
+            player.velocity[1] += delta_t * 130.0;
             player.jump_duration += delta_t;
-            if player.jump_duration > 0.15 {
+            if player.jump_duration > 0.10 {
                 player.on_ground = false; // jump is finished
                 player.jump_duration = 0.0; // Reset jump duration
             }
