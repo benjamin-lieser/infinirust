@@ -101,7 +101,7 @@ impl Renderer {
                 / (FAR_PLAIN + NEAR_PLAIN - ndc * (FAR_PLAIN - NEAR_PLAIN))
         };
 
-        if distance_to_screen_mid <= 10.0 {
+        if distance_to_screen_mid <= 7.0 {
             let [x, y, z] = camera.camera_position();
 
             let look_pos = camera.view_direction() * (distance_to_screen_mid);
@@ -135,7 +135,7 @@ impl Renderer {
 
             // Remove block update if left click
             if self.controls.left_click
-                && self.last_block_remove_place.elapsed().as_secs_f32() > 0.1
+                && self.last_block_remove_place.elapsed().as_secs_f32() > 0.07
             {
                 let _ = self.updates.try_send(Update::Block(highlighted_block, 0));
                 self.last_block_remove_place = std::time::Instant::now();
@@ -264,5 +264,8 @@ in vec3 texCord;
 
 void main() {
     fragColor = texture(tex_atlas, texCord);
+    if(fragColor.a < 0.1) {
+        discard;
+    }
 }
 \0";
