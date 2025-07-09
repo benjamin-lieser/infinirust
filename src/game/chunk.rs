@@ -187,7 +187,7 @@ impl Chunk {
         unsafe {
             gl::Enable(gl::BLEND);
             gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
-            gl::DrawArrays(gl::TRIANGLES, 0, self.texture_pos.len() as i32 / 2);
+            gl::DrawArrays(gl::TRIANGLES, 0, self.texture_pos.len() as i32 / 3);
         }
     }
 
