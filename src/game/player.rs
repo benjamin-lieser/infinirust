@@ -1,5 +1,8 @@
-use gl::types::GLint;
+use std::{fs::File, io::BufReader};
+
+use gl::types::{GLint, GLuint};
 use nalgebra_glm::{self as glm, DVec3, Vec3};
+use obj::TexturedVertex;
 use zerocopy::transmute;
 
 use crate::{
@@ -132,8 +135,10 @@ impl Players {
 
 pub struct PlayerRender {
     vao: VAO,
-    vertex_vbo: VBO<u8>,
+    vertex_vbo: VBO<f32>,
     texture_vbo: VBO<f32>,
+    texture: GLuint,
+    num_triangles: usize,
 }
 
 impl PlayerRender {
@@ -142,78 +147,110 @@ impl PlayerRender {
         let mut vertex_vbo = VBO::new(glt);
         let mut texture_vbo = VBO::new(glt);
 
+        let mut texture: GLuint = 0;
+        unsafe {
+            gl::GenTextures(1, &mut texture);
+        }
+        assert!(texture != 0);
+
+        unsafe {
+            gl::BindTexture(gl::TEXTURE_2D_ARRAY, texture);
+            gl::TexParameteri(
+                gl::TEXTURE_2D_ARRAY,
+                gl::TEXTURE_MIN_FILTER,
+                gl::LINEAR as i32,
+            );
+            gl::TexParameteri(
+                gl::TEXTURE_2D_ARRAY,
+                gl::TEXTURE_MAG_FILTER,
+                gl::LINEAR as i32,
+            );
+            gl::TexParameteri(
+                gl::TEXTURE_2D_ARRAY,
+                gl::TEXTURE_WRAP_S,
+                gl::CLAMP_TO_EDGE as i32,
+            );
+            gl::TexParameteri(
+                gl::TEXTURE_2D_ARRAY,
+                gl::TEXTURE_WRAP_T,
+                gl::CLAMP_TO_EDGE as i32,
+            );
+
+            gl::TexStorage3D(
+                gl::TEXTURE_2D_ARRAY,
+                4, // mipmap level
+                gl::RGBA8,
+                1024,
+                1024,
+                18,
+            );
+        }
+
+        let pngs = ('a'..='r')
+            .map(|c| format!("textures/players/texture-{}.png", c))
+            .collect::<Vec<_>>();
+
+        for (i, png) in pngs.iter().enumerate() {
+            let mut image = image::open(png).expect("Failed to open image").to_rgba8();
+            image::imageops::flip_vertical_in_place(&mut image);
+            assert_eq!(image.width(), 1024);
+            assert_eq!(image.height(), 1024);
+
+            unsafe {
+                gl::TexSubImage3D(
+                    gl::TEXTURE_2D_ARRAY,
+                    0, // mipmap level
+                    0,
+                    0,
+                    i as i32,
+                    image.width() as i32,
+                    image.height() as i32,
+                    1, // layer
+                    gl::RGBA,
+                    gl::UNSIGNED_BYTE,
+                    image.as_ptr().cast(),
+                );
+            }
+        }
+
         vao.attrib_pointer(glt, 0, &vertex_vbo, 3, 0, 0, false);
-        vao.attrib_pointer(glt, 1, &texture_vbo, 2, 0, 0, false);
+        vao.attrib_pointer(glt, 1, &texture_vbo, 3, 0, 0, false);
         vao.enable_array(glt, 0);
         vao.enable_array(glt, 1);
 
-        // Make it a cube of obsidian with a furnace face for now
-        //let mut vertex_data = vec![];
-        //let mut texture_data = vec![];
+        let model = BufReader::new(
+            File::open("textures/players/model.obj").expect("Failed to open player model"),
+        );
+        let model_obj = obj::load_obj::<TexturedVertex, _, u16>(model).unwrap();
 
-        /*add_face(
-            &mut vertex_data,
-            &mut texture_data,
-            atlas,
-            "head.png",
-            [0, 0, 0],
-            super::Direction::NegX,
-        );
-        add_face(
-            &mut vertex_data,
-            &mut texture_data,
-            atlas,
-            "head.png",
-            [0, 0, 0],
-            super::Direction::PosX,
-        );
-        add_face(
-            &mut vertex_data,
-            &mut texture_data,
-            atlas,
-            "head.png",
-            [0, 0, 0],
-            super::Direction::NegY,
-        );
-        add_face(
-            &mut vertex_data,
-            &mut texture_data,
-            atlas,
-            "head.png",
-            [0, 0, 0],
-            super::Direction::PosY,
-        );
-        add_face(
-            &mut vertex_data,
-            &mut texture_data,
-            atlas,
-            "face.png",
-            [0, 0, 0],
-            super::Direction::NegZ,
-        );
-        add_face(
-            &mut vertex_data,
-            &mut texture_data,
-            atlas,
-            "head.png",
-            [0, 0, 0],
-            super::Direction::PosZ,
-        );*/
+        let vertex_data = model_obj
+            .vertices
+            .iter()
+            .flat_map(|v: &TexturedVertex| v.position)
+            .collect::<Vec<_>>();
+        let texture_data = model_obj
+            .vertices
+            .iter()
+            .flat_map(|v: &TexturedVertex| [v.texture[0], v.texture[1], 0.0])
+            .collect::<Vec<_>>();
 
-        //vertex_vbo.copy(glt, &vertex_data);
-        //texture_vbo.copy(glt, &texture_data);
+        vertex_vbo.copy(glt, &vertex_data);
+        texture_vbo.copy(glt, &texture_data);
 
         Self {
             vao,
             vertex_vbo,
             texture_vbo,
+            texture,
+            num_triangles: model_obj.indices.len() / 3,
         }
     }
 
     pub fn draw(&self, glt: GLToken) {
         self.vao.bind(glt);
-        // TODO different redering
-        //gl::DrawArrays(gl::TRIANGLES, 0, 36);
+        unsafe {
+            gl::DrawArrays(gl::TRIANGLES, 0, self.num_triangles as GLint * 3);
+        }
     }
 
     pub fn delete(self, glt: GLToken) {

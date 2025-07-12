@@ -7,6 +7,7 @@ rust-version = "1.88"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+obj-rs = "0.7.4"
 gl = "0.14.0"
 glutin = "0.32"
 winit = "0.30"
