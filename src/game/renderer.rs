@@ -141,6 +141,20 @@ impl Renderer {
                 self.last_block_remove_place = std::time::Instant::now();
             }
 
+            // Place block if right click
+            if self.controls.right_click
+                && self.last_block_remove_place.elapsed().as_secs_f32() > 0.15
+            {
+                let mut block = highlighted_block;
+                block[direction] += if camera.view_direction()[direction] <= 0.0 {
+                    1
+                } else {
+                    -1
+                };
+                let _ = self.updates.try_send(Update::Block(block, 1));
+                self.last_block_remove_place = std::time::Instant::now();   
+            }
+
             let model = glm::translation(&glm::vec3(
                 (look_block[0] - x) as f32,
                 (look_block[1] - y) as f32,
