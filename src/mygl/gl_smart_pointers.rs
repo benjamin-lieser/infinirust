@@ -229,6 +229,10 @@ impl<T: GLType> VBOWithStorage<T> {
         self.data.len()
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.data.is_empty()
+    }
+
     pub fn vbo(&self) -> &VBO<T> {
         &self.vbo
     }

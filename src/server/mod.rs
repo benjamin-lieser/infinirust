@@ -15,7 +15,7 @@ pub mod world;
 pub type Client = tokio::sync::mpsc::Sender<Arc<[u8]>>;
 pub type ServerCommand = tokio::sync::mpsc::Sender<(UID, Command)>;
 pub type UID = usize;
-pub const NOUSER: UID = std::usize::MAX;
+pub const NOUSER: UID = usize::MAX;
 
 #[derive(Debug)]
 pub enum BlockUpdateMode {

@@ -159,7 +159,7 @@ async fn read_start_packages(mut stream: OwnedReadHalf, server: ServerCommand, c
                 return;
             }
             _ => {
-                panic!("Recieved invalid package for state `start`");
+                eprintln!("Server: Recieved invalid package for state `start`");
             }
         }
     };
@@ -170,7 +170,7 @@ async fn read_start_packages(mut stream: OwnedReadHalf, server: ServerCommand, c
         .expect_err("Somehow the read_play_packages function returned with Ok");
 
     //Log the player out
-    eprintln!("Player got logged out because of error: {}", e);
+    eprintln!("Player got logged out because of error: {e}");
     server.send((uid, Command::Logout)).await.unwrap();
 }
 

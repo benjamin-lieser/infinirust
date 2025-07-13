@@ -63,7 +63,7 @@ pub fn start_server(world_directory: &str) -> (std::process::Child, String) {
     child.stdin = Some(stdin);
     child.stdout = Some(stdout);
 
-    println!("Bind from stdout:{}", bind);
+    println!("Client: Bind from stdout:{bind}");
 
     (child, bind)
 }

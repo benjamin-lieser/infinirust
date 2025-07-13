@@ -149,7 +149,6 @@ impl ApplicationHandler for App {
             winit::event::DeviceEvent::MouseMotion { delta } => {
                 self.game.mouse_input((delta.0, delta.1));
             }
-
             _ => {}
         }
     }
@@ -183,7 +182,7 @@ fn main() {
     let now = std::time::SystemTime::now();
 
     let mut app = App {
-        game: game,
+        game,
         time: now,
         glt,
         surface,

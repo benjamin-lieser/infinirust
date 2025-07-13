@@ -1,7 +1,7 @@
 use super::{ChunkIndex, LocalBlockIndex};
 use crate::{
-    game::{blocks::BlocksConfig, BlockType},
-    mygl::{GLToken, VBOWithStorage, VAO},
+    game::{BlockType, blocks::BlocksConfig},
+    mygl::{GLToken, VAO, VBOWithStorage},
 };
 
 use crate::game::Direction;
@@ -107,7 +107,7 @@ impl Chunk {
                                 &mut texture_pos,
                                 block_config,
                                 block_type,
-                                [x as u8, y as u8, z as u8],
+                                [x, y, z],
                                 Direction::PosZ,
                             );
                         }
@@ -117,7 +117,7 @@ impl Chunk {
                                 &mut texture_pos,
                                 block_config,
                                 block_type,
-                                [x as u8, y as u8, z as u8],
+                                [x, y, z],
                                 Direction::NegZ,
                             );
                         }
@@ -127,7 +127,7 @@ impl Chunk {
                                 &mut texture_pos,
                                 block_config,
                                 block_type,
-                                [x as u8, y as u8, z as u8],
+                                [x, y, z],
                                 Direction::NegX,
                             );
                         }
@@ -137,7 +137,7 @@ impl Chunk {
                                 &mut texture_pos,
                                 block_config,
                                 block_type,
-                                [x as u8, y as u8, z as u8],
+                                [x, y, z],
                                 Direction::PosX,
                             );
                         }
@@ -147,7 +147,7 @@ impl Chunk {
                                 &mut texture_pos,
                                 block_config,
                                 block_type,
-                                [x as u8, y as u8, z as u8],
+                                [x, y, z],
                                 Direction::PosY,
                             );
                         }
@@ -157,7 +157,7 @@ impl Chunk {
                                 &mut texture_pos,
                                 block_config,
                                 block_type,
-                                [x as u8, y as u8, z as u8],
+                                [x, y, z],
                                 Direction::NegY,
                             );
                         }

@@ -1,7 +1,5 @@
-use std::ffi::CStr;
-
 use nalgebra_glm::Mat4;
-use obj::{FromRawVertex, TexturedVertex, raw::object::Polygon};
+use obj::raw::object::Polygon;
 
 use crate::mygl::{GLToken, Program, VAO, VBO};
 
@@ -69,7 +67,7 @@ impl CubeOutlines {
     pub fn draw(&self, glt : GLToken, mvp : &Mat4) {
         unsafe {
             self.program.bind(glt);
-            self.program.uniform_mat4(glt, CStr::from_bytes_with_nul(b"mvp\0").unwrap(), mvp);
+            self.program.uniform_mat4(glt, c"mvp", mvp);
             self.vao.bind(glt);
             gl::Enable(gl::DEPTH_TEST);
             gl::DrawArrays(gl::LINES, 0, 24);
@@ -138,8 +136,7 @@ pub fn extract_group_range(raw_obj: &obj::raw::RawObj, name: &str) -> (u32, u32)
 
     assert!(
         group.polygons.len() == 1,
-        "Expected exactly one polygon range in group '{}'",
-        name
+        "Expected exactly one polygon range in group '{name}'"
     );
 
     let range = group.polygons[0];

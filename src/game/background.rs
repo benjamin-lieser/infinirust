@@ -212,10 +212,10 @@ async fn write_packages(
 ) {
     loop {
         if let Some(package) = input.recv().await {
-            stream.write_all(&package).await.unwrap_or_else(|e| {
-                eprintln!("Client: Writer returns because of error: {e}");
+            if stream.write_all(&package).await.is_err() {
+                eprintln!("Client: Writer failed to send package, exiting");
                 return;
-            });
+            }
         } else {
             eprintln!("Client: Writer returns because there is no more input");
             return;

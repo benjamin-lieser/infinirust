@@ -10,7 +10,7 @@ pub fn handle_stdin(server: ServerCommand, bind: String) {
     for line in stdin.lock().lines() {
         let command = line.unwrap_or_else(|e| {
             _ = server.blocking_send((NOUSER, super::Command::Shutdown));
-            eprintln!("IO error in stdin: {}", e);
+            eprintln!("Server: IO error in stdin: {e}");
             panic!();
         });
         match command.as_str() {
@@ -22,16 +22,16 @@ pub fn handle_stdin(server: ServerCommand, bind: String) {
             }
             "bind" => {
                 //Writes the address to connect to on stdout
-                println!("{}", bind);
+                println!("{bind}");
                 std::io::stdout().flush().unwrap();
             }
             _ => {
-                eprintln!("Unknown command");
+                eprintln!("Server: Unknown command");
             }
         }
     }
     //Reached EOF, if the server is already down exit the process
-    eprintln!("Server stdin EOF");
+    eprintln!("Server: stdin EOF");
     server
         .blocking_send((NOUSER, super::Command::Shutdown))
         .unwrap_or_else(|_| std::process::exit(1));

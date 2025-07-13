@@ -8,7 +8,7 @@ use crate::{
     mygl::{GLToken, Program},
 };
 
-use super::{player::Players, Camera, Chunk, CHUNK_SIZE, Y_RANGE};
+use super::{CHUNK_SIZE, Camera, Chunk, Y_RANGE, player::Players};
 
 pub const VIEW_DISTANCE: i32 = 8;
 
@@ -111,8 +111,8 @@ impl World {
 
         for move_direction in 0..3 {
             // Movement update in this direction
-            player.position[move_direction] = player.position[move_direction]
-                + player.velocity[move_direction] as f64 * delta_t as f64;
+            player.position[move_direction] +=
+                player.velocity[move_direction] as f64 * delta_t as f64;
 
             if player.velocity[move_direction] == 0.0 {
                 continue; // No movement in this direction
@@ -175,9 +175,9 @@ impl World {
 
             let [x, y, z] = camera.camera_position();
 
-            let mvp_location = gl::GetUniformLocation(program.program, "mvp\0".as_ptr().cast());
+            let mvp_location = gl::GetUniformLocation(program.program, c"mvp".as_ptr().cast());
             let texture_location =
-                gl::GetUniformLocation(program.program, "tex_atlas\0".as_ptr().cast());
+                gl::GetUniformLocation(program.program, c"tex_atlas".as_ptr().cast());
 
             gl::Uniform1i(texture_location, 0);
 

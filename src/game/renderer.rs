@@ -238,7 +238,7 @@ impl Renderer {
     pub fn send_exit(&self) {
         self.updates
             .blocking_send(Update::Exit)
-            .unwrap_or_else(|e| println!("Client: background thread already crashed: {}", e));
+            .unwrap_or_else(|e| println!("Client: background thread already crashed: {e}"));
     }
 
     /// # Safety

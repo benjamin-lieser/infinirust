@@ -57,7 +57,7 @@ impl ChunkData {
     }
 
     pub fn get(&self, pos: LocalBlockIndex) -> u8 {
-        let chunk_size_usize: usize = CHUNK_SIZE as usize;
+        let chunk_size_usize: usize = CHUNK_SIZE;
         self.blocks[pos[0] as usize * chunk_size_usize * chunk_size_usize
             + pos[1] as usize * chunk_size_usize
             + pos[2] as usize]
@@ -68,7 +68,7 @@ impl ChunkData {
     }
 
     pub fn block_mut(&mut self, pos: LocalBlockIndex) -> &mut u8 {
-        let chunk_size_usize: usize = CHUNK_SIZE as usize;
+        let chunk_size_usize: usize = CHUNK_SIZE;
         &mut self.blocks[pos[0] as usize * chunk_size_usize * chunk_size_usize
             + pos[1] as usize * chunk_size_usize
             + pos[2] as usize]
@@ -99,7 +99,7 @@ impl ServerWorld {
             if let Ok(mut chunk_data) = File::open(world_directory.join("chunks.dat")) {
                 let mut loaded_chunks = HashMap::new();
                 let mut pos = [0i32; 3];
-                while let Ok(_) = chunk_data.read_exact(&mut pos.as_mut_bytes()) {
+                while chunk_data.read_exact(pos.as_mut_bytes()).is_ok() {
                     let mut chunk = ChunkData::empty();
                     chunk_data
                         .read_exact(&mut chunk.blocks)
@@ -121,7 +121,7 @@ impl ServerWorld {
         // Save chunk data
         let mut chunk_file = File::create(world_directory.join("chunks.dat"))?;
         for (pos, chunk) in &self.loaded_chunks {
-            chunk_file.write_all(&pos.as_bytes())?;
+            chunk_file.write_all(pos.as_bytes())?;
             chunk_file.write_all(&chunk.blocks)?;
         }
 
