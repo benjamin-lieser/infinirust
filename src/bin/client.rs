@@ -43,16 +43,6 @@ impl ApplicationHandler for App {
                     self.game.resize(self.glt, size);
                 }
             }
-            WindowEvent::Focused(is_focused) => {
-                if is_focused {
-                    self.window.set_cursor_visible(false);
-                    //window.set_fullscreen(Some(winit::window::Fullscreen::Borderless(None)));
-                } else {
-                    //window.set_fullscreen(None);
-                    //window.set_cursor_grab(CursorGrabMode::None).unwrap();
-                    self.window.set_cursor_visible(true);
-                }
-            }
             WindowEvent::KeyboardInput {
                 device_id: _,
                 event,
@@ -88,11 +78,20 @@ impl ApplicationHandler for App {
                         KeyCode::KeyF => {
                             self.window
                                 .set_fullscreen(Some(winit::window::Fullscreen::Borderless(None)));
-                            //window.set_cursor_visible(false);
+                            self.window.set_cursor_visible(false);
+                            self.window
+                                .set_cursor_grab(winit::window::CursorGrabMode::Confined)
+                                .or_else(|_| {
+                                    self.window
+                                        .set_cursor_grab(winit::window::CursorGrabMode::Locked)
+                                })
+                                .unwrap();
                         }
                         KeyCode::KeyG => {
-                            //window.set_cursor_grab(CursorGrabMode::None).unwrap();
-                            //window.set_cursor_visible(true);
+                            self.window
+                                .set_cursor_grab(winit::window::CursorGrabMode::None)
+                                .unwrap();
+                            self.window.set_cursor_visible(true);
                             self.window.set_fullscreen(None)
                         }
                         _ => {}
@@ -118,25 +117,27 @@ impl ApplicationHandler for App {
                     _ => {}
                 }
             }
-            WindowEvent::RedrawRequested => {}
+            WindowEvent::RedrawRequested => {
+                let current_time = std::time::SystemTime::now();
+                let delta_t = current_time.duration_since(self.time).unwrap();
+                self.time = current_time;
+
+                if delta_t.as_millis() > 10 {
+                    println!("Delta time: {:} milliseconds", delta_t.as_millis());
+                }
+
+                self.game.draw(self.glt, delta_t.as_secs_f32());
+
+                self.window.pre_present_notify();
+
+                self.surface.swap_buffers(&self.gl_context).unwrap();
+            }
             _ => {}
         }
     }
 
     fn about_to_wait(&mut self, _event_loop: &winit::event_loop::ActiveEventLoop) {
-        let current_time = std::time::SystemTime::now();
-        let delta_t = current_time.duration_since(self.time).unwrap();
-        self.time = current_time;
-
-        if delta_t.as_millis() > 10 {
-            println!("Delta time: {:} milliseconds", delta_t.as_millis());
-        }
-
-        self.game.draw(self.glt, delta_t.as_secs_f32());
-
-        //game.print_dist();
-
-        self.surface.swap_buffers(&self.gl_context).unwrap();
+        self.window.request_redraw();
     }
 
     fn device_event(
