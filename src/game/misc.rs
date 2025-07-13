@@ -1,6 +1,7 @@
 use std::ffi::CStr;
 
 use nalgebra_glm::Mat4;
+use obj::{FromRawVertex, TexturedVertex};
 
 use crate::mygl::{GLToken, Program, VAO, VBO};
 
@@ -106,3 +107,34 @@ void main() {
     fragColor = vec4(1.0,1.0,1.0,0.5);
 }
 \0";
+
+pub fn extract_groups(raw_obj: &obj::raw::RawObj, names: &[&str]) -> obj::Obj<TexturedVertex, u32> {
+    let mut vertices = vec![];
+    let mut textures = vec![];
+    let mut normals = vec![];
+    let mut polygons = vec![];
+
+    for name in names {
+        let group = &raw_obj.groups[*name];
+
+        dbg!(group);
+
+        for pos_range in &group.points {
+            vertices.extend_from_slice(&raw_obj.positions[pos_range.start..pos_range.end]);
+            textures.extend_from_slice(&raw_obj.tex_coords[pos_range.start..pos_range.end]);
+            normals.extend_from_slice(&raw_obj.normals[pos_range.start..pos_range.end]);
+        }
+
+        for pol_range in &group.polygons {
+            polygons.extend_from_slice(&raw_obj.polygons[pol_range.start..pol_range.end]);
+        }
+    }
+
+    let data = TexturedVertex::process(vertices, normals, textures, polygons).unwrap();
+
+    obj::Obj {
+        name: None,
+        vertices: data.0,
+        indices: data.1,
+    }
+}
