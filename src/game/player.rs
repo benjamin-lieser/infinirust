@@ -1,4 +1,4 @@
-use std::{fs::File, io::BufReader};
+use std::{collections::HashMap, fs::File, hash::Hash, io::BufReader};
 
 use gl::types::{GLint, GLuint};
 use nalgebra_glm::{self as glm, DVec3, Vec3};
@@ -6,7 +6,10 @@ use obj::TexturedVertex;
 use zerocopy::transmute;
 
 use crate::{
-    game::misc::CubeOutlines, mygl::{GLToken, IndexBuffer, VAO, VBO}, net::ServerPackagePlayerPosition, server::UID
+    game::misc::{CubeOutlines, extract_group_range},
+    mygl::{GLToken, IndexBuffer, VAO, VBO},
+    net::ServerPackagePlayerPosition,
+    server::UID,
 };
 
 use super::Camera;
@@ -48,7 +51,7 @@ impl Camera for Player {
 impl Player {
     pub fn bounding_box_size(&self) -> DVec3 {
         // x y z
-        DVec3::new(0.6, 1.65, 0.6)
+        DVec3::new(0.6, 1.625, 0.6)
     }
 
     pub fn update_pos_pitch_yaw(&mut self, pos: [f64; 3], pitch: f32, yaw: f32) {
@@ -120,19 +123,21 @@ impl Players {
                 (player_pos.y - pos[1]) as f32,
                 (player_pos.z - pos[2]) as f32,
             ));
-            let model = model_trans * player.inverse_view_matrix() * glm::scale(&model_center, &Vec3::new(0.6, 0.6, 0.6));
+            let model = model_trans
+                * player.inverse_view_matrix()
+                * glm::scale(&model_center, &Vec3::new(0.6, 0.6, 0.6));
             let mvp = projection_view * model;
             unsafe {
                 gl::UniformMatrix4fv(mvp_location, 1, 0, mvp.as_ptr());
             }
             self.render.draw(glt);
 
-
             // Draw the bounding box
             let bounding_box_size = player.bounding_box_size().cast();
 
             let bounding_box_model = glm::scale(&model_trans, &bounding_box_size);
-            self.bounding_box_render.draw(glt, &(projection_view * bounding_box_model));
+            self.bounding_box_render
+                .draw(glt, &(projection_view * bounding_box_model));
         }
     }
     pub fn delete(self, glt: GLToken) {
@@ -146,6 +151,7 @@ pub struct PlayerRender {
     vertex_vbo: VBO<f32>,
     texture_vbo: VBO<f32>,
     index_buffer: IndexBuffer,
+    body_ranges: HashMap<String, (u32, u32)>,
     texture: GLuint,
     num_indices: usize,
 }
@@ -235,7 +241,22 @@ impl PlayerRender {
         let model = BufReader::new(
             File::open("textures/players/model.obj").expect("Failed to open player model"),
         );
-        let model_obj = obj::load_obj::<TexturedVertex, _, u32>(model).unwrap();
+
+        let raw_obj = obj::raw::parse_obj(model).expect("Failed to parse player model");
+
+        let body_ranges = [
+            ("head", extract_group_range(&raw_obj, "head")),
+            ("torso", extract_group_range(&raw_obj, "torso")),
+            ("arm-left", extract_group_range(&raw_obj, "arm-left")),
+            ("arm-right", extract_group_range(&raw_obj, "arm-right")),
+            ("leg-left", extract_group_range(&raw_obj, "leg-left")),
+            ("leg-right", extract_group_range(&raw_obj, "leg-right")),
+        ]
+        .iter()
+        .map(|(name, range)| (name.to_string(), *range))
+        .collect::<HashMap<String, (u32, u32)>>();
+
+        let model_obj = obj::Obj::<TexturedVertex, u32>::new(raw_obj).unwrap();
 
         let vertex_data = model_obj
             .vertices
@@ -248,16 +269,18 @@ impl PlayerRender {
             .flat_map(|v: &TexturedVertex| [v.texture[0], v.texture[1], 0.0])
             .collect::<Vec<_>>();
 
-
         vertex_vbo.copy(glt, &vertex_data);
         texture_vbo.copy(glt, &texture_data);
         index_buffer.copy(glt, &model_obj.indices);
+
+        dbg!(body_ranges.clone());
 
         Self {
             vao,
             vertex_vbo,
             texture_vbo,
             index_buffer,
+            body_ranges,
             texture,
             num_indices: model_obj.indices.len(),
         }
@@ -267,7 +290,14 @@ impl PlayerRender {
         self.vao.bind(glt);
         unsafe {
             gl::BindTexture(gl::TEXTURE_2D_ARRAY, self.texture);
-            gl::DrawElements(gl::TRIANGLES, self.num_indices as GLint, gl::UNSIGNED_INT, std::ptr::null());
+            for (_, (start, end)) in &self.body_ranges {
+                gl::DrawElements(
+                    gl::TRIANGLES,
+                    (end - start) as GLint * 3,
+                    gl::UNSIGNED_INT,
+                    (3 * start * std::mem::size_of::<u32>() as u32) as *const _,
+                );
+            }
         }
     }
 

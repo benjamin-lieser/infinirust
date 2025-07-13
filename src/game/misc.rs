@@ -1,7 +1,7 @@
 use std::ffi::CStr;
 
 use nalgebra_glm::Mat4;
-use obj::{FromRawVertex, TexturedVertex};
+use obj::{FromRawVertex, TexturedVertex, raw::object::Polygon};
 
 use crate::mygl::{GLToken, Program, VAO, VBO};
 
@@ -108,10 +108,7 @@ void main() {
 }
 \0";
 
-pub fn extract_groups(raw_obj: &obj::raw::RawObj, names: &[&str]) -> obj::Obj<TexturedVertex, u32> {
-    let mut vertices = vec![];
-    let mut textures = vec![];
-    let mut normals = vec![];
+pub fn extract_groups(raw_obj: &obj::raw::RawObj, names: &[&str]) -> Vec<u32> {
     let mut polygons = vec![];
 
     for name in names {
@@ -119,22 +116,33 @@ pub fn extract_groups(raw_obj: &obj::raw::RawObj, names: &[&str]) -> obj::Obj<Te
 
         dbg!(group);
 
-        for pos_range in &group.points {
-            vertices.extend_from_slice(&raw_obj.positions[pos_range.start..pos_range.end]);
-            textures.extend_from_slice(&raw_obj.tex_coords[pos_range.start..pos_range.end]);
-            normals.extend_from_slice(&raw_obj.normals[pos_range.start..pos_range.end]);
-        }
-
         for pol_range in &group.polygons {
             polygons.extend_from_slice(&raw_obj.polygons[pol_range.start..pol_range.end]);
         }
     }
 
-    let data = TexturedVertex::process(vertices, normals, textures, polygons).unwrap();
+    polygons
+        .into_iter()
+        .flat_map(|p| {
+            let Polygon::P(p) = p else {
+                panic!("Expected Polygon::P")
+            };
+            p
+        })
+        .map(|i| i as u32)
+        .collect()
+}
 
-    obj::Obj {
-        name: None,
-        vertices: data.0,
-        indices: data.1,
-    }
+pub fn extract_group_range(raw_obj: &obj::raw::RawObj, name: &str) -> (u32, u32) {
+    let group = &raw_obj.groups[name];
+
+    assert!(
+        group.polygons.len() == 1,
+        "Expected exactly one polygon range in group '{}'",
+        name
+    );
+
+    let range = group.polygons[0];
+
+    (range.start as u32, range.end as u32)
 }
