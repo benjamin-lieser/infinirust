@@ -108,30 +108,47 @@ impl Players {
         &self,
         glt: GLToken,
         projection_view: &nalgebra_glm::Mat4,
-        pos: &[f64; 3],
+        camera_pos: &[f64; 3],
         mvp_location: GLint,
     ) {
+        self.render.vao.bind(glt);
+        unsafe {
+            gl::BindTexture(gl::TEXTURE_2D_ARRAY, self.render.texture);
+        }
+        // The Model is centered on 0,0,0, we have the lower x y coordinates in pos
+        let model_center = glm::translation(&glm::vec3(0.3, 0.0, 0.3));
         for player in self.players.iter() {
             let player_pos = player.position;
 
-            //TODO this is still a bit off
-
-            let model_center = glm::translation(&glm::vec3(0.3, 0.0, 0.3));
-
             let model_trans = glm::translation(&glm::vec3(
-                (player_pos.x - pos[0]) as f32,
-                (player_pos.y - pos[1]) as f32,
-                (player_pos.z - pos[2]) as f32,
+                (player_pos.x - camera_pos[0]) as f32,
+                (player_pos.y - camera_pos[1]) as f32,
+                (player_pos.z - camera_pos[2]) as f32,
             ));
-            let model = model_trans
-                * player.inverse_view_matrix()
-                * glm::scale(&model_center, &Vec3::new(0.6, 0.6, 0.6));
-            let mvp = projection_view * model;
-            unsafe {
-                gl::UniformMatrix4fv(mvp_location, 1, 0, mvp.as_ptr());
-            }
-            self.render.draw(glt);
 
+            for (name, (start, end)) in &self.render.body_ranges {
+                let model_local = if name == "head" {
+                    let head_in_center = glm::translation(&glm::vec3(0.0, -2.3, 0.0));
+                    let head_back = glm::translation(&glm::vec3(0.0, 2.3, 0.0));
+                    model_center * head_back * player.inverse_view_matrix() * head_in_center
+                } else {
+                    model_center
+                };
+                
+                let model = glm::scale(&model_trans, &Vec3::new(0.6, 0.6, 0.6)) * model_local;
+                let mvp = projection_view * model;
+                unsafe {
+                    gl::UniformMatrix4fv(mvp_location, 1, 0, mvp.as_ptr());
+                }
+                unsafe {
+                    gl::DrawElements(
+                        gl::TRIANGLES,
+                        (end - start) as GLint * 3,
+                        gl::UNSIGNED_INT,
+                        (3 * start * std::mem::size_of::<u32>() as u32) as *const _,
+                    );
+                }
+            }
             // Draw the bounding box
             let bounding_box_size = player.bounding_box_size().cast();
 
@@ -283,21 +300,6 @@ impl PlayerRender {
             body_ranges,
             texture,
             num_indices: model_obj.indices.len(),
-        }
-    }
-
-    pub fn draw(&self, glt: GLToken) {
-        self.vao.bind(glt);
-        unsafe {
-            gl::BindTexture(gl::TEXTURE_2D_ARRAY, self.texture);
-            for (_, (start, end)) in &self.body_ranges {
-                gl::DrawElements(
-                    gl::TRIANGLES,
-                    (end - start) as GLint * 3,
-                    gl::UNSIGNED_INT,
-                    (3 * start * std::mem::size_of::<u32>() as u32) as *const _,
-                );
-            }
         }
     }
 

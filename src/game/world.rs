@@ -29,8 +29,8 @@ impl World {
             unused_chunks.push(Chunk::new_empty(glt));
         }
 
-        let mut players = Players::new(glt, local_player);
-        players.add_player("Test".to_string(), 24);
+        let players = Players::new(glt, local_player);
+        //players.add_player("Test".to_string(), 24);
 
         Self {
             chunks: Mutex::new(HashMap::with_capacity(MAX_CHUNKS)),

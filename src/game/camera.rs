@@ -1,3 +1,5 @@
+use core::f32;
+
 use glm::Mat4;
 use nalgebra_glm as glm;
 
@@ -23,8 +25,8 @@ pub trait Camera {
         (yaw * pitch * orig_view_vec).xyz()
     }
     fn inverse_view_matrix(&self) -> Mat4 {
-        let pitch = glm::rotation(-self.pitch(), &glm::vec3(1.0, 0.0, 0.0));
-        let yaw = glm::rotation(-self.yaw(), &glm::vec3(0.0, 1.0, 0.0));
+        let pitch = glm::rotation(self.pitch(), &glm::vec3(1.0, 0.0, 0.0));
+        let yaw = glm::rotation(-self.yaw() + f32::consts::PI, &glm::vec3(0.0, 1.0, 0.0));
         yaw * pitch
     }
 
