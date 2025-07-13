@@ -9,12 +9,8 @@ pub struct Program {
 }
 
 impl Program {
-    pub fn new(glt: GLToken, vertex_source: &[u8], fragment_source: &[u8]) -> Self {
-        let program = create_program(
-            glt,
-            CStr::from_bytes_with_nul(vertex_source).unwrap(),
-            CStr::from_bytes_with_nul(fragment_source).unwrap(),
-        );
+    pub fn new(glt: GLToken, vertex_source: &CStr, fragment_source: &CStr) -> Self {
+        let program = create_program(glt, vertex_source, fragment_source);
 
         Self { program }
     }
@@ -43,7 +39,7 @@ impl Program {
 impl Drop for Program {
     fn drop(&mut self) {
         if self.program != 0 {
-            panic!("Program was not deleted before being dropped");
+            eprintln!("Client: Program was not deleted before being dropped");
         }
     }
 }

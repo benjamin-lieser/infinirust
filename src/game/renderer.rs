@@ -1,12 +1,12 @@
-use std::sync::Arc;
+use std::{ffi::CStr, sync::Arc};
 
 use glm::Mat4;
 use nalgebra_glm as glm;
 
-use crate::mygl::{get_gl_string, BlockTextures, GLToken, Program};
+use crate::mygl::{BlockTextures, GLToken, Program, get_gl_string};
 
 use super::{
-    background::Update, misc::CubeOutlines, overlay::Overlay, Camera, Controls, Key, World,
+    Camera, Controls, Key, World, background::Update, misc::CubeOutlines, overlay::Overlay,
 };
 
 const NEAR_PLAIN: f32 = 0.2;
@@ -72,7 +72,6 @@ impl Renderer {
     }
 
     pub fn draw(&mut self, glt: GLToken, delta_t: f32) {
-
         self.world.game_update(delta_t, &self.controls);
 
         unsafe {
@@ -157,7 +156,7 @@ impl Renderer {
                     -1
                 };
                 let _ = self.updates.try_send(Update::Block(block, 1));
-                self.last_block_remove_place = std::time::Instant::now();   
+                self.last_block_remove_place = std::time::Instant::now();
             }
 
             let model = glm::translation(&glm::vec3(
@@ -169,7 +168,6 @@ impl Renderer {
             self.cube_outlines
                 .draw(glt, &(self.projection * camera.view_matrix() * model));
         }
-
 
         // Make sure we send the actual position of the player (lowest part of bounding box)
         camera.pos[0] -= 0.25;
@@ -254,7 +252,7 @@ impl Renderer {
     }
 }
 
-const VERTEX_SHADER_SOURCE: &[u8] = b"
+const VERTEX_SHADER_SOURCE: &CStr = c"
 #version 410 core
 precision highp float;
 
@@ -268,10 +266,9 @@ out vec3 texCord;
 void main() {
     gl_Position = mvp * vec4(position, 1.0);
     texCord = tex;
-}
-\0";
+}";
 
-const FRAGMENT_SHADER_SOURCE: &[u8] = b"
+const FRAGMENT_SHADER_SOURCE: &CStr = c"
 #version 410 core
 precision highp float;
 
@@ -286,5 +283,4 @@ void main() {
     if(fragColor.a < 0.1) {
         discard;
     }
-}
-\0";
+}";

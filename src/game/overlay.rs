@@ -1,3 +1,5 @@
+use std::ffi::CStr;
+
 use winit::dpi::PhysicalSize;
 
 use crate::mygl::{GLToken, Program, VAO, VBO};
@@ -67,7 +69,7 @@ impl Overlay {
     }
 }
 
-const VERTEX_SHADER_SOURCE: &[u8] = b"
+const VERTEX_SHADER_SOURCE: &CStr = c"
 #version 410 core
 precision highp float;
 
@@ -75,10 +77,9 @@ layout(location=0) in vec2 position;
 
 void main() {
     gl_Position = vec4(position, 0.0, 1.0);
-}
-\0";
+}";
 
-const FRAGMENT_SHADER_SOURCE: &[u8] = b"
+const FRAGMENT_SHADER_SOURCE: &CStr = c"
 #version 410 core
 precision highp float;
 
@@ -86,5 +87,4 @@ layout(location=0) out vec4 fragColor;
 
 void main() {
     fragColor = vec4(0.8,0.8,0.8,1.0);
-}
-\0";
+}";

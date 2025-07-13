@@ -1,3 +1,5 @@
+use std::ffi::CStr;
+
 use nalgebra_glm::Mat4;
 use obj::raw::object::Polygon;
 
@@ -81,7 +83,7 @@ impl CubeOutlines {
     }
 }
 
-const VERTEX_SHADER_SOURCE: &[u8] = b"
+const VERTEX_SHADER_SOURCE: &CStr = c"
 #version 410 core
 precision highp float;
 
@@ -92,10 +94,9 @@ uniform mat4 mvp;
 void main() {
     gl_Position = mvp * vec4(position, 1.0);
     gl_Position.z -= 1e-4;
-}
-\0";
+}";
 
-const FRAGMENT_SHADER_SOURCE: &[u8] = b"
+const FRAGMENT_SHADER_SOURCE: &CStr = c"
 #version 410 core
 precision highp float;
 
@@ -103,8 +104,7 @@ layout(location=0) out vec4 fragColor;
 
 void main() {
     fragColor = vec4(1.0,1.0,1.0,0.5);
-}
-\0";
+}";
 
 pub fn extract_groups(raw_obj: &obj::raw::RawObj, names: &[&str]) -> Vec<u32> {
     let mut polygons = vec![];
