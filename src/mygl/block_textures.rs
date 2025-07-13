@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::mygl::GLToken;
 
 pub struct BlockTextures {
-    texture: gl::types::GLuint,
+    pub texture: gl::types::GLuint,
     positions: HashMap<String, f32>,
 }
 

@@ -41,6 +41,46 @@ impl GLType for i8 {
         gl::BYTE
     }
 }
+
+pub struct IndexBuffer {
+    id: GLuint,
+}
+
+impl IndexBuffer {
+    pub fn new(_: GLToken) -> Self {
+        let mut id: GLuint = 0;
+        unsafe {
+            gl::GenBuffers(1, &mut id);
+        }
+        IndexBuffer { id }
+    }
+
+    pub fn bind(&self, _: GLToken) {
+        unsafe {
+            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.id);
+        }
+    }
+
+    pub fn copy<T: GLType>(&mut self, glt: GLToken, data: &[T]) {
+        self.bind(glt);
+        unsafe {
+            gl::BufferData(
+                gl::ELEMENT_ARRAY_BUFFER,
+                std::mem::size_of_val(data) as GLsizeiptr,
+                data.as_ptr().cast(),
+                gl::STATIC_DRAW,
+            );
+        }
+    }
+
+    pub fn delete(mut self, _: GLToken) {
+        unsafe {
+            gl::DeleteBuffers(1, &self.id);
+        }
+        // This marks the struct as safe to drop
+        self.id = 0;
+    }
+}
 pub struct VBO<T: GLType> {
     id: GLuint,
     _phantom: PhantomData<T>,

@@ -10,6 +10,7 @@ use std::marker::PhantomData;
 pub use gl_smart_pointers::VBOWithStorage;
 pub use gl_smart_pointers::VAO;
 pub use gl_smart_pointers::VBO;
+pub use gl_smart_pointers::IndexBuffer;
 pub use program::Program;
 pub use texture_atlas::TextureAtlas;
 pub use block_textures::BlockTextures;

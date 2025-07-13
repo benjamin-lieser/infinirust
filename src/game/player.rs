@@ -6,7 +6,7 @@ use obj::TexturedVertex;
 use zerocopy::transmute;
 
 use crate::{
-    mygl::{GLToken, VAO, VBO},
+    mygl::{GLToken, IndexBuffer, VAO, VBO},
     net::ServerPackagePlayerPosition,
     server::UID,
 };
@@ -113,7 +113,7 @@ impl Players {
 
             //TODO this is still a bit off
 
-            let model_center = glm::translation(&glm::vec3(-0.5, -0.5, -0.5));
+            let model_center = glm::translation(&glm::vec3(0.0, 0.0, 0.0));
 
             let model_trans = glm::translation(&glm::vec3(
                 (x - pos[0]) as f32,
@@ -137,8 +137,9 @@ pub struct PlayerRender {
     vao: VAO,
     vertex_vbo: VBO<f32>,
     texture_vbo: VBO<f32>,
+    index_buffer: IndexBuffer,
     texture: GLuint,
-    num_triangles: usize,
+    num_indices: usize,
 }
 
 impl PlayerRender {
@@ -146,6 +147,7 @@ impl PlayerRender {
         let mut vao = VAO::new(glt);
         let mut vertex_vbo = VBO::new(glt);
         let mut texture_vbo = VBO::new(glt);
+        let mut index_buffer = IndexBuffer::new(glt);
 
         let mut texture: GLuint = 0;
         unsafe {
@@ -168,12 +170,12 @@ impl PlayerRender {
             gl::TexParameteri(
                 gl::TEXTURE_2D_ARRAY,
                 gl::TEXTURE_WRAP_S,
-                gl::CLAMP_TO_EDGE as i32,
+                gl::TEXTURE_WRAP_S as i32,
             );
             gl::TexParameteri(
                 gl::TEXTURE_2D_ARRAY,
                 gl::TEXTURE_WRAP_T,
-                gl::CLAMP_TO_EDGE as i32,
+                gl::TEXTURE_WRAP_T as i32,
             );
 
             gl::TexStorage3D(
@@ -213,6 +215,10 @@ impl PlayerRender {
             }
         }
 
+        unsafe {
+            gl::GenerateMipmap(gl::TEXTURE_2D_ARRAY);
+        }
+
         vao.attrib_pointer(glt, 0, &vertex_vbo, 3, 0, 0, false);
         vao.attrib_pointer(glt, 1, &texture_vbo, 3, 0, 0, false);
         vao.enable_array(glt, 0);
@@ -221,7 +227,7 @@ impl PlayerRender {
         let model = BufReader::new(
             File::open("textures/players/model.obj").expect("Failed to open player model"),
         );
-        let model_obj = obj::load_obj::<TexturedVertex, _, u16>(model).unwrap();
+        let model_obj = obj::load_obj::<TexturedVertex, _, u32>(model).unwrap();
 
         let vertex_data = model_obj
             .vertices
@@ -234,22 +240,26 @@ impl PlayerRender {
             .flat_map(|v: &TexturedVertex| [v.texture[0], v.texture[1], 0.0])
             .collect::<Vec<_>>();
 
+
         vertex_vbo.copy(glt, &vertex_data);
         texture_vbo.copy(glt, &texture_data);
+        index_buffer.copy(glt, &model_obj.indices);
 
         Self {
             vao,
             vertex_vbo,
             texture_vbo,
+            index_buffer,
             texture,
-            num_triangles: model_obj.indices.len() / 3,
+            num_indices: model_obj.indices.len(),
         }
     }
 
     pub fn draw(&self, glt: GLToken) {
         self.vao.bind(glt);
         unsafe {
-            gl::DrawArrays(gl::TRIANGLES, 0, self.num_triangles as GLint * 3);
+            gl::BindTexture(gl::TEXTURE_2D_ARRAY, self.texture);
+            gl::DrawElements(gl::TRIANGLES, self.num_indices as GLint, gl::UNSIGNED_INT, std::ptr::null());
         }
     }
 
