@@ -116,7 +116,7 @@ impl Players {
             gl::BindTexture(gl::TEXTURE_2D_ARRAY, self.render.texture);
         }
         // The Model is centered on 0,0,0, we have the lower x y coordinates in pos
-        let model_center = glm::translation(&glm::vec3(0.3, 0.0, 0.3));
+        let model_center = glm::translation(&glm::vec3(0.3/0.6, 0.0, 0.3/0.6));
         for player in self.players.iter() {
             let player_pos = player.position;
 
@@ -126,13 +126,14 @@ impl Players {
                 (player_pos.z - camera_pos[2]) as f32,
             ));
 
+
             for (name, (start, end)) in &self.render.body_ranges {
                 let model_local = if name == "head" {
                     let head_in_center = glm::translation(&glm::vec3(0.0, -2.3, 0.0));
                     let head_back = glm::translation(&glm::vec3(0.0, 2.3, 0.0));
                     model_center * head_back * player.inverse_view_matrix() * head_in_center
                 } else {
-                    model_center
+                    glm::rotate(&model_center, -player.yaw + std::f32::consts::PI, &glm::vec3(0.0, 1.0, 0.0))
                 };
                 
                 let model = glm::scale(&model_trans, &Vec3::new(0.6, 0.6, 0.6)) * model_local;
