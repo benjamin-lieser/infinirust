@@ -6,9 +6,7 @@ use obj::TexturedVertex;
 use zerocopy::transmute;
 
 use crate::{
-    mygl::{GLToken, IndexBuffer, VAO, VBO},
-    net::ServerPackagePlayerPosition,
-    server::UID,
+    game::misc::CubeOutlines, mygl::{GLToken, IndexBuffer, VAO, VBO}, net::ServerPackagePlayerPosition, server::UID
 };
 
 use super::Camera;
@@ -50,7 +48,7 @@ impl Camera for Player {
 impl Player {
     pub fn bounding_box_size(&self) -> DVec3 {
         // x y z
-        DVec3::new(0.5, 1.75, 0.5)
+        DVec3::new(0.6, 1.65, 0.6)
     }
 
     pub fn update_pos_pitch_yaw(&mut self, pos: [f64; 3], pitch: f32, yaw: f32) {
@@ -65,6 +63,7 @@ pub struct Players {
     players: Vec<Player>,
     pub local_player: Player,
     render: PlayerRender,
+    bounding_box_render: CubeOutlines,
 }
 
 impl Players {
@@ -73,6 +72,7 @@ impl Players {
             players: vec![],
             local_player,
             render: PlayerRender::new(glt),
+            bounding_box_render: CubeOutlines::new(glt),
         }
     }
 
@@ -109,27 +109,35 @@ impl Players {
         mvp_location: GLint,
     ) {
         for player in self.players.iter() {
-            let [x, y, z] = player.camera_position();
+            let player_pos = player.position;
 
             //TODO this is still a bit off
 
-            let model_center = glm::translation(&glm::vec3(0.0, 0.0, 0.0));
+            let model_center = glm::translation(&glm::vec3(0.3, 0.0, 0.3));
 
             let model_trans = glm::translation(&glm::vec3(
-                (x - pos[0]) as f32,
-                (y - pos[1]) as f32,
-                (z - pos[2]) as f32,
+                (player_pos.x - pos[0]) as f32,
+                (player_pos.y - pos[1]) as f32,
+                (player_pos.z - pos[2]) as f32,
             ));
-            let model = model_trans * player.inverse_view_matrix() * model_center;
+            let model = model_trans * player.inverse_view_matrix() * glm::scale(&model_center, &Vec3::new(0.6, 0.6, 0.6));
             let mvp = projection_view * model;
             unsafe {
                 gl::UniformMatrix4fv(mvp_location, 1, 0, mvp.as_ptr());
             }
             self.render.draw(glt);
+
+
+            // Draw the bounding box
+            let bounding_box_size = player.bounding_box_size().cast();
+
+            let bounding_box_model = glm::scale(&model_trans, &bounding_box_size);
+            self.bounding_box_render.draw(glt, &(projection_view * bounding_box_model));
         }
     }
     pub fn delete(self, glt: GLToken) {
         self.render.delete(glt);
+        self.bounding_box_render.delete(glt);
     }
 }
 
