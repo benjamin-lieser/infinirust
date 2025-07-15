@@ -3,6 +3,7 @@ mod program;
 mod text;
 mod texture_atlas;
 mod block_textures;
+mod cube_map;
 
 use std::ffi::CStr;
 use std::marker::PhantomData;
@@ -14,6 +15,7 @@ pub use gl_smart_pointers::IndexBuffer;
 pub use program::Program;
 pub use texture_atlas::TextureAtlas;
 pub use block_textures::BlockTextures;
+pub use cube_map::CubeMap;
 
 pub fn get_gl_string(variant: gl::types::GLenum) -> Option<&'static CStr> {
     unsafe {

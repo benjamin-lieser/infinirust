@@ -3,7 +3,7 @@ use std::{ffi::CStr, sync::Arc};
 use glm::Mat4;
 use nalgebra_glm as glm;
 
-use crate::mygl::{BlockTextures, GLToken, Program, get_gl_string};
+use crate::{game::skybox::SkyBox, mygl::{get_gl_string, BlockTextures, GLToken, Program}};
 
 use super::{
     Camera, Controls, Key, World, background::Update, misc::CubeOutlines, overlay::Overlay,
@@ -23,6 +23,7 @@ pub struct Renderer {
     controls: Controls,
     cube_outlines: CubeOutlines,
     overlay: Overlay,
+    skybox: SkyBox,
     render_size: winit::dpi::PhysicalSize<u32>,
     updates: tokio::sync::mpsc::Sender<Update>,
     last_pos_update: std::time::Instant,
@@ -56,6 +57,16 @@ impl Renderer {
             NEAR_PLAIN,
             FAR_PLAIN,
         );
+
+        let skybox = SkyBox::new(glt, vec![
+            "textures/skybox/skybox_side.png".into(),
+            "textures/skybox/skybox_side.png".into(),
+            "textures/skybox/skybox_top.png".into(),
+            "textures/skybox/skybox_bottom.png".into(),
+            "textures/skybox/skybox_side.png".into(),
+            "textures/skybox/skybox_side.png".into(),
+        ]);
+
         Self {
             world,
             program,
@@ -64,6 +75,7 @@ impl Renderer {
             controls: Controls::default(),
             cube_outlines: CubeOutlines::new(glt),
             overlay: Overlay::new(glt, render_size),
+            skybox,
             render_size,
             updates,
             last_pos_update: std::time::Instant::now(),
@@ -168,6 +180,8 @@ impl Renderer {
             self.cube_outlines
                 .draw(glt, &(self.projection * camera.view_matrix() * model));
         }
+        // Render the skybox
+        self.skybox.render(glt, &(self.projection * camera.view_matrix()));
 
         // Make sure we send the actual position of the player (lowest part of bounding box)
         camera.pos[0] -= 0.25;
@@ -179,6 +193,8 @@ impl Renderer {
             self.last_pos_update = std::time::Instant::now();
             _ = self.updates.try_send(Update::Pos(camera));
         }
+
+
         self.overlay.draw(glt);
     }
 
@@ -249,6 +265,7 @@ impl Renderer {
             .expect("After the background therad joind this should be the only reference to world")
             .delete(glt);
         self.program.delete(glt);
+        self.skybox.delete(glt);
     }
 }
 

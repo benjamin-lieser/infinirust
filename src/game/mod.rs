@@ -8,6 +8,7 @@ mod overlay;
 mod player;
 mod renderer;
 mod world;
+mod skybox;
 
 use std::net::TcpStream;
 use std::path::Path;

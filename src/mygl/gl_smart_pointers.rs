@@ -128,7 +128,7 @@ impl<T: GLType> VBO<T> {
 impl<T: GLType> Drop for VBO<T> {
     fn drop(&mut self) {
         if self.id != 0 {
-            panic!("VBO was not deleted before drop");
+            eprintln!("Client: VBO was not deleted before drop");
         }
     }
 }
@@ -196,7 +196,7 @@ impl VAO {
 impl Drop for VAO {
     fn drop(&mut self) {
         if self.id != 0 {
-            panic!("VAO was not deleted before drop");
+            panic!("Client: VAO was not deleted before drop");
         }
     }
 }
