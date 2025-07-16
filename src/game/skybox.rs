@@ -67,17 +67,15 @@ impl SkyBox {
         }
     }
 
-    pub fn render(&self, glt: GLToken, mvp: &Mat4) {
+    pub fn render(&self, glt: GLToken, vp: &Mat4) {
         self.program.bind(glt);
         self.cube_map.bind(glt);
 
-        let mut rotation: Mat4 = mvp.clone();
-        rotation.fill_row(3, 0.0);
-        rotation.fill_column(3, 0.0);
-        rotation[15] = 1.0; // Set the last element to 1.0 for proper matrix multiplication
+        println!("{vp}");
+        //panic!("Skybox rendering is not implemented yet");
 
         self.program
-            .uniform_mat4(glt, c"view_projection", &rotation);
+            .uniform_mat4(glt, c"view_projection", vp);
 
         unsafe { gl::DepthFunc(gl::LEQUAL) };
         self.renderer.render(glt);
