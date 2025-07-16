@@ -294,8 +294,6 @@ impl PlayerRender {
         texture_vbo.copy(glt, &texture_data);
         index_buffer.copy(glt, &model_obj.indices);
 
-        dbg!(body_ranges.clone());
-
         Self {
             vao,
             vertex_vbo,

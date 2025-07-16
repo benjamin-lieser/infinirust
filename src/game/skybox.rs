@@ -71,9 +71,6 @@ impl SkyBox {
         self.program.bind(glt);
         self.cube_map.bind(glt);
 
-        println!("{vp}");
-        //panic!("Skybox rendering is not implemented yet");
-
         self.program
             .uniform_mat4(glt, c"view_projection", vp);
 
