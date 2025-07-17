@@ -1,4 +1,4 @@
-use std::{ffi::CStr, path::PathBuf};
+use std::{ffi::CStr, path::Path};
 
 use nalgebra_glm::Mat4;
 
@@ -55,8 +55,8 @@ pub struct SkyBox {
 }
 
 impl SkyBox {
-    pub fn new(glt: GLToken, textures: Vec<PathBuf>) -> Self {
-        let cube_map = CubeMap::new(glt, &textures);
+    pub fn new(glt: GLToken, texture: &Path) -> Self {
+        let cube_map = CubeMap::new(glt, texture);
         let renderer = CubeRenderer::new(glt);
         let program = Program::new(glt, SKYBOX_VERTEX_SHADER, SKYBOX_FRAGMENT_SHADER);
 
@@ -71,8 +71,7 @@ impl SkyBox {
         self.program.bind(glt);
         self.cube_map.bind(glt);
 
-        self.program
-            .uniform_mat4(glt, c"view_projection", vp);
+        self.program.uniform_mat4(glt, c"view_projection", vp);
 
         unsafe { gl::DepthFunc(gl::LEQUAL) };
         self.renderer.render(glt);

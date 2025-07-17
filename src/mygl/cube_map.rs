@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::Path;
 
 use gl::types::GLuint;
 
@@ -9,7 +9,7 @@ pub struct CubeMap {
 }
 
 impl CubeMap {
-    pub fn new(_: GLToken, textures: &Vec<PathBuf>) -> Self {
+    pub fn new(_: GLToken, cubemap: &Path) -> Self {
         let mut id: GLuint = 0;
         unsafe {
             gl::GenTextures(1, &mut id);
@@ -44,11 +44,31 @@ impl CubeMap {
             );
         }
 
-        for (i, path) in textures.iter().enumerate() {
-            let image = image::open(path).expect("Failed to load cube map texture");
-            let image = image.into_rgba8();
-            let (width, height) = image.dimensions();
-            assert!(width == height, "Cube map textures must be square");
+        let image = image::open(cubemap).expect("Failed to load cube map texture");
+        let image = image.into_rgba8();
+        let (width, height) = image.dimensions();
+
+        assert!(
+            width / 4 == height / 3,
+            "Cube map texture must be in 4:3 aspect ratio"
+        );
+
+        let width = width / 4;
+        let height = height / 3;
+
+        for i in 0..6 {
+            let sub_image = match i {
+                0 => image::GenericImageView::view(&image, 2 * width, height, width, height)
+                    .to_image(), // POS X
+                1 => image::GenericImageView::view(&image, 0, height, width, height).to_image(), // NEG X
+                2 => image::GenericImageView::view(&image, width, 0, width, height).to_image(), // POS Y
+                3 => image::GenericImageView::view(&image, width, height * 2, width, height)
+                    .to_image(), // NEG Y
+                4 => image::GenericImageView::view(&image, width, height, width, height).to_image(), // Pos Z
+                5 => image::GenericImageView::view(&image, 3 * width, height, width, height)
+                    .to_image(), // Neg Z
+                _ => unreachable!(),
+            };
 
             unsafe {
                 gl::TexImage2D(
@@ -60,7 +80,7 @@ impl CubeMap {
                     0,
                     gl::RGBA,
                     gl::UNSIGNED_BYTE,
-                    image.as_raw().as_ptr() as *const _,
+                    sub_image.as_raw().as_ptr() as *const _,
                 );
             }
         }

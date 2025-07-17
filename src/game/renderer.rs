@@ -1,4 +1,4 @@
-use std::{ffi::CStr, sync::Arc};
+use std::{ffi::CStr, path::Path, sync::Arc};
 
 use glm::Mat4;
 use nalgebra_glm as glm;
@@ -58,15 +58,7 @@ impl Renderer {
             FAR_PLAIN,
         );
 
-        let skybox = SkyBox::new(glt, vec![
-            "textures/skybox/skybox_side.png".into(),
-            "textures/skybox/skybox_side.png".into(),
-            "textures/skybox/skybox_top.png".into(),
-            "textures/skybox/skybox_bottom.png".into(),
-            "textures/skybox/skybox_side.png".into(),
-            "textures/skybox/skybox_side.png".into(),
-        ]);
-
+        let skybox = SkyBox::new(glt, &Path::new("textures/skybox/cubemap_1.png"));
         Self {
             world,
             program,
