@@ -68,7 +68,7 @@ pub struct Game {
 
 fn create_block_texture(glt: GLToken) -> (BlocksConfig, BlockTextures) {
     let (blocks_config, texture_files) = BlocksConfig::new(Path::new("config/blocks.json"));
-    let block_textures = BlockTextures::new(glt, 128, &texture_files);
+    let block_textures = BlockTextures::new(glt, texture_files.iter().map(|s| s.as_str()).collect::<Vec<_>>().as_slice());
 
     (blocks_config, block_textures)
 }

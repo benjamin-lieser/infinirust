@@ -78,9 +78,7 @@ impl Renderer {
     pub fn draw(&mut self, glt: GLToken, delta_t: f32) {
         self.world.game_update(delta_t, &self.controls);
 
-        unsafe {
-            gl::BindTexture(gl::TEXTURE_2D_ARRAY, self.block_textures.texture);
-        }
+        self.block_textures.bind_texture(glt);
 
         let mut camera = self
             .world

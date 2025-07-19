@@ -4,6 +4,7 @@ mod text;
 mod texture_atlas;
 mod block_textures;
 mod cube_map;
+mod texture_array;
 
 use std::ffi::CStr;
 use std::marker::PhantomData;
