@@ -17,6 +17,7 @@ pub use program::Program;
 pub use texture_atlas::TextureAtlas;
 pub use block_textures::BlockTextures;
 pub use cube_map::CubeMap;
+pub use text::FontAtlas;
 
 pub fn get_gl_string(variant: gl::types::GLenum) -> Option<&'static CStr> {
     unsafe {
