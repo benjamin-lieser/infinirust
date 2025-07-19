@@ -1,14 +1,10 @@
 # MyGL
 
 # Server
-- Send position
-- get all player position
-- send block update
-- get all block updates
-- Config file
+- Better world generation
 
 # Client
-- render players
-- Config file
-- Sky
+- Interpolation for other player movements
+- Animations of players
 - Lighting
+- Choose which block to put
