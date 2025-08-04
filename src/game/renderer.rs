@@ -196,7 +196,7 @@ impl Renderer {
         // Render the text
         self.text_renderer.bind_program(glt);
 
-        let text = self.text_renderer.render_text(glt, "HelloWorld", (0.5, 0.5), 0.001);
+        let text = self.text_renderer.render_text(glt, "HelloWorld", (0.0, 0.0), 0.0009);
         text.draw(glt);
         text.delete(glt);
     }

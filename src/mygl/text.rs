@@ -8,6 +8,8 @@ pub struct Text {
     position: (f32, f32), // (x, y) position on screen
     scale: f32,           // Scale of the text
     vao: super::gl_smart_pointers::VAO,
+    vbo_texture: super::gl_smart_pointers::VBO<f32>,
+    vbo_vertex: super::gl_smart_pointers::VBO<f32>,
 }
 
 pub struct TextRenderer {
@@ -62,8 +64,7 @@ impl TextRenderer {
                 );
             }
 
-            x += metrics.width;
-
+            
             let coords = (
                 x as f32 / 1024.0,
                 y as f32 / 1024.0,
@@ -82,10 +83,11 @@ impl TextRenderer {
                 ),
             );
             advance_data.insert(char, metrics.advance_width);
+            x += metrics.width;
         }
 
         image.save("test.png").unwrap();
-
+        image::imageops::flip_vertical_in_place(&mut image);
         texture.upload(glt, &image);
 
         Self {
@@ -125,12 +127,20 @@ impl TextRenderer {
                 y,
                 x + width,
                 y + height,
+                x + width,
+                y,
+                x + width,
+                y + height,
                 x,
                 y + height,
             ]);
             texture_coords.extend_from_slice(&[
                 tex_x,
                 tex_y,
+                tex_x + tex_width,
+                tex_y,
+                tex_x + tex_width,
+                tex_y + tex_height,
                 tex_x + tex_width,
                 tex_y,
                 tex_x + tex_width,
@@ -146,15 +156,17 @@ impl TextRenderer {
         vbo_vertex.copy(glt, &vertices);
         dbg!(vertices);
         vbo_texture.copy(glt, &texture_coords);
-        vao.attrib_pointer(glt, 0, &vbo_vertex, 2, 2, 0, false);
-        vao.attrib_pointer(glt, 1, &vbo_texture, 2, 2, 0, false);
-        vbo_vertex.delete(glt);
-        vbo_texture.delete(glt);
+        vao.attrib_pointer(glt, 0, &vbo_vertex, 2, 0, 0, false);
+        vao.attrib_pointer(glt, 1, &vbo_texture, 2, 0, 0, false);
+        vao.enable_array(glt, 0);
+        vao.enable_array(glt, 1);
         Text {
             text: text.to_string(),
             position,
             scale,
             vao,
+            vbo_texture,
+            vbo_vertex,
         }
     }
 
@@ -169,6 +181,7 @@ impl TextRenderer {
             gl::Disable(gl::DEPTH_TEST);
             gl::Enable(gl::BLEND);
             gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
+            gl::Disable(gl::CULL_FACE);
         }
     }
 
@@ -182,12 +195,14 @@ impl Text {
     pub fn draw(&self, glt: GLToken) {
         self.vao.bind(glt);
         unsafe {
-            gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4 * self.text.len() as i32);
+            gl::DrawArrays(gl::TRIANGLES, 0, 6 * self.text.len() as i32);
         }
     }
 
     pub fn delete(self, glt: GLToken) {
         self.vao.delete(glt);
+        self.vbo_texture.delete(glt);
+        self.vbo_vertex.delete(glt);
     }
 }
 
@@ -216,5 +231,5 @@ layout(location=0) out vec4 fragColor;
 
 void main() {
     vec4 tex = texture(text_texture, fragTexCoord);
-    fragColor = vec4(1.0,0.0,0.0,1.0) + tex * 0.0001; // For testing purposes
+    fragColor = tex;
 }";
