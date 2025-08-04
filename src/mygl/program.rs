@@ -34,6 +34,19 @@ impl Program {
         }
         self.program = 0;
     }
+
+    pub fn get_uniform_location(&self, name: &CStr) -> gl::types::GLint {
+        let location = unsafe { gl::GetUniformLocation(self.program, name.as_ptr()) };
+        if location < 0 {
+            panic!(
+                "Uniform '{}' not found in program {}",
+                name.to_string_lossy(),
+                self.program
+            );
+        } else {
+            location
+        }
+    }
 }
 
 impl Drop for Program {

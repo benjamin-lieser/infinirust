@@ -24,7 +24,7 @@ pub struct Renderer {
     cube_outlines: CubeOutlines,
     overlay: Overlay,
     skybox: SkyBox,
-    font_atlas: TextRenderer,
+    text_renderer: TextRenderer,
     render_size: winit::dpi::PhysicalSize<u32>,
     updates: tokio::sync::mpsc::Sender<Update>,
     last_pos_update: std::time::Instant,
@@ -61,7 +61,7 @@ impl Renderer {
 
         let skybox = SkyBox::new(glt, &Path::new("textures/skybox/cubemap_1.png"));
 
-        let font_atlas = TextRenderer::new(glt, include_bytes!("../../textures/font/MartianMono-Regular.otf"), "ABCDEFGHIJKLMNabcdfghijklmnopqrstuvwxyz0123456789.,");
+        let text_renderer = TextRenderer::new(glt, include_bytes!("../../textures/font/MartianMono-Regular.otf"), "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,");
 
         Self {
             world,
@@ -72,7 +72,7 @@ impl Renderer {
             cube_outlines: CubeOutlines::new(glt),
             overlay: Overlay::new(glt, render_size),
             skybox,
-            font_atlas,
+            text_renderer,
             render_size,
             updates,
             last_pos_update: std::time::Instant::now(),
@@ -191,6 +191,14 @@ impl Renderer {
 
 
         self.overlay.draw(glt);
+
+
+        // Render the text
+        self.text_renderer.bind_program(glt);
+
+        let text = self.text_renderer.render_text(glt, "HelloWorld", (0.5, 0.5), 0.001);
+        text.draw(glt);
+        text.delete(glt);
     }
 
     pub fn resize(&mut self, glt: GLToken, size: winit::dpi::PhysicalSize<u32>) {
@@ -261,6 +269,7 @@ impl Renderer {
             .delete(glt);
         self.program.delete(glt);
         self.skybox.delete(glt);
+        self.text_renderer.delete(glt);
     }
 }
 
