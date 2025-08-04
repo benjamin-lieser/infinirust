@@ -28,7 +28,12 @@ impl TextureArray {
         Self { id }
     }
 
-    pub fn upload_png<'a>(&self, glt: GLToken, pngs: impl ExactSizeIterator<Item = &'a str>, mipmap: GLsizei) {
+    pub fn upload_png<'a>(
+        &self,
+        glt: GLToken,
+        pngs: impl ExactSizeIterator<Item = &'a str>,
+        mipmap: GLsizei,
+    ) {
         self.bind(glt);
 
         let mut all_width: u32 = 0;

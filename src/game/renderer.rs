@@ -3,7 +3,7 @@ use std::{ffi::CStr, path::Path, sync::Arc};
 use glm::Mat4;
 use nalgebra_glm as glm;
 
-use crate::{game::skybox::SkyBox, mygl::{get_gl_string, BlockTextures, FontAtlas, GLToken, Program}};
+use crate::{game::skybox::SkyBox, mygl::{get_gl_string, BlockTextures, TextRenderer, GLToken, Program}};
 
 use super::{
     Camera, Controls, Key, World, background::Update, misc::CubeOutlines, overlay::Overlay,
@@ -24,7 +24,7 @@ pub struct Renderer {
     cube_outlines: CubeOutlines,
     overlay: Overlay,
     skybox: SkyBox,
-    font_atlas: FontAtlas,
+    font_atlas: TextRenderer,
     render_size: winit::dpi::PhysicalSize<u32>,
     updates: tokio::sync::mpsc::Sender<Update>,
     last_pos_update: std::time::Instant,
@@ -61,7 +61,7 @@ impl Renderer {
 
         let skybox = SkyBox::new(glt, &Path::new("textures/skybox/cubemap_1.png"));
 
-        let font_atlas = FontAtlas::new(glt, include_bytes!("../../textures/font/MartianMono-Regular.otf"), "ABCDEFGHIJKLMNabcdfghijklmnopqrstuvwxyz0123456789.,");
+        let font_atlas = TextRenderer::new(glt, include_bytes!("../../textures/font/MartianMono-Regular.otf"), "ABCDEFGHIJKLMNabcdfghijklmnopqrstuvwxyz0123456789.,");
 
         Self {
             world,

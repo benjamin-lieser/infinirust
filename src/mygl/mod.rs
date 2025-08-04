@@ -5,6 +5,7 @@ mod texture_atlas;
 mod block_textures;
 mod cube_map;
 mod texture_array;
+mod texture;
 
 use std::ffi::CStr;
 use std::marker::PhantomData;
@@ -17,7 +18,8 @@ pub use program::Program;
 pub use texture_atlas::TextureAtlas;
 pub use block_textures::BlockTextures;
 pub use cube_map::CubeMap;
-pub use text::FontAtlas;
+pub use text::TextRenderer;
+pub use texture::Texture;
 
 pub fn get_gl_string(variant: gl::types::GLenum) -> Option<&'static CStr> {
     unsafe {
