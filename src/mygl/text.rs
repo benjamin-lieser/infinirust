@@ -39,9 +39,8 @@ impl TextRenderer {
 
         for char in chars.chars() {
             let (metrics, bitmap) = font.rasterize(char, 64.0);
-            dbg!(metrics);
 
-            if x + metrics.width >= 1024 {
+            if x + metrics.width + 1 >= 1024 {
                 x = 0;
                 y += y_skip;
             }
@@ -67,7 +66,7 @@ impl TextRenderer {
             
             let coords = (
                 x as f32 / 1024.0,
-                y as f32 / 1024.0,
+                1.0 - (y as f32 / 1024.0) - (metrics.height as f32 / 1024.0),
                 metrics.width as f32 / 1024.0,
                 metrics.height as f32 / 1024.0,
             );
@@ -83,10 +82,8 @@ impl TextRenderer {
                 ),
             );
             advance_data.insert(char, metrics.advance_width);
-            x += metrics.width;
+            x += metrics.width + 1; // +1 for spacing between characters
         }
-
-        image.save("test.png").unwrap();
         image::imageops::flip_vertical_in_place(&mut image);
         texture.upload(glt, &image);
 
@@ -125,7 +122,7 @@ impl TextRenderer {
                 y,
                 x + width,
                 y,
-                x + width,
+                x,
                 y + height,
                 x + width,
                 y,
@@ -139,7 +136,7 @@ impl TextRenderer {
                 tex_y,
                 tex_x + tex_width,
                 tex_y,
-                tex_x + tex_width,
+                tex_x,
                 tex_y + tex_height,
                 tex_x + tex_width,
                 tex_y,
@@ -154,7 +151,6 @@ impl TextRenderer {
         vbo_vertex.bind(glt);
         vbo_texture.bind(glt);
         vbo_vertex.copy(glt, &vertices);
-        dbg!(vertices);
         vbo_texture.copy(glt, &texture_coords);
         vao.attrib_pointer(glt, 0, &vbo_vertex, 2, 0, 0, false);
         vao.attrib_pointer(glt, 1, &vbo_texture, 2, 0, 0, false);
