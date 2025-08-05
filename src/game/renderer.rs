@@ -61,7 +61,10 @@ impl Renderer {
 
         let skybox = SkyBox::new(glt, &Path::new("textures/skybox/cubemap_1.png"));
 
-        let text_renderer = TextRenderer::new(glt, include_bytes!("../../textures/font/MartianMono-Regular.otf"), "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789., ");
+        let font = std::fs::read(Path::new("textures/font/FreeSans.ttf"))
+            .expect("Failed to read font file");
+
+        let text_renderer = TextRenderer::new(glt, &font, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789., !%&*()-_=+[]{};:'\"\\|/?<>`~");
 
         Self {
             world,
@@ -196,7 +199,7 @@ impl Renderer {
         // Render the text
         self.text_renderer.bind_program(glt);
 
-        let text = self.text_renderer.render_text(glt, "Test", (-1.0, -0.9), 0.001);
+        let text = self.text_renderer.render_text(glt, "Test 0.4, 3.5!", (-1.0, -0.9), 0.001);
         text.draw(glt);
         text.delete(glt);
     }

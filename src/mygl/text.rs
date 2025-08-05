@@ -84,6 +84,7 @@ impl TextRenderer {
             advance_data.insert(char, metrics.advance_width);
             x += metrics.width + 1; // +1 for spacing between characters
         }
+        image.save("font_atlas.png").unwrap();
         image::imageops::flip_vertical_in_place(&mut image);
         texture.upload(glt, &image);
 
