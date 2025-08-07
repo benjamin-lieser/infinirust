@@ -196,12 +196,6 @@ impl Renderer {
         self.overlay.draw(glt);
 
 
-        // Render the text
-        self.text_renderer.bind_program(glt);
-
-        let text = self.text_renderer.render_text(glt, "Test 0.4, 3.5!", (-1.0, -0.9), 0.001);
-        text.draw(glt);
-        text.delete(glt);
     }
 
     pub fn resize(&mut self, glt: GLToken, size: winit::dpi::PhysicalSize<u32>) {

@@ -5,7 +5,7 @@ use std::fs::File;
 use std::io::{Read, Write};
 use std::{collections::HashMap, sync::Arc};
 
-use noise::NoiseFn;
+use noise::{BasicMulti, NoiseFn, Seedable};
 use noise::Perlin;
 use zerocopy::IntoBytes;
 
@@ -25,7 +25,7 @@ impl ChunkData {
         }
     }
 
-    pub fn generate(generator: &Perlin, pos: &[i32; 3]) -> Self {
+    pub fn generate(generator: &BasicMulti<Perlin>, pos: &[i32; 3]) -> Self {
         let mut chunk = Self::empty();
 
         let [x, y, z] = pos;
@@ -83,7 +83,7 @@ pub struct ChunkMeta {
 }
 
 pub struct ServerWorld {
-    generator: Perlin,
+    generator: BasicMulti<Perlin>,
     loaded_chunks: HashMap<[i32; 3], ChunkData>,
 }
 
@@ -111,8 +111,12 @@ impl ServerWorld {
                 HashMap::new()
             };
 
+        let mut generator = BasicMulti::<Perlin>::default();
+        generator.octaves = 3;
+        generator = generator.set_seed(settings.seed);
+
         ServerWorld {
-            generator: Perlin::new(settings.seed),
+            generator,
             loaded_chunks,
         }
     }

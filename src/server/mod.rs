@@ -11,6 +11,7 @@ use crate::net::Package;
 pub mod player;
 pub mod stdin;
 pub mod world;
+pub mod world_generator;
 
 pub type Client = tokio::sync::mpsc::Sender<Arc<[u8]>>;
 pub type ServerCommand = tokio::sync::mpsc::Sender<(UID, Command)>;
@@ -44,7 +45,7 @@ pub fn start_world(
         match command {
             Command::Login(name, client, back) => {
                 let uid = server.players.login(name, client);
-                back.send(uid).expect("Could not send uid back");
+                back.send(uid).expect("Server: Could not send uid back");
                 if let Some(uid) = uid {
                     //send login success package
                     let mut package =
@@ -127,7 +128,7 @@ pub fn start_world(
             Command::Shutdown => {
                 server.players.sync_to_disk(&world_directory).unwrap();
                 server.world.sync_to_disk(&world_directory).unwrap();
-                eprintln!("Server shut down after saving to disk");
+                eprintln!("Server: shut down after saving to disk");
                 std::process::exit(0);
             }
         }
