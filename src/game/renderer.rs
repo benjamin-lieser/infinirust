@@ -215,8 +215,8 @@ impl Renderer {
     /// Only mouse movement, clicking is handled in `keyboard_input`
     pub fn mouse_input(&mut self, delta: (f64, f64)) {
         let camera = &mut self.world.players.lock().unwrap().local_player;
-        camera.change_pitch(delta.1 as f32 / 300.0);
-        camera.change_yaw(delta.0 as f32 / 300.0);
+        camera.change_pitch(delta.1 as f32 / 500.0);
+        camera.change_yaw(delta.0 as f32 / 500.0);
     }
 
     /// also manages clicking

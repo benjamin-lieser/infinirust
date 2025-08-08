@@ -35,7 +35,7 @@ impl ChunkData {
                 let x = (x * CHUNK_SIZE as i32 + xx as i32) as f64 + 0.5;
                 let z = (z * CHUNK_SIZE as i32 + zz as i32) as f64 + 0.5;
                 let height =
-                    generator.get([x / 50.0, z / 50.0]) * Y_RANGE as f64 * CHUNK_SIZE as f64 * 0.1;
+                    generator.get([x / 50.0, z / 50.0]) * Y_RANGE as f64 * CHUNK_SIZE as f64 * 0.25;
                 for yy in 0..CHUNK_SIZE {
                     let y = (y * CHUNK_SIZE as i32 + yy as i32) as f64 + 0.5;
                     if y <= height {
@@ -112,7 +112,8 @@ impl ServerWorld {
             };
 
         let mut generator = BasicMulti::<Perlin>::default();
-        generator.octaves = 3;
+        generator.octaves = 5;
+        generator.persistence = 0.25;
         generator = generator.set_seed(settings.seed);
 
         ServerWorld {
