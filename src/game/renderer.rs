@@ -15,9 +15,8 @@ use super::{
 const NEAR_PLAIN: f32 = 0.2;
 const FAR_PLAIN: f32 = 300.0;
 
-/// This struct holds all GL relevant things
-/// All the functions have to be called from the GL thread
-/// It holds a Arc of the World to render it
+/// This holds all the relevant data for the game loop, mostly OpenGL structs.
+/// It contains an Arc to the world, which is shared with the background thread.
 pub struct Renderer {
     world: Arc<World>,
     program: Program,
@@ -272,13 +271,12 @@ impl Renderer {
     }
 
     /// # Safety
-    /// This function has to be called after the exit thread has been joined
-    /// Otherwise some drop glue will panic
+    /// This function has to be called after the background thread has been joined
     pub unsafe fn delete(self, glt: GLToken) {
         self.cube_outlines.delete(glt);
         self.overlay.delete(glt);
         Arc::<World>::into_inner(self.world)
-            .expect("After the background therad joind this should be the only reference to world")
+            .expect("After the background thread joined this should be the only reference to world")
             .delete(glt);
         self.program.delete(glt);
         self.skybox.delete(glt);

@@ -45,6 +45,7 @@ pub enum Direction {
     NegZ,
 }
 
+/// Represents an input for the game. These are abstracted from the actual input handling and could for example be key combinations or mouse clicks.
 #[derive(Debug, Clone, Copy)]
 pub enum Key {
     Forward,
@@ -62,6 +63,9 @@ pub type ChunkIndex = [i32; 3];
 pub type LocalBlockIndex = [u8; 3];
 pub type BlockType = u8;
 
+/// Represents the game state in the client.
+/// Renderer holds everything needed in the game loop.
+/// The background thread handles the network communication and other asynchronous tasks.
 pub struct Game {
     renderer: Renderer,
     background_thread: std::thread::JoinHandle<()>,
