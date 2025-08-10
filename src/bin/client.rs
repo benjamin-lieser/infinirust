@@ -97,6 +97,10 @@ impl ApplicationHandler for App {
                         KeyCode::F3 => {
                             self.game.keyboard_input(Key::DebugScreen, pressed);
                         }
+                        KeyCode::KeyV => {
+                            // Disable vsync to measuere FPS
+                            let _ = self.surface.set_swap_interval(&self.gl_context, glutin::surface::SwapInterval::DontWait);
+                        }
                         _ => {}
                     }
                 }
