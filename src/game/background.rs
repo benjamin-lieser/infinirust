@@ -98,7 +98,7 @@ async fn manage_world(
                         // Both locks in this section are sync, but we do not await here
                         let mut unused_chunks_rx = world.unused_chunks.lock().unwrap();
                         let mut chunk = {
-                            unused_chunks_rx.pop().expect("No available chunks")
+                            unused_chunks_rx.pop().expect("Client: No available chunks")
                         };
                         chunk.load(data, pos);
                         chunk.write_vbo(&blocks_config);
@@ -199,7 +199,7 @@ async fn manage_world(
                     Some(Update::Exit) => {
                         return;
                     }
-                    None => {panic!("client crashed")}
+                    None => {panic!("Client: client crashed")}
                 }
             }
         }

@@ -10,6 +10,7 @@ use crate::{
     },
 };
 
+/// Renders the debug screen, which overlays some information on the screen.
 struct DebugScreen {
     texts: Vec<Text>,
     inv_aspect_ratio: f32,
@@ -19,6 +20,7 @@ impl DebugScreen {
     pub fn new(glt: GLToken, text_renderer: &TextRenderer, inv_aspect_ratio: f32) -> Self {
         let mut texts = Vec::new();
 
+        // Create them with empty strings, we will update them later
         let fps_text = text_renderer.render_text(
             glt,
             "",
@@ -106,6 +108,7 @@ impl DebugScreen {
     }
 }
 
+/// Anything which is 2D and part of the game UI is rendered here.
 pub struct Overlay {
     cross_hair_program: Program,
     cross_hair_vbo: VBO<f32>,

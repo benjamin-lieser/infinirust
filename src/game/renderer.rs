@@ -28,6 +28,7 @@ pub struct Renderer {
     skybox: SkyBox,
     text_renderer: TextRenderer,
     render_size: winit::dpi::PhysicalSize<u32>,
+    /// The channel to send information to the background thread
     updates: tokio::sync::mpsc::Sender<Update>,
     last_pos_update: std::time::Instant,
     last_block_remove_place: std::time::Instant,

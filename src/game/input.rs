@@ -1,3 +1,4 @@
+/// Represents the state of the controls in the game.
 #[derive(Debug, Default)]
 pub struct Controls {
     pub forward: bool,
