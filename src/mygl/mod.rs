@@ -21,6 +21,8 @@ pub use cube_map::CubeMap;
 pub use text::TextRenderer;
 pub use texture::Texture;
 pub use text::Text;
+pub use text::HorizontalTextAlignment;
+pub use text::VerticalTextAlignment;
 
 pub fn get_gl_string(variant: gl::types::GLenum) -> Option<&'static CStr> {
     unsafe {

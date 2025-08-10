@@ -171,7 +171,7 @@ impl World {
         unsafe {
             program.bind(glt);
             gl::Enable(gl::DEPTH_TEST);
-            gl::Disable(gl::CULL_FACE);
+            gl::Enable(gl::CULL_FACE);
 
             let [x, y, z] = camera.camera_position();
 
@@ -181,8 +181,7 @@ impl World {
 
             gl::Uniform1i(texture_location, 0);
 
-            gl::ClearColor(0.1, 0.1, 0.1, 0.9);
-            gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
+            gl::Clear(gl::DEPTH_BUFFER_BIT);
 
             let projection_view = projection * camera.view_matrix();
 
