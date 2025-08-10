@@ -94,6 +94,9 @@ impl ApplicationHandler for App {
                             self.window.set_cursor_visible(true);
                             self.window.set_fullscreen(None)
                         }
+                        KeyCode::F3 => {
+                            self.game.keyboard_input(Key::DebugScreen, pressed);
+                        }
                         _ => {}
                     }
                 }

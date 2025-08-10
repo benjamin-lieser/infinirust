@@ -1,10 +1,9 @@
 use std::{ffi::CStr, path::Path, sync::Arc};
 
-use fontdue::layout::HorizontalAlign;
 use glm::Mat4;
 use nalgebra_glm as glm;
 
-use crate::{game::skybox::SkyBox, mygl::{get_gl_string, BlockTextures, GLToken, HorizontalTextAlignment, Program, TextRenderer, VerticalTextAlignment}};
+use crate::{game::skybox::SkyBox, mygl::{get_gl_string, BlockTextures, GLToken, Program, TextRenderer}};
 
 use super::{
     Camera, Controls, Key, World, background::Update, misc::CubeOutlines, overlay::Overlay,
@@ -65,7 +64,7 @@ impl Renderer {
         let font = std::fs::read(Path::new("textures/font/FreeSans.ttf"))
             .expect("Failed to read font file");
 
-        let text_renderer = TextRenderer::new(glt, &font, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789., !%&*()-_=+[]{};:'\"\\|/?<>`~", render_size.height as f32 / render_size.width as f32);
+        let text_renderer = TextRenderer::new(glt, &font, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789., !%&*()-_=+[]{};:'\"\\|/?<>`~");
 
         Self {
             world,
@@ -74,7 +73,7 @@ impl Renderer {
             projection,
             controls: Controls::default(),
             cube_outlines: CubeOutlines::new(glt),
-            overlay: Overlay::new(glt, render_size),
+            overlay: Overlay::new(glt, render_size, &text_renderer),
             skybox,
             text_renderer,
             render_size,
@@ -194,28 +193,7 @@ impl Renderer {
         }
 
 
-        self.overlay.draw(glt);
-
-        // Render text
-        self.text_renderer.bind_program(glt);
-        let text = self.text_renderer.render_text(glt, "Mittdle Left", (-1.0,0.0), HorizontalTextAlignment::Left, VerticalTextAlignment::Middle, 0.1);
-        text.draw(glt);
-        text.delete(glt);
-        let text = self.text_renderer.render_text(glt, "Right Top", (1.0,1.0), HorizontalTextAlignment::Right, VerticalTextAlignment::Top, 0.1);
-        text.draw(glt);
-        text.delete(glt);
-        let text = self.text_renderer.render_text(glt, "Right Buttom", (1.0,-1.0), HorizontalTextAlignment::Right, VerticalTextAlignment::Bottom, 0.1);
-        text.draw(glt);
-        text.delete(glt);
-        let text = self.text_renderer.render_text(glt, "Left Buttom", (-1.0,-1.0), HorizontalTextAlignment::Left, VerticalTextAlignment::Bottom, 0.1);
-        text.draw(glt);
-        text.delete(glt);
-        let text = self.text_renderer.render_text(glt, "Center Middle", (0.0,0.0), HorizontalTextAlignment::Center, VerticalTextAlignment::Middle, 0.1);
-        text.draw(glt);
-        text.delete(glt);
-        let text = self.text_renderer.render_text(glt, "Left Top", (-1.0,1.0), HorizontalTextAlignment::Left, VerticalTextAlignment::Top, 0.1);
-        text.draw(glt);
-        text.delete(glt);
+        self.overlay.draw(glt, &self.text_renderer, &self.world, delta_t, self.controls.debug_screen);
     }
 
     pub fn resize(&mut self, glt: GLToken, size: winit::dpi::PhysicalSize<u32>) {
@@ -230,7 +208,6 @@ impl Renderer {
             FAR_PLAIN,
         );
         self.overlay.resize(glt, size);
-        self.text_renderer.update_aspect_ratio(glt, size.height as f32 / size.width as f32);
     }
 
     /// Only mouse movement, clicking is handled in `keyboard_input`
@@ -266,6 +243,11 @@ impl Renderer {
             }
             Key::RightClick => {
                 self.controls.right_click = pressed;
+            }
+            Key::DebugScreen => {
+                if pressed {
+                    self.controls.debug_screen = !self.controls.debug_screen;   
+                }
             }
         }
     }

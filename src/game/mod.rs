@@ -55,6 +55,7 @@ pub enum Key {
     Down,
     LeftClick,
     RightClick,
+    DebugScreen,
 }
 
 pub type ChunkIndex = [i32; 3];

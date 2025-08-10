@@ -8,4 +8,5 @@ pub struct Controls {
     pub down: bool,
     pub left_click: bool,
     pub right_click: bool,
+    pub debug_screen: bool,
 }

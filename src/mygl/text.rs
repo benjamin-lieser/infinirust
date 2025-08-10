@@ -1,6 +1,6 @@
 use std::{collections::HashMap, ffi::CStr};
 
-use crate::mygl::{text, GLToken, Texture};
+use crate::mygl::{GLToken, Texture};
 use fontdue::{Font, FontSettings, LineMetrics};
 
 
@@ -35,11 +35,10 @@ pub struct TextRenderer {
     advance_data: HashMap<char, f32>,                 // advance for each character
     line_metrics : LineMetrics,
     scale : f32,
-    inv_aspect_ratio: f32,
 }
 
 impl TextRenderer {
-    pub fn new(glt: GLToken, font_data: &[u8], chars: &str, inv_aspect_ratio: f32) -> Self {
+    pub fn new(glt: GLToken, font_data: &[u8], chars: &str) -> Self {
         let texture = Texture::new(glt, gl::LINEAR, gl::NEAREST, gl::CLAMP_TO_EDGE);
 
         let settings = FontSettings {
@@ -123,11 +122,10 @@ impl TextRenderer {
             program: super::program::Program::new(glt, VERTEX_SHADER_SOURCE, FRAGMENT_SHADER_SOURCE),
             line_metrics,
             scale,
-            inv_aspect_ratio,
         }
     }
 
-    pub fn render_text(&self, glt: GLToken, text: &str, position: (f32, f32), alignment: HorizontalTextAlignment, vertical_alignment: VerticalTextAlignment, scale: f32) -> Text {
+    pub fn render_text(&self, glt: GLToken, text: &str, position: (f32, f32), alignment: HorizontalTextAlignment, vertical_alignment: VerticalTextAlignment, scale: f32, inv_aspect_ratio: f32) -> Text {
 
         let vbo_vertex = super::gl_smart_pointers::VBO::new(glt);
         let vbo_texture = super::gl_smart_pointers::VBO::new(glt);
@@ -148,7 +146,7 @@ impl TextRenderer {
             vbo_texture,
             vbo_vertex,
         };
-        text.update(glt, self.inv_aspect_ratio, &self);
+        text.update(glt, inv_aspect_ratio, &self);
         text
     }
 
@@ -166,10 +164,6 @@ impl TextRenderer {
         }
     }
 
-    pub fn update_aspect_ratio(&mut self, glt: GLToken, inv_aspect_ratio: f32) {
-        self.inv_aspect_ratio = inv_aspect_ratio;
-    }
-
     pub fn delete(self, glt: GLToken) {
         self.texture.delete(glt);
         self.program.delete(glt);
@@ -182,6 +176,10 @@ impl Text {
         unsafe {
             gl::DrawArrays(gl::TRIANGLES, 0, 6 * self.text.len() as i32);
         }
+    }
+
+    pub fn set_string(&mut self, text: &str) {
+        self.text = text.to_string();
     }
 
     pub fn update(&mut self, glt : GLToken, inv_aspect_ratio : f32, text_renderer: &TextRenderer) {
