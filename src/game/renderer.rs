@@ -3,7 +3,10 @@ use std::{ffi::CStr, path::Path, sync::Arc};
 use glm::Mat4;
 use nalgebra_glm as glm;
 
-use crate::{game::skybox::SkyBox, mygl::{get_gl_string, BlockTextures, GLToken, Program, TextRenderer}};
+use crate::{
+    game::skybox::SkyBox,
+    mygl::{BlockTextures, GLToken, Program, TextRenderer, get_gl_string},
+};
 
 use super::{
     Camera, Controls, Key, World, background::Update, misc::CubeOutlines, overlay::Overlay,
@@ -64,7 +67,11 @@ impl Renderer {
         let font = std::fs::read(Path::new("textures/font/FreeSans.ttf"))
             .expect("Failed to read font file");
 
-        let text_renderer = TextRenderer::new(glt, &font, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789., !%&*()-_=+[]{};:'\"\\|/?<>`~");
+        let text_renderer = TextRenderer::new(
+            glt,
+            &font,
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789., !%&*()-_=+[]{};:'\"\\|/?<>`~",
+        );
 
         Self {
             world,
@@ -179,7 +186,8 @@ impl Renderer {
                 .draw(glt, &(self.projection * camera.view_matrix() * model));
         }
         // Render the skybox
-        self.skybox.render(glt, &(self.projection * camera.view_matrix()));
+        self.skybox
+            .render(glt, &(self.projection * camera.view_matrix()));
 
         // Make sure we send the actual position of the player (lowest part of bounding box)
         camera.pos[0] -= 0.25;
@@ -192,8 +200,13 @@ impl Renderer {
             _ = self.updates.try_send(Update::Pos(camera));
         }
 
-
-        self.overlay.draw(glt, &self.text_renderer, &self.world, delta_t, self.controls.debug_screen);
+        self.overlay.draw(
+            glt,
+            &self.text_renderer,
+            &self.world,
+            delta_t,
+            self.controls.debug_screen,
+        );
     }
 
     pub fn resize(&mut self, glt: GLToken, size: winit::dpi::PhysicalSize<u32>) {
@@ -246,7 +259,7 @@ impl Renderer {
             }
             Key::DebugScreen => {
                 if pressed {
-                    self.controls.debug_screen = !self.controls.debug_screen;   
+                    self.controls.debug_screen = !self.controls.debug_screen;
                 }
             }
         }

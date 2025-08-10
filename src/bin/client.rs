@@ -33,6 +33,9 @@ impl ApplicationHandler for App {
         event: WindowEvent,
     ) {
         match event {
+            WindowEvent::CloseRequested => {
+                event_loop.exit();
+            }
             WindowEvent::Resized(size) => {
                 if size.width != 0 && size.height != 0 {
                     self.surface.resize(
@@ -99,7 +102,10 @@ impl ApplicationHandler for App {
                         }
                         KeyCode::KeyV => {
                             // Disable vsync to measuere FPS
-                            let _ = self.surface.set_swap_interval(&self.gl_context, glutin::surface::SwapInterval::DontWait);
+                            let _ = self.surface.set_swap_interval(
+                                &self.gl_context,
+                                glutin::surface::SwapInterval::DontWait,
+                            );
                         }
                         _ => {}
                     }

@@ -2,7 +2,13 @@ use std::ffi::CStr;
 
 use winit::dpi::PhysicalSize;
 
-use crate::{game::World, mygl::{GLToken, HorizontalTextAlignment, Program, Text, TextRenderer, VerticalTextAlignment, VAO, VBO}};
+use crate::{
+    game::World,
+    mygl::{
+        GLToken, HorizontalTextAlignment, Program, Text, TextRenderer, VAO, VBO,
+        VerticalTextAlignment,
+    },
+};
 
 struct DebugScreen {
     texts: Vec<Text>,
@@ -10,9 +16,9 @@ struct DebugScreen {
 }
 
 impl DebugScreen {
-    pub fn new(glt: GLToken, text_renderer : &TextRenderer, inv_aspect_ratio: f32) -> Self {
+    pub fn new(glt: GLToken, text_renderer: &TextRenderer, inv_aspect_ratio: f32) -> Self {
         let mut texts = Vec::new();
-        
+
         let fps_text = text_renderer.render_text(
             glt,
             "",
@@ -20,7 +26,7 @@ impl DebugScreen {
             HorizontalTextAlignment::Left,
             VerticalTextAlignment::Top,
             0.025,
-            inv_aspect_ratio
+            inv_aspect_ratio,
         );
 
         texts.push(fps_text);
@@ -32,7 +38,7 @@ impl DebugScreen {
             HorizontalTextAlignment::Left,
             VerticalTextAlignment::Top,
             0.025,
-            inv_aspect_ratio
+            inv_aspect_ratio,
         );
 
         texts.push(x_text);
@@ -44,7 +50,7 @@ impl DebugScreen {
             HorizontalTextAlignment::Left,
             VerticalTextAlignment::Top,
             0.025,
-            inv_aspect_ratio
+            inv_aspect_ratio,
         );
 
         texts.push(y_text);
@@ -56,15 +62,24 @@ impl DebugScreen {
             HorizontalTextAlignment::Left,
             VerticalTextAlignment::Top,
             0.025,
-            inv_aspect_ratio
+            inv_aspect_ratio,
         );
 
         texts.push(z_text);
 
-        Self { texts , inv_aspect_ratio}
+        Self {
+            texts,
+            inv_aspect_ratio,
+        }
     }
 
-    pub fn draw(&mut self, glt: GLToken, text_renderer : &TextRenderer, world : &World, delta_t : f32) {
+    pub fn draw(
+        &mut self,
+        glt: GLToken,
+        text_renderer: &TextRenderer,
+        world: &World,
+        delta_t: f32,
+    ) {
         let local_player = &world.players.lock().unwrap().local_player;
 
         let pos = local_player.position;
@@ -147,7 +162,14 @@ impl Overlay {
         self.debug_screen.inv_aspect_ratio = inv_aspect;
     }
 
-    pub fn draw(&mut self, glt: GLToken, text_renderer: &TextRenderer, world: &World, delta_t: f32, debug_screen: bool) {
+    pub fn draw(
+        &mut self,
+        glt: GLToken,
+        text_renderer: &TextRenderer,
+        world: &World,
+        delta_t: f32,
+        debug_screen: bool,
+    ) {
         self.cross_hair_program.bind(glt);
         self.cross_hair_vao.bind(glt);
         unsafe {

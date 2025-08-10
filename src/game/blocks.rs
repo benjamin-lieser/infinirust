@@ -56,10 +56,7 @@ impl BlocksConfig {
             }
         }
 
-        let blocks_config = Self {
-            blocks,
-            textures,
-        };
+        let blocks_config = Self { blocks, textures };
 
         (blocks_config, textures_vec)
     }

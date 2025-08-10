@@ -5,8 +5,8 @@ use std::fs::File;
 use std::io::{Read, Write};
 use std::{collections::HashMap, sync::Arc};
 
-use noise::{BasicMulti, NoiseFn, Seedable};
 use noise::Perlin;
+use noise::{BasicMulti, NoiseFn, Seedable};
 use zerocopy::IntoBytes;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]

@@ -7,8 +7,8 @@ pub mod misc;
 mod overlay;
 mod player;
 mod renderer;
-mod world;
 mod skybox;
+mod world;
 
 use std::net::TcpStream;
 use std::path::Path;
@@ -19,8 +19,8 @@ use nalgebra_glm::Vec3;
 use winit::dpi::PhysicalSize;
 
 pub use camera::{Camera, FreeCamera};
-pub use chunk::Chunk;
 pub use chunk::CHUNK_SIZE;
+pub use chunk::Chunk;
 pub use chunk::Y_RANGE;
 pub use input::Controls;
 pub use renderer::Renderer;
@@ -69,7 +69,14 @@ pub struct Game {
 
 fn create_block_texture(glt: GLToken) -> (BlocksConfig, BlockTextures) {
     let (blocks_config, texture_files) = BlocksConfig::new(Path::new("config/blocks.json"));
-    let block_textures = BlockTextures::new(glt, texture_files.iter().map(|s| s.as_str()).collect::<Vec<_>>().as_slice());
+    let block_textures = BlockTextures::new(
+        glt,
+        texture_files
+            .iter()
+            .map(|s| s.as_str())
+            .collect::<Vec<_>>()
+            .as_slice(),
+    );
 
     (blocks_config, block_textures)
 }
@@ -104,7 +111,13 @@ impl Game {
 
         let chunk_loader_world = world.clone();
         let background_thread = std::thread::spawn(move || {
-            background_thread(tcp, chunk_loader_world, update_rx, Arc::new(blocks_config), uid)
+            background_thread(
+                tcp,
+                chunk_loader_world,
+                update_rx,
+                Arc::new(blocks_config),
+                uid,
+            )
         });
 
         Self {

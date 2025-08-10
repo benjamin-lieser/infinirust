@@ -8,8 +8,8 @@ use zerocopy::IntoBytes;
 
 use crate::{
     game::{
-        blocks::BlocksConfig, chunk::block_position_to_chunk_index, world::VIEW_DISTANCE, Camera,
-        CHUNK_SIZE, Y_RANGE,
+        CHUNK_SIZE, Camera, Y_RANGE, blocks::BlocksConfig, chunk::block_position_to_chunk_index,
+        world::VIEW_DISTANCE,
     },
     net::{
         ClientPackagePlayerPosition, Package as NetworkPackage, PackageBlockUpdate,

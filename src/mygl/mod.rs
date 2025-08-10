@@ -1,28 +1,28 @@
+mod block_textures;
+mod cube_map;
 mod gl_smart_pointers;
 mod program;
 mod text;
-mod texture_atlas;
-mod block_textures;
-mod cube_map;
-mod texture_array;
 mod texture;
+mod texture_array;
+mod texture_atlas;
 
 use std::ffi::CStr;
 use std::marker::PhantomData;
 
-pub use gl_smart_pointers::VBOWithStorage;
-pub use gl_smart_pointers::VAO;
-pub use gl_smart_pointers::VBO;
-pub use gl_smart_pointers::IndexBuffer;
-pub use program::Program;
-pub use texture_atlas::TextureAtlas;
 pub use block_textures::BlockTextures;
 pub use cube_map::CubeMap;
-pub use text::TextRenderer;
-pub use texture::Texture;
-pub use text::Text;
+pub use gl_smart_pointers::IndexBuffer;
+pub use gl_smart_pointers::VAO;
+pub use gl_smart_pointers::VBO;
+pub use gl_smart_pointers::VBOWithStorage;
+pub use program::Program;
 pub use text::HorizontalTextAlignment;
+pub use text::Text;
+pub use text::TextRenderer;
 pub use text::VerticalTextAlignment;
+pub use texture::Texture;
+pub use texture_atlas::TextureAtlas;
 
 pub fn get_gl_string(variant: gl::types::GLenum) -> Option<&'static CStr> {
     unsafe {

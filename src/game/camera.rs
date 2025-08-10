@@ -3,7 +3,6 @@ use core::f32;
 use glm::Mat4;
 use nalgebra_glm as glm;
 
-
 /// Anything that can be used as a camera in the game
 pub trait Camera {
     fn camera_position(&self) -> [f64; 3];
@@ -38,7 +37,6 @@ pub trait Camera {
         }
     }
 
-
     fn forward_dir(&self) -> glm::Vec3 {
         let yaw = self.yaw();
         glm::vec3(yaw.sin(), 0.0, -yaw.cos())
@@ -49,7 +47,6 @@ pub trait Camera {
         glm::vec3(-yaw.cos(), 0.0, -yaw.sin())
     }
 }
-
 
 #[derive(Debug, Clone)]
 pub struct FreeCamera {
@@ -93,5 +90,4 @@ impl Camera for FreeCamera {
     fn change_yaw(&mut self, diff: f32) {
         self.yaw = (self.yaw + diff) % std::f32::consts::TAU;
     }
-
 }

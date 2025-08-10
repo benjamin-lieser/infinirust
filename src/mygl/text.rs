@@ -3,7 +3,6 @@ use std::{collections::HashMap, ffi::CStr};
 use crate::mygl::{GLToken, Texture};
 use fontdue::{Font, FontSettings, LineMetrics};
 
-
 pub enum HorizontalTextAlignment {
     Left,
     Center,
@@ -33,8 +32,8 @@ pub struct TextRenderer {
     texture_coordinates: HashMap<char, (f32, f32, f32, f32)>, // (x, y, width, height)
     vertex_data: HashMap<char, (f32, f32, f32, f32)>, // (x, y, width, height) relative to origin
     advance_data: HashMap<char, f32>,                 // advance for each character
-    line_metrics : LineMetrics,
-    scale : f32,
+    line_metrics: LineMetrics,
+    scale: f32,
 }
 
 impl TextRenderer {
@@ -85,7 +84,6 @@ impl TextRenderer {
                 );
             }
 
-            
             let coords = (
                 x as f32 / 1024.0,
                 1.0 - (y as f32 / 1024.0) - (metrics.height as f32 / 1024.0),
@@ -119,14 +117,26 @@ impl TextRenderer {
             texture_coordinates,
             vertex_data,
             advance_data,
-            program: super::program::Program::new(glt, VERTEX_SHADER_SOURCE, FRAGMENT_SHADER_SOURCE),
+            program: super::program::Program::new(
+                glt,
+                VERTEX_SHADER_SOURCE,
+                FRAGMENT_SHADER_SOURCE,
+            ),
             line_metrics,
             scale,
         }
     }
 
-    pub fn render_text(&self, glt: GLToken, text: &str, position: (f32, f32), alignment: HorizontalTextAlignment, vertical_alignment: VerticalTextAlignment, scale: f32, inv_aspect_ratio: f32) -> Text {
-
+    pub fn render_text(
+        &self,
+        glt: GLToken,
+        text: &str,
+        position: (f32, f32),
+        alignment: HorizontalTextAlignment,
+        vertical_alignment: VerticalTextAlignment,
+        scale: f32,
+        inv_aspect_ratio: f32,
+    ) -> Text {
         let vbo_vertex = super::gl_smart_pointers::VBO::new(glt);
         let vbo_texture = super::gl_smart_pointers::VBO::new(glt);
         let mut vao = super::gl_smart_pointers::VAO::new(glt);
@@ -154,10 +164,7 @@ impl TextRenderer {
         self.texture.bind(glt);
         self.program.bind(glt);
         unsafe {
-            gl::Uniform1i(
-                self.program.get_uniform_location(c"text_texture"),
-                0,
-            );
+            gl::Uniform1i(self.program.get_uniform_location(c"text_texture"), 0);
             gl::Disable(gl::DEPTH_TEST);
             gl::Enable(gl::BLEND);
             gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
@@ -182,14 +189,23 @@ impl Text {
         self.text = text.to_string();
     }
 
-    pub fn update(&mut self, glt : GLToken, inv_aspect_ratio : f32, text_renderer: &TextRenderer) {
+    pub fn update(&mut self, glt: GLToken, inv_aspect_ratio: f32, text_renderer: &TextRenderer) {
         let scale = self.scale;
         let mut position = self.position;
 
         match self.vertical_alignment {
-            VerticalTextAlignment::Top => {position.1 -= text_renderer.line_metrics.ascent * scale;},
-            VerticalTextAlignment::Middle => position.1 -= ((text_renderer.line_metrics.ascent - text_renderer.line_metrics.descent) / 2.0 + text_renderer.line_metrics.descent) * scale,
-            VerticalTextAlignment::Bottom => position.1 -= text_renderer.line_metrics.descent * scale,
+            VerticalTextAlignment::Top => {
+                position.1 -= text_renderer.line_metrics.ascent * scale;
+            }
+            VerticalTextAlignment::Middle => {
+                position.1 -=
+                    ((text_renderer.line_metrics.ascent - text_renderer.line_metrics.descent) / 2.0
+                        + text_renderer.line_metrics.descent)
+                        * scale
+            }
+            VerticalTextAlignment::Bottom => {
+                position.1 -= text_renderer.line_metrics.descent * scale
+            }
         }
 
         let mut vertices = Vec::new();
@@ -240,13 +256,9 @@ impl Text {
         }
 
         let x_offset = match self.horizontal_alignment {
-            HorizontalTextAlignment::Left => {0.0}
-            HorizontalTextAlignment::Center => {
-                pos_x / 2.0
-            }
-            HorizontalTextAlignment::Right => {
-                pos_x - 1.0
-            }
+            HorizontalTextAlignment::Left => 0.0,
+            HorizontalTextAlignment::Center => pos_x / 2.0,
+            HorizontalTextAlignment::Right => pos_x - 1.0,
         };
 
         for vertex in vertices.iter_mut().step_by(2) {

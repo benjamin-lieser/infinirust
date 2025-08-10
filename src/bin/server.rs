@@ -2,13 +2,13 @@ use anyhow::anyhow;
 use std::sync::Arc;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{
-    tcp::{OwnedReadHalf, OwnedWriteHalf},
     TcpListener,
+    tcp::{OwnedReadHalf, OwnedWriteHalf},
 };
 use zerocopy::IntoBytes;
 
 use infinirust::net::{ClientPackagePlayerPosition, Package, PackageBlockUpdate};
-use infinirust::server::{Client, Command, ServerCommand, NOUSER, UID};
+use infinirust::server::{Client, Command, NOUSER, ServerCommand, UID};
 
 fn main() -> std::io::Result<()> {
     let args: Vec<String> = std::env::args().collect();
