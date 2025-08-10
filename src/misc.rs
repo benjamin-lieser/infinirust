@@ -69,7 +69,7 @@ pub fn start_server(world_directory: &str) -> (std::process::Child, String) {
 }
 
 pub fn login(bind: &str, username: &str) -> (TcpStream, u64) {
-    let mut stream = TcpStream::connect(bind).expect("Could not connect to server");
+    let mut stream = TcpStream::connect(bind).expect("Client: Could not connect to server");
     //login package
     let len = username.len();
     assert!(len <= u16::MAX as usize);
@@ -83,7 +83,7 @@ pub fn login(bind: &str, username: &str) -> (TcpStream, u64) {
     let uid = match answer {
         0x00001 => {
             //Login Failed
-            panic!("Login failed:{}", read_string(&mut stream));
+            panic!("Client: Login failed:{}", read_string(&mut stream));
         }
         0x00002 => {
             //Login success
@@ -92,7 +92,7 @@ pub fn login(bind: &str, username: &str) -> (TcpStream, u64) {
             uid
         }
         _ => {
-            panic!("Invalid package");
+            panic!("Client:Invalid package");
         }
     };
     (stream, uid)

@@ -11,7 +11,6 @@
 - Lighting
 - Choose which block to put
 - Text rendering (also for multiplayer)
-- Debug screen
 - Debug camera
 - Block break animation
 - Better block selection (without z value of opengl)
