@@ -6,8 +6,8 @@ use obj::TexturedVertex;
 use zerocopy::transmute;
 
 use crate::{
-    game::misc::{CubeOutlines, extract_group_range},
-    mygl::{GLToken, IndexBuffer, VAO, VBO},
+    game::misc::{extract_group_range, CubeOutlines},
+    mygl::{GLToken, IndexBuffer, Program, VAO, VBO},
     net::ServerPackagePlayerPosition,
     server::UID,
 };
@@ -110,14 +110,16 @@ impl Players {
         projection_view: &nalgebra_glm::Mat4,
         camera_pos: &[f64; 3],
         mvp_location: GLint,
+        program: &Program,
     ) {
-        self.render.vao.bind(glt);
         unsafe {
             gl::BindTexture(gl::TEXTURE_2D_ARRAY, self.render.texture);
         }
         // The Model is centered on 0,0,0, we have the lower x y coordinates in pos
         let model_center = glm::translation(&glm::vec3(0.3 / 0.6, 0.0, 0.3 / 0.6));
         for player in self.players.iter() {
+            program.bind(glt);
+            self.render.vao.bind(glt);
             let player_pos = player.position;
 
             let model_trans = glm::translation(&glm::vec3(
@@ -153,6 +155,7 @@ impl Players {
                     );
                 }
             }
+
             // Draw the bounding box
             let bounding_box_size = player.bounding_box_size().cast();
 

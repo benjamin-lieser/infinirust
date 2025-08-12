@@ -219,6 +219,7 @@ impl World {
                 &projection_view,
                 &camera.camera_position(),
                 mvp_location,
+                program,
             );
         }
     }
