@@ -92,6 +92,10 @@ impl Players {
         });
     }
 
+    pub fn remove_player(&mut self, uid: UID) {
+        self.players.retain(|p| p.uid != uid);
+    }
+
     pub fn update(&mut self, package: &ServerPackagePlayerPosition) {
         for player in self.players.iter_mut() {
             if player.uid == package.uid as usize {

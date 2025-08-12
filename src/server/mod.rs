@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use zerocopy::IntoBytes;
 
-use crate::net::{ServerPackagePlayerPosition, ServerPlayerLogin};
+use crate::net::{ServerPackageLogout, ServerPackagePlayerPosition, ServerPlayerLogin};
 
 use self::player::Players;
 use self::world::ServerWorld;
@@ -97,6 +97,11 @@ pub fn start_world(
             }
             Command::Logout => {
                 server.players.logout(uid);
+                server.players
+                    .broadcast_filtered(
+                        ServerPackageLogout { uid: uid as u64 }.to_arc(),
+                        |p| p.uid != uid,
+                    );
             }
             Command::ChunkData(pos) => {
                 // If the buffer is full or client disconnect, this package will not be send

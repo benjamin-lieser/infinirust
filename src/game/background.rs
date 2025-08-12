@@ -8,12 +8,10 @@ use zerocopy::IntoBytes;
 
 use crate::{
     game::{
-        CHUNK_SIZE, Camera, Y_RANGE, blocks::BlocksConfig, chunk::block_position_to_chunk_index,
-        world::VIEW_DISTANCE,
+        blocks::BlocksConfig, chunk::block_position_to_chunk_index, world::VIEW_DISTANCE, Camera, CHUNK_SIZE, Y_RANGE
     },
     net::{
-        ClientPackagePlayerPosition, Package as NetworkPackage, PackageBlockUpdate,
-        ServerPackagePlayerPosition, ServerPlayerLogin,
+        ClientPackagePlayerPosition, Package as NetworkPackage, PackageBlockUpdate, ServerPackageLogout, ServerPackagePlayerPosition, ServerPlayerLogin
     },
     server::UID,
 };
@@ -35,6 +33,7 @@ enum Package {
     Chunk([i32; 3], Vec<u8>),
     PlayerPositionUpdate(ServerPackagePlayerPosition),
     PlayerLogin(ServerPlayerLogin),
+    PlayerLogout(ServerPackageLogout),
     BlockUpdate(PackageBlockUpdate),
 }
 
@@ -122,6 +121,10 @@ async fn manage_world(
                     Some(Package::PlayerLogin(package)) => {
                         // Add player to world
                         world.players.lock().unwrap().add_player(package.name, package.uid as UID);
+                    }
+                    Some(Package::PlayerLogout(package)) => {
+                        // Remove player from world
+                        world.players.lock().unwrap().remove_player(package.uid as UID);
                     }
                     Some(Package::BlockUpdate(package)) => {
                         // Update block in chunk
@@ -266,6 +269,14 @@ async fn read_packages(
                 let login_package = ServerPlayerLogin::new(&mut reader).await;
                 chunk_loader
                     .send(Package::PlayerLogin(login_package))
+                    .await
+                    .unwrap();
+            }
+            0x0004 => {
+                // Player logs out
+                let logout_package = ServerPackageLogout::new(&mut reader).await;
+                chunk_loader
+                    .send(Package::PlayerLogout(logout_package))
                     .await
                     .unwrap();
             }

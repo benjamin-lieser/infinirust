@@ -64,6 +64,15 @@ impl Package for PackageBlockUpdate {
     }
 }
 
+impl Package for ServerPackageLogout {
+    fn id() -> u16 {
+        0x0004
+    }
+    async fn handle(&self, _command: &ServerCommand, _uid: UID) {
+        panic!("ServerPackageLogout should not be received by the server");
+    }
+}
+
 #[repr(C)]
 #[derive(Debug, Default, IntoBytes, FromBytes, Immutable)]
 pub struct PackageBlockUpdate {
@@ -87,6 +96,12 @@ pub struct ServerPackagePlayerPosition {
     pub pos: [f64; 3],
     pub pitch: f32,
     pub yaw: f32,
+}
+
+#[repr(C)]
+#[derive(Debug, Default, IntoBytes, FromBytes, Immutable)]
+pub struct ServerPackageLogout {
+    pub uid: u64,
 }
 
 pub struct ServerPlayerLogin {
