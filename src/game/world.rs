@@ -5,7 +5,7 @@ use zerocopy::transmute;
 
 use crate::{
     game::{chunk::block_position_to_chunk_index, player::Player},
-    mygl::{GLToken, Program},
+    mygl::{BlockTextures, GLToken, Program, TextRenderer},
 };
 
 use super::{CHUNK_SIZE, Camera, Chunk, Y_RANGE, player::Players};
@@ -23,14 +23,13 @@ pub struct World {
 }
 
 impl World {
-    pub fn new(glt: GLToken, local_player: Player) -> Self {
+    pub fn new(glt: GLToken, local_player: Player, inv_aspect_ratio: f32) -> Self {
         let mut unused_chunks = Vec::new();
         for _ in 0..MAX_CHUNKS {
             unused_chunks.push(Chunk::new_empty(glt));
         }
 
-        let players = Players::new(glt, local_player);
-        //players.add_player("Test".to_string(), 24);
+        let players = Players::new(glt, local_player, inv_aspect_ratio);
 
         Self {
             chunks: Mutex::new(HashMap::with_capacity(MAX_CHUNKS)),
@@ -167,9 +166,12 @@ impl World {
         program: &Program,
         projection: &nalgebra_glm::Mat4,
         camera: &impl Camera,
+        text_renderer: &TextRenderer,
+        block_texture: &BlockTextures
     ) {
         unsafe {
             program.bind(glt);
+            block_texture.bind_texture(glt);
             gl::Enable(gl::DEPTH_TEST);
             gl::Enable(gl::CULL_FACE);
 
@@ -220,6 +222,7 @@ impl World {
                 &camera.camera_position(),
                 mvp_location,
                 program,
+                text_renderer,
             );
         }
     }

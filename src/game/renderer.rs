@@ -93,8 +93,6 @@ impl Renderer {
     pub fn draw(&mut self, glt: GLToken, delta_t: f32) {
         self.world.game_update(delta_t, &self.controls);
 
-        self.block_textures.bind_texture(glt);
-
         let mut camera = self
             .world
             .players
@@ -104,7 +102,7 @@ impl Renderer {
             .clone_into_free_camera();
 
         self.world
-            .draw(glt, &self.program, &self.projection, &camera);
+            .draw(glt, &self.program, &self.projection, &camera, &self.text_renderer, &self.block_textures);
 
         let distance_to_screen_mid = unsafe {
             let mut depth: f32 = 0.0;

@@ -97,6 +97,7 @@ impl Game {
 
         let local_player = Player {
             name,
+            name_text: None,
             uid,
             position: DVec3::new(0.0, 0.0, 0.0),
             pitch: 0.0,
@@ -106,7 +107,9 @@ impl Game {
             jump_duration: 0.0,
         };
 
-        let world = World::new(glt, local_player);
+        let inv_aspect_ratio = render_size.height as f32 / render_size.width as f32;
+
+        let world = World::new(glt, local_player, inv_aspect_ratio);
         let world = Arc::new(world);
 
         let (update_tx, update_rx) = tokio::sync::mpsc::channel(100);

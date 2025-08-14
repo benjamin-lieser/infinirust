@@ -1,6 +1,6 @@
 use std::{collections::HashMap, ffi::CStr};
 
-use crate::mygl::{GLToken, Texture};
+use crate::mygl::{GLToken, Texture, Program};
 use fontdue::{Font, FontSettings, LineMetrics};
 
 pub enum HorizontalTextAlignment {
@@ -28,7 +28,8 @@ pub struct Text {
 
 pub struct TextRenderer {
     texture: Texture,
-    program: super::program::Program,
+    overlay_program: Program,
+    player_program: Program,
     texture_coordinates: HashMap<char, (f32, f32, f32, f32)>, // (x, y, width, height)
     vertex_data: HashMap<char, (f32, f32, f32, f32)>, // (x, y, width, height) relative to origin
     advance_data: HashMap<char, f32>,                 // advance for each character
@@ -117,9 +118,14 @@ impl TextRenderer {
             texture_coordinates,
             vertex_data,
             advance_data,
-            program: super::program::Program::new(
+            overlay_program: super::program::Program::new(
                 glt,
-                VERTEX_SHADER_SOURCE,
+                OVERLAY_VERTEX_SHADER_SOURCE,
+                FRAGMENT_SHADER_SOURCE,
+            ),
+            player_program: super::program::Program::new(
+                glt,
+                PLAYER_VERTEX_SHADER_SOURCE,
                 FRAGMENT_SHADER_SOURCE,
             ),
             line_metrics,
@@ -160,11 +166,34 @@ impl TextRenderer {
         text
     }
 
-    pub fn bind_program(&self, glt: GLToken) {
+    pub fn bind_overlay_program(&self, glt: GLToken) {
         self.texture.bind(glt);
-        self.program.bind(glt);
+        self.overlay_program.bind(glt);
         unsafe {
-            gl::Uniform1i(self.program.get_uniform_location(c"text_texture"), 0);
+            gl::Uniform1i(self.overlay_program.get_uniform_location(c"text_texture"), 0);
+            gl::Disable(gl::DEPTH_TEST);
+            gl::Enable(gl::BLEND);
+            gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
+        }
+    }
+
+    pub fn set_offset(&self, _glt: GLToken, offset: nalgebra_glm::Vec4) {
+        unsafe {
+            gl::Uniform4f(
+                self.player_program.get_uniform_location(c"offset"),
+                offset.x,
+                offset.y,
+                offset.z,
+                offset.w,
+            );
+        }
+    }
+    
+    pub fn bind_player_program(&self, glt: GLToken) {
+        self.texture.bind(glt);
+        self.player_program.bind(glt);
+        unsafe {
+            gl::Uniform1i(self.player_program.get_uniform_location(c"text_texture"), 0);
             gl::Disable(gl::DEPTH_TEST);
             gl::Enable(gl::BLEND);
             gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
@@ -173,7 +202,8 @@ impl TextRenderer {
 
     pub fn delete(self, glt: GLToken) {
         self.texture.delete(glt);
-        self.program.delete(glt);
+        self.overlay_program.delete(glt);
+        self.player_program.delete(glt);
     }
 }
 
@@ -276,7 +306,7 @@ impl Text {
     }
 }
 
-const VERTEX_SHADER_SOURCE: &CStr = c"
+const OVERLAY_VERTEX_SHADER_SOURCE: &CStr = c"
 #version 410 core
 precision highp float;
 
@@ -290,6 +320,22 @@ void main() {
     fragTexCoord = tex_coord;
 }";
 
+const PLAYER_VERTEX_SHADER_SOURCE: &CStr = c"
+#version 410 core
+precision highp float;
+
+layout(location=0) in vec2 position;
+layout(location=1) in vec2 tex_coord;
+
+uniform vec4 offset;
+
+out vec2 fragTexCoord;
+
+void main() {
+    gl_Position = vec4(position, 0.0, 0.0) + offset;
+    fragTexCoord = tex_coord;
+}";
+
 const FRAGMENT_SHADER_SOURCE: &CStr = c"
 #version 410 core
 precision highp float;
@@ -300,6 +346,5 @@ uniform sampler2D text_texture;
 layout(location=0) out vec4 fragColor;
 
 void main() {
-    vec4 tex = texture(text_texture, fragTexCoord);
-    fragColor = tex;
+    fragColor = texture(text_texture, fragTexCoord);
 }";

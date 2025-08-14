@@ -95,7 +95,7 @@ impl DebugScreen {
         self.texts[3].set_string(&format!("z: {:.10}", pos.z));
         self.texts[3].update(glt, self.inv_aspect_ratio, text_renderer);
 
-        text_renderer.bind_program(glt);
+        text_renderer.bind_overlay_program(glt);
         for text in &self.texts {
             text.draw(glt);
         }

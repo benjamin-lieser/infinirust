@@ -73,7 +73,10 @@ impl SkyBox {
 
         self.program.uniform_mat4(glt, c"view_projection", vp);
 
-        unsafe { gl::DepthFunc(gl::LEQUAL) };
+        unsafe {
+            gl::DepthFunc(gl::LEQUAL);
+            gl::Enable(gl::DEPTH_TEST)
+        };
         self.renderer.render(glt);
         unsafe { gl::DepthFunc(gl::LESS) };
     }
@@ -114,6 +117,5 @@ uniform samplerCube skybox;
 void main()
 {
     FragColor = texture(skybox, TexCoords);
-    //FragColor = vec4(1.0, 0.0, 0.0, 1.0); // For testing purposes
 }
 ";

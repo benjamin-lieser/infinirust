@@ -1,13 +1,16 @@
 use std::{collections::HashMap, fs::File, io::BufReader};
 
 use gl::types::{GLint, GLuint};
-use nalgebra_glm::{self as glm, DVec3, Vec3};
+use nalgebra_glm::{self as glm, DVec3, Vec3, Vec4};
 use obj::TexturedVertex;
 use zerocopy::transmute;
 
 use crate::{
-    game::misc::{extract_group_range, CubeOutlines},
-    mygl::{GLToken, IndexBuffer, Program, VAO, VBO},
+    game::misc::{CubeOutlines, extract_group_range},
+    mygl::{
+        GLToken, HorizontalTextAlignment, IndexBuffer, Program, Text, TextRenderer, VAO, VBO,
+        VerticalTextAlignment,
+    },
     net::ServerPackagePlayerPosition,
     server::UID,
 };
@@ -16,6 +19,7 @@ use super::Camera;
 
 pub struct Player {
     pub name: String,
+    pub name_text: Option<Text>,
     pub position: DVec3, // Position in x, y, z
     pub pitch: f32,      // Pitch in radians
     pub yaw: f32,        // Yaw in radians
@@ -59,6 +63,12 @@ impl Player {
         self.pitch = pitch;
         self.yaw = yaw;
     }
+
+    pub fn delete(self, glt: GLToken) {
+        if let Some(text) = self.name_text {
+            text.delete(glt);
+        }
+    }
 }
 
 pub struct Players {
@@ -67,21 +77,24 @@ pub struct Players {
     pub local_player: Player,
     render: PlayerRender,
     bounding_box_render: CubeOutlines,
+    inv_aspect_ratio: f32,
 }
 
 impl Players {
-    pub fn new(glt: GLToken, local_player: Player) -> Self {
+    pub fn new(glt: GLToken, local_player: Player, inv_aspect_ratio: f32) -> Self {
         Self {
             players: vec![],
             local_player,
             render: PlayerRender::new(glt),
             bounding_box_render: CubeOutlines::new(glt),
+            inv_aspect_ratio,
         }
     }
 
     pub fn add_player(&mut self, name: String, uid: UID) {
         self.players.push(Player {
             name,
+            name_text: None,
             position: DVec3::new(0.0, 0.0, 0.0),
             pitch: 0.0,
             yaw: 0.0,
@@ -109,19 +122,21 @@ impl Players {
     }
 
     pub fn draw(
-        &self,
+        &mut self,
         glt: GLToken,
         projection_view: &nalgebra_glm::Mat4,
         camera_pos: &[f64; 3],
         mvp_location: GLint,
         program: &Program,
+        text_renderer: &TextRenderer,
     ) {
-        unsafe {
-            gl::BindTexture(gl::TEXTURE_2D_ARRAY, self.render.texture);
-        }
         // The Model is centered on 0,0,0, we have the lower x y coordinates in pos
         let model_center = glm::translation(&glm::vec3(0.3 / 0.6, 0.0, 0.3 / 0.6));
-        for player in self.players.iter() {
+        for player in self.players.iter_mut() {
+            unsafe {
+                gl::BindTexture(gl::TEXTURE_2D_ARRAY, self.render.texture);
+                gl::Enable(gl::DEPTH_TEST);
+            }
             program.bind(glt);
             self.render.vao.bind(glt);
             let player_pos = player.position;
@@ -166,6 +181,31 @@ impl Players {
             let bounding_box_model = glm::scale(&model_trans, &bounding_box_size);
             self.bounding_box_render
                 .draw(glt, &(projection_view * bounding_box_model));
+
+            // Draw the name text
+
+            let text = player.name_text.get_or_insert_with(|| {
+                text_renderer.render_text(
+                    glt,
+                    &player.name,
+                    (0.0, 0.0),
+                    HorizontalTextAlignment::Center,
+                    VerticalTextAlignment::Bottom,
+                    0.15,
+                    1.0,
+                )
+            });
+
+
+            let text_pos = Vec4::new(0.3,1.8,0.3,1.0);
+
+            let text_pos_transformed = projection_view * model_trans * text_pos;
+
+            text_renderer.bind_player_program(glt);
+            text_renderer.set_offset(glt, text_pos_transformed);
+
+            text.draw(glt);
+
         }
     }
     pub fn delete(self, glt: GLToken) {
