@@ -106,8 +106,14 @@ impl Renderer {
 
         let projection_view = self.projection * camera.view_matrix();
 
-        self.world
-            .draw(glt, &self.program, &self.projection, &camera, &self.text_renderer, &self.block_textures);
+        self.world.draw(
+            glt,
+            &self.program,
+            &self.projection,
+            &camera,
+            &self.text_renderer,
+            &self.block_textures,
+        );
 
         let distance_to_screen_mid = unsafe {
             let mut depth: f32 = 0.0;
@@ -185,12 +191,10 @@ impl Renderer {
                 (look_block[2] - z) as f32,
             ));
 
-            self.cube_outlines
-                .draw(glt, &(projection_view * model));
+            self.cube_outlines.draw(glt, &(projection_view * model));
         }
         // Render the skybox
-        self.skybox
-            .render(glt, &projection_view);
+        self.skybox.render(glt, &projection_view);
 
         // Make sure we send the actual position of the player (lowest part of bounding box)
         camera.pos[0] -= 0.25;
@@ -209,7 +213,7 @@ impl Renderer {
             &self.world,
             delta_t,
             self.controls.debug_screen,
-            &projection_view, 
+            &projection_view,
         );
     }
 

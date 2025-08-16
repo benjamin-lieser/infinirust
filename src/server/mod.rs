@@ -97,11 +97,11 @@ pub fn start_world(
             }
             Command::Logout => {
                 server.players.logout(uid);
-                server.players
-                    .broadcast_filtered(
-                        ServerPackageLogout { uid: uid as u64 }.to_arc(),
-                        |p| p.uid != uid,
-                    );
+                server
+                    .players
+                    .broadcast_filtered(ServerPackageLogout { uid: uid as u64 }.to_arc(), |p| {
+                        p.uid != uid
+                    });
             }
             Command::ChunkData(pos) => {
                 // If the buffer is full or client disconnect, this package will not be send
