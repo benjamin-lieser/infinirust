@@ -210,7 +210,7 @@ impl Overlay {
                     (0.0, 0.0),
                     HorizontalTextAlignment::Center,
                     VerticalTextAlignment::Bottom,
-                    0.15,
+                    0.5,
                     1.0,
                 )
             });

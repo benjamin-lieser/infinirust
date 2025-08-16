@@ -244,7 +244,7 @@ impl Text {
         let mut texture_coords = Vec::new();
 
         let (mut pos_x, pos_y) = position;
-        for (char, next_char) in self.text.chars().zip(self.text.chars().skip(1)) {
+        for (char, next_char) in self.text.chars().zip(self.text.chars().skip(1).chain(std::iter::once('\0'))) {
             let &(tex_x, tex_y, tex_width, tex_height) =
                 text_renderer.texture_coordinates.get(&char).unwrap();
 
