@@ -135,10 +135,6 @@ impl ApplicationHandler for App {
                 let delta_t = current_time.duration_since(self.time).unwrap();
                 self.time = current_time;
 
-                if delta_t.as_millis() > 10 {
-                    println!("Delta time: {:} milliseconds", delta_t.as_millis());
-                }
-
                 self.game.draw(self.glt, delta_t.as_secs_f32());
 
                 self.window.pre_present_notify();

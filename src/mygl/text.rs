@@ -248,14 +248,6 @@ impl Text {
             let &(tex_x, tex_y, tex_width, tex_height) =
                 text_renderer.texture_coordinates.get(&char).unwrap();
 
-            dbg!(
-                text_renderer
-                    .font
-                    .horizontal_kern(char, next_char, 64.0)
-                    .unwrap_or(0.0)
-            );
-            dbg!(text_renderer.font.metrics(char, 64.0).advance_width);
-
             let advance = (text_renderer.font.metrics(char, 64.0).advance_width
                 + text_renderer
                     .font
