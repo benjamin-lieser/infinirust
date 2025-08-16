@@ -1,6 +1,6 @@
 use std::{collections::HashMap, ffi::CStr};
 
-use crate::mygl::{GLToken, Texture, Program};
+use crate::mygl::{GLToken, Program, Texture};
 use fontdue::{Font, FontSettings, LineMetrics};
 
 pub enum HorizontalTextAlignment {
@@ -32,7 +32,7 @@ pub struct TextRenderer {
     player_program: Program,
     texture_coordinates: HashMap<char, (f32, f32, f32, f32)>, // (x, y, width, height)
     vertex_data: HashMap<char, (f32, f32, f32, f32)>, // (x, y, width, height) relative to origin
-    advance_data: HashMap<char, f32>,                 // advance for each character
+    font: Font,
     line_metrics: LineMetrics,
     scale: f32,
 }
@@ -57,7 +57,6 @@ impl TextRenderer {
 
         let mut texture_coordinates = HashMap::new();
         let mut vertex_data = HashMap::new();
-        let mut advance_data = HashMap::new();
 
         for char in chars.chars() {
             let (metrics, bitmap) = font.rasterize(char, 64.0);
@@ -93,6 +92,7 @@ impl TextRenderer {
             );
 
             texture_coordinates.insert(char, coords);
+
             vertex_data.insert(
                 char,
                 (
@@ -102,7 +102,6 @@ impl TextRenderer {
                     metrics.height as f32,
                 ),
             );
-            advance_data.insert(char, metrics.advance_width);
             x += metrics.width + 1; // +1 for spacing between characters
         }
         image.save("font_atlas.png").unwrap();
@@ -117,7 +116,7 @@ impl TextRenderer {
             texture,
             texture_coordinates,
             vertex_data,
-            advance_data,
+            font,
             overlay_program: super::program::Program::new(
                 glt,
                 OVERLAY_VERTEX_SHADER_SOURCE,
@@ -170,7 +169,10 @@ impl TextRenderer {
         self.texture.bind(glt);
         self.overlay_program.bind(glt);
         unsafe {
-            gl::Uniform1i(self.overlay_program.get_uniform_location(c"text_texture"), 0);
+            gl::Uniform1i(
+                self.overlay_program.get_uniform_location(c"text_texture"),
+                0,
+            );
             gl::Disable(gl::DEPTH_TEST);
             gl::Enable(gl::BLEND);
             gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
@@ -188,7 +190,7 @@ impl TextRenderer {
             );
         }
     }
-    
+
     pub fn bind_player_program(&self, glt: GLToken) {
         self.texture.bind(glt);
         self.player_program.bind(glt);
@@ -242,14 +244,28 @@ impl Text {
         let mut texture_coords = Vec::new();
 
         let (mut pos_x, pos_y) = position;
-        for char in self.text.chars() {
+        for (char, next_char) in self.text.chars().zip(self.text.chars().skip(1)) {
             let &(tex_x, tex_y, tex_width, tex_height) =
                 text_renderer.texture_coordinates.get(&char).unwrap();
-            let advance = text_renderer.advance_data.get(&char).unwrap() * inv_aspect_ratio;
+
+            dbg!(
+                text_renderer
+                    .font
+                    .horizontal_kern(char, next_char, 64.0)
+                    .unwrap_or(0.0)
+            );
+            dbg!(text_renderer.font.metrics(char, 64.0).advance_width);
+
+            let advance = (text_renderer.font.metrics(char, 64.0).advance_width
+                + text_renderer
+                    .font
+                    .horizontal_kern(char, next_char, 64.0)
+                    .unwrap_or(0.0))
+                * inv_aspect_ratio;
             let (vertex_x, vertex_y, vertex_width, vertex_height) =
                 text_renderer.vertex_data.get(&char).unwrap();
 
-            let x = pos_x + vertex_x * scale;
+            let x = pos_x + vertex_x * scale * inv_aspect_ratio;
             let y = pos_y + vertex_y * scale;
             let width = vertex_width * scale * inv_aspect_ratio;
             let height = vertex_height * scale;

@@ -64,6 +64,9 @@ impl Renderer {
 
         let skybox = SkyBox::new(glt, &Path::new("textures/skybox/cubemap_1.png"));
 
+        //let font = std::fs::read(Path::new("textures/font/MartianMono-Regular.otf"))
+        //    .expect("Failed to read font file");
+
         let font = std::fs::read(Path::new("textures/font/FreeSans.ttf"))
             .expect("Failed to read font file");
 
