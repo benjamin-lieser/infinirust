@@ -1,9 +1,10 @@
-use std::ffi::CStr;
+use std::{collections::HashMap, ffi::CStr};
 
+use nalgebra_glm::{Mat4, Vec3, Vec4};
 use winit::dpi::PhysicalSize;
 
 use crate::{
-    game::World,
+    game::{World, player::Player},
     mygl::{
         GLToken, HorizontalTextAlignment, Program, Text, TextRenderer, VAO, VBO,
         VerticalTextAlignment,
@@ -21,7 +22,7 @@ impl DebugScreen {
         let mut texts = Vec::new();
 
         // Create them with empty strings, we will update them later
-        let fps_text = text_renderer.render_text(
+        let fps_text = text_renderer.create_text(
             glt,
             "",
             (-1.0, 1.0),
@@ -33,7 +34,7 @@ impl DebugScreen {
 
         texts.push(fps_text);
 
-        let x_text = text_renderer.render_text(
+        let x_text = text_renderer.create_text(
             glt,
             "",
             (-1.0, 0.95),
@@ -45,7 +46,7 @@ impl DebugScreen {
 
         texts.push(x_text);
 
-        let y_text = text_renderer.render_text(
+        let y_text = text_renderer.create_text(
             glt,
             "",
             (-1.0, 0.90),
@@ -57,7 +58,7 @@ impl DebugScreen {
 
         texts.push(y_text);
 
-        let z_text = text_renderer.render_text(
+        let z_text = text_renderer.create_text(
             glt,
             "",
             (-1.0, 0.85),
@@ -114,6 +115,8 @@ pub struct Overlay {
     cross_hair_vbo: VBO<f32>,
     cross_hair_vao: VAO,
     debug_screen: DebugScreen,
+    player_names: HashMap<usize, Text>,
+    inv_aspect_ratio: f32,
 }
 
 const CROSSHAIR_SIZE: f32 = 0.03;
@@ -145,10 +148,17 @@ impl Overlay {
             cross_hair_vbo: vbo,
             cross_hair_vao: vao,
             debug_screen: DebugScreen::new(glt, text_renderer, inv_aspect),
+            player_names: HashMap::new(),
+            inv_aspect_ratio: inv_aspect,
         }
     }
 
-    pub fn resize(&mut self, glt: GLToken, render_size: PhysicalSize<u32>) {
+    pub fn resize(
+        &mut self,
+        glt: GLToken,
+        render_size: PhysicalSize<u32>,
+        text_renderer: &TextRenderer,
+    ) {
         let inv_aspect = render_size.height as f32 / render_size.width as f32;
 
         let data = [
@@ -163,6 +173,50 @@ impl Overlay {
         ];
         self.cross_hair_vbo.copy(glt, &data);
         self.debug_screen.inv_aspect_ratio = inv_aspect;
+
+        for text in self.player_names.values_mut() {
+            text.update(glt, inv_aspect, text_renderer);
+        }
+
+        self.inv_aspect_ratio = inv_aspect;
+    }
+
+    pub fn draw_player_names(
+        &mut self,
+        glt: GLToken,
+        text_renderer: &TextRenderer,
+        world: &World,
+        projection_view: &Mat4,
+    ) {
+        let players = world.players.lock().unwrap();
+
+        let camera = &players.local_player.position + Player::camera_offset();
+
+        text_renderer.bind_player_program(glt);
+
+        for player in players.players.iter() {
+            let relative_pos: Vec3 = (player.position - camera).cast() + Player::text_offset();
+            let text_pos_transformed =
+                projection_view * Vec4::new(relative_pos.x, relative_pos.y, relative_pos.z, 1.0);
+
+            text_renderer.set_offset(glt, text_pos_transformed);
+
+            // Draw the name text
+
+            let text = self.player_names.entry(player.uid).or_insert_with(|| {
+                text_renderer.create_text(
+                    glt,
+                    &player.name,
+                    (0.0, 0.0),
+                    HorizontalTextAlignment::Center,
+                    VerticalTextAlignment::Bottom,
+                    0.15,
+                    1.0,
+                )
+            });
+
+            text.draw(glt);
+        }
     }
 
     pub fn draw(
@@ -172,6 +226,7 @@ impl Overlay {
         world: &World,
         delta_t: f32,
         debug_screen: bool,
+        projection_view: &Mat4,
     ) {
         self.cross_hair_program.bind(glt);
         self.cross_hair_vao.bind(glt);
@@ -179,6 +234,8 @@ impl Overlay {
             gl::Disable(gl::DEPTH_TEST);
             gl::DrawArrays(gl::LINES, 0, 4);
         }
+
+        self.draw_player_names(glt, text_renderer, world, projection_view);
 
         if debug_screen {
             self.debug_screen.draw(glt, text_renderer, world, delta_t);
@@ -190,6 +247,9 @@ impl Overlay {
         self.cross_hair_vao.delete(glt);
         self.cross_hair_program.delete(glt);
         self.debug_screen.delete(glt);
+        for text in self.player_names.into_values() {
+            text.delete(glt);
+        }
     }
 }
 

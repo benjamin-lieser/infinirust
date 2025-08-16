@@ -101,6 +101,8 @@ impl Renderer {
             .local_player
             .clone_into_free_camera();
 
+        let projection_view = self.projection * camera.view_matrix();
+
         self.world
             .draw(glt, &self.program, &self.projection, &camera, &self.text_renderer, &self.block_textures);
 
@@ -181,11 +183,11 @@ impl Renderer {
             ));
 
             self.cube_outlines
-                .draw(glt, &(self.projection * camera.view_matrix() * model));
+                .draw(glt, &(projection_view * model));
         }
         // Render the skybox
         self.skybox
-            .render(glt, &(self.projection * camera.view_matrix()));
+            .render(glt, &projection_view);
 
         // Make sure we send the actual position of the player (lowest part of bounding box)
         camera.pos[0] -= 0.25;
@@ -204,6 +206,7 @@ impl Renderer {
             &self.world,
             delta_t,
             self.controls.debug_screen,
+            &projection_view, 
         );
     }
 
@@ -218,7 +221,7 @@ impl Renderer {
             NEAR_PLAIN,
             FAR_PLAIN,
         );
-        self.overlay.resize(glt, size);
+        self.overlay.resize(glt, size, &self.text_renderer);
     }
 
     /// Only mouse movement, clicking is handled in `keyboard_input`

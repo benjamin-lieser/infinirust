@@ -133,7 +133,7 @@ impl TextRenderer {
         }
     }
 
-    pub fn render_text(
+    pub fn create_text(
         &self,
         glt: GLToken,
         text: &str,

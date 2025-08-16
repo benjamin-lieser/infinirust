@@ -1,16 +1,13 @@
 use std::{collections::HashMap, fs::File, io::BufReader};
 
 use gl::types::{GLint, GLuint};
-use nalgebra_glm::{self as glm, DVec3, Vec3, Vec4};
+use nalgebra_glm::{self as glm, DVec3, Vec3};
 use obj::TexturedVertex;
 use zerocopy::transmute;
 
 use crate::{
     game::misc::{CubeOutlines, extract_group_range},
-    mygl::{
-        GLToken, HorizontalTextAlignment, IndexBuffer, Program, Text, TextRenderer, VAO, VBO,
-        VerticalTextAlignment,
-    },
+    mygl::{GLToken, IndexBuffer, Program, Text, VAO, VBO},
     net::ServerPackagePlayerPosition,
     server::UID,
 };
@@ -58,6 +55,16 @@ impl Player {
         DVec3::new(0.6, 1.625, 0.6)
     }
 
+    pub fn camera_offset() -> DVec3 {
+        // Offset from the player's position to the camera position
+        DVec3::new(0.3, 1.5, 0.3)
+    }
+
+    pub fn text_offset() -> Vec3 {
+        // Offset from the player's position to the text position
+        Vec3::new(0.3, 1.8, 0.3)
+    }
+
     pub fn update_pos_pitch_yaw(&mut self, pos: [f64; 3], pitch: f32, yaw: f32) {
         self.position = DVec3::new(pos[0], pos[1], pos[2]);
         self.pitch = pitch;
@@ -73,7 +80,7 @@ impl Player {
 
 pub struct Players {
     /// Other Players
-    players: Vec<Player>,
+    pub players: Vec<Player>,
     pub local_player: Player,
     render: PlayerRender,
     bounding_box_render: CubeOutlines,
@@ -128,7 +135,6 @@ impl Players {
         camera_pos: &[f64; 3],
         mvp_location: GLint,
         program: &Program,
-        text_renderer: &TextRenderer,
     ) {
         // The Model is centered on 0,0,0, we have the lower x y coordinates in pos
         let model_center = glm::translation(&glm::vec3(0.3 / 0.6, 0.0, 0.3 / 0.6));
@@ -181,31 +187,6 @@ impl Players {
             let bounding_box_model = glm::scale(&model_trans, &bounding_box_size);
             self.bounding_box_render
                 .draw(glt, &(projection_view * bounding_box_model));
-
-            // Draw the name text
-
-            let text = player.name_text.get_or_insert_with(|| {
-                text_renderer.render_text(
-                    glt,
-                    &player.name,
-                    (0.0, 0.0),
-                    HorizontalTextAlignment::Center,
-                    VerticalTextAlignment::Bottom,
-                    0.15,
-                    1.0,
-                )
-            });
-
-
-            let text_pos = Vec4::new(0.3,1.8,0.3,1.0);
-
-            let text_pos_transformed = projection_view * model_trans * text_pos;
-
-            text_renderer.bind_player_program(glt);
-            text_renderer.set_offset(glt, text_pos_transformed);
-
-            text.draw(glt);
-
         }
     }
     pub fn delete(self, glt: GLToken) {

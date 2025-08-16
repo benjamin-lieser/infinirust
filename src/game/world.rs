@@ -166,7 +166,7 @@ impl World {
         program: &Program,
         projection: &nalgebra_glm::Mat4,
         camera: &impl Camera,
-        text_renderer: &TextRenderer,
+        _text_renderer: &TextRenderer,
         block_texture: &BlockTextures
     ) {
         unsafe {
@@ -221,8 +221,7 @@ impl World {
                 &projection_view,
                 &camera.camera_position(),
                 mvp_location,
-                program,
-                text_renderer,
+                program
             );
         }
     }
