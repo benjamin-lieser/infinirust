@@ -17,7 +17,7 @@ impl Player {
     pub fn new(name: String) -> Self {
         Player {
             name,
-            pos: [0.0; 3],
+            pos: [0.0, 50.0, 0.0],
             pitch: 0.0,
             yaw: 0.0,
         }
