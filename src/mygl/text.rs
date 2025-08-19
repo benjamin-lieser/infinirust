@@ -29,7 +29,9 @@ pub struct Text {
 pub struct TextRenderer {
     texture: Texture,
     overlay_program: Program,
+    text_texture_uniform: gl::types::GLint,
     player_program: Program,
+    offset_uniform: gl::types::GLint,
     texture_coordinates: HashMap<char, (f32, f32, f32, f32)>, // (x, y, width, height)
     vertex_data: HashMap<char, (f32, f32, f32, f32)>, // (x, y, width, height) relative to origin
     font: Font,
@@ -112,21 +114,31 @@ impl TextRenderer {
 
         let scale = 2.0 / (line_metrics.ascent - line_metrics.descent);
 
+        let overlay_program = Program::new(
+            glt,
+            OVERLAY_VERTEX_SHADER_SOURCE,
+            FRAGMENT_SHADER_SOURCE,
+        );
+
+        let text_texture_uniform = overlay_program.get_uniform_location(c"text_texture");
+
+        let player_program = Program::new(
+            glt,
+            PLAYER_VERTEX_SHADER_SOURCE,
+            FRAGMENT_SHADER_SOURCE,
+        );
+
+        let offset_uniform = player_program.get_uniform_location(c"offset");
+
         Self {
             texture,
             texture_coordinates,
             vertex_data,
             font,
-            overlay_program: super::program::Program::new(
-                glt,
-                OVERLAY_VERTEX_SHADER_SOURCE,
-                FRAGMENT_SHADER_SOURCE,
-            ),
-            player_program: super::program::Program::new(
-                glt,
-                PLAYER_VERTEX_SHADER_SOURCE,
-                FRAGMENT_SHADER_SOURCE,
-            ),
+            overlay_program,
+            text_texture_uniform,
+            player_program,
+            offset_uniform,
             line_metrics,
             scale,
         }
@@ -170,7 +182,7 @@ impl TextRenderer {
         self.overlay_program.bind(glt);
         unsafe {
             gl::Uniform1i(
-                self.overlay_program.get_uniform_location(c"text_texture"),
+                self.text_texture_uniform,
                 0,
             );
             gl::Disable(gl::DEPTH_TEST);
@@ -182,7 +194,7 @@ impl TextRenderer {
     pub fn set_offset(&self, _glt: GLToken, offset: nalgebra_glm::Vec4) {
         unsafe {
             gl::Uniform4f(
-                self.player_program.get_uniform_location(c"offset"),
+                self.offset_uniform,
                 offset.x,
                 offset.y,
                 offset.z,
@@ -195,7 +207,7 @@ impl TextRenderer {
         self.texture.bind(glt);
         self.player_program.bind(glt);
         unsafe {
-            gl::Uniform1i(self.player_program.get_uniform_location(c"text_texture"), 0);
+            gl::Uniform1i(self.text_texture_uniform, 0);
             gl::Disable(gl::DEPTH_TEST);
             gl::Enable(gl::BLEND);
             gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
